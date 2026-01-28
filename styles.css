@@ -267,15 +267,31 @@ a:hover {
 }
 
 /* Newsletter */
-.newsletter-embed {
-    background-color: var(--color-surface);
-    border-radius: 8px;
-    padding: 1.5rem;
-    border: 1px solid var(--color-border);
+.newsletter-cta {
+    text-align: center;
 }
 
-.newsletter-embed iframe {
-    max-width: 100%;
+.newsletter-button {
+    display: inline-block;
+    padding: 1rem 2.5rem;
+    background-color: var(--color-accent);
+    color: var(--color-bg);
+    font-weight: 500;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.newsletter-button:hover {
+    background-color: var(--color-accent-hover);
+    color: var(--color-bg);
+    transform: translateY(-2px);
+}
+
+.newsletter-note {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
 }
 
 /* Contact */
