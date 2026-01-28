@@ -133,7 +133,7 @@ a:hover {
 /* Hero */
 .hero {
     position: relative;
-    min-height: 45vh;
+    min-height: 30vh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -347,7 +347,7 @@ a:hover {
     }
 
     .hero {
-        min-height: 35vh;
+        min-height: 25vh;
     }
 
     .section {
