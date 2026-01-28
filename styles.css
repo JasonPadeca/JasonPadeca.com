@@ -201,12 +201,36 @@ a:hover {
 
 /* About */
 .about-content {
+    display: flex;
+    gap: 3rem;
+    align-items: flex-start;
+}
+
+.about-photo {
+    flex-shrink: 0;
+    width: 280px;
+}
+
+.about-photo img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    filter: grayscale(20%);
+    transition: filter 0.3s ease;
+}
+
+.about-photo img:hover {
+    filter: grayscale(0%);
+}
+
+.about-text {
     font-family: var(--font-serif);
     font-size: 1.25rem;
     line-height: 1.8;
 }
 
-.about-content p {
+.about-text p {
     margin-bottom: 1.5rem;
 }
 
@@ -315,6 +339,16 @@ a:hover {
     }
 
     .about-content {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .about-photo {
+        width: 200px;
+    }
+
+    .about-text {
         font-size: 1.1rem;
     }
 }
