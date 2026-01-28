@@ -295,10 +295,95 @@ a:hover {
 }
 
 /* Contact */
+.contact-form {
+    max-width: 500px;
+    margin: 0 auto 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    transition: border-color 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.form-button {
+    display: block;
+    width: 100%;
+    padding: 1rem;
+    background-color: var(--color-accent);
+    color: var(--color-bg);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.form-button:hover {
+    background-color: var(--color-accent-hover);
+    transform: translateY(-2px);
+}
+
+.contact-divider {
+    text-align: center;
+    margin: 2.5rem 0;
+    position: relative;
+}
+
+.contact-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: var(--color-border);
+}
+
+.contact-divider span {
+    position: relative;
+    padding: 0 1rem;
+    background-color: var(--color-bg-alt);
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+}
+
 .contact-links {
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
+    justify-content: center;
 }
 
 .contact-link {

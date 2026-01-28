@@ -75,7 +75,28 @@
         <section id="contact" class="section section-alt">
             <div class="container">
                 <h2>Contact</h2>
-                <p class="section-intro">Want to get in touch? Reach out via email or find me on social media.</p>
+                <p class="section-intro">Want to get in touch? Send a message or find me on social media.</p>
+
+                <form class="contact-form" action="https://formspree.io/f/xzdgbwpo" method="POST">
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message</label>
+                        <textarea id="message" name="message" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="form-button">Send Message</button>
+                </form>
+
+                <div class="contact-divider">
+                    <span>or find me on</span>
+                </div>
+
                 <div class="contact-links">
                     <a href="mailto:jason@jasonpadeca.com" class="contact-link">
                         <span class="contact-icon">&#9993;</span>
