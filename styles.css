@@ -203,13 +203,14 @@ a:hover {
 /* About */
 .about-content {
     display: flex;
-    gap: 3rem;
-    align-items: flex-start;
+    gap: 2rem;
+    align-items: center;
+    justify-content: center;
 }
 
 .about-photo {
     flex-shrink: 0;
-    width: 280px;
+    width: 220px;
 }
 
 .about-photo img {
@@ -226,9 +227,12 @@ a:hover {
 }
 
 .about-text {
+    flex: 1;
+    max-width: 400px;
     font-family: var(--font-serif);
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     line-height: 1.8;
+    text-align: center;
 }
 
 .about-text p {
