@@ -235,6 +235,53 @@ a:hover {
     margin-bottom: 1.5rem;
 }
 
+/* Works */
+.works-list {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.work-item {
+    padding: 1.5rem;
+    background-color: var(--color-surface);
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+}
+
+.work-item h3 {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    color: var(--color-text);
+    margin-bottom: 0.75rem;
+}
+
+.work-status {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+}
+
+.status-complete {
+    background-color: rgba(139, 115, 85, 0.2);
+    color: var(--color-accent);
+}
+
+.status-progress {
+    background-color: rgba(100, 120, 140, 0.2);
+    color: #8a9bab;
+}
+
+.work-details {
+    color: var(--color-text-muted);
+    font-size: 0.95rem;
+    margin-bottom: 0;
+}
+
 /* News */
 .news-list {
     display: flex;
