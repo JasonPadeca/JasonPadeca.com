@@ -237,9 +237,7 @@ a:hover {
 
 /* Feature Image */
 .feature-image {
-    padding: 3rem 0;
     text-align: center;
-    background-color: var(--color-bg);
 }
 
 .feature-image img {
