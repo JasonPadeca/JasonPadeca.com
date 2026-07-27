@@ -253,23 +253,6 @@
     <span><i class="swatch noent"></i> no entry — tap for why</span>
   </div>
 
-  <section class="panel">
-    <h2>Across the whole play</h2>
-    <div class="figs" id="figs"></div>
-    <p class="note" id="note1"></p>
-    <p class="note">
-      Line numbers are reconstructed from the Globe edition milestones in the source,
-      counting a shared verse line once — which is what makes Schmidt's own citations
-      line up. On Pericles the reconstruction disagreed with a printed anchor
-      <span id="snaps"></span> times out of 2,382 lines, and self-corrected at each one.
-    </p>
-    <p class="note">
-      Still crude: lookup is a headword index plus suffix stripping and an irregular-verb
-      table, no real early-modern lemmatiser. Homographs always take the first entry, so
-      <code>lie</code> (recline) and <code>lie</code> (deceive) are not yet told apart
-      except where a pinned citation settles it.
-    </p>
-  </section>
 
 </div>
 
@@ -337,14 +320,23 @@ const LIB  = {"title":"Pericles","self":"per.html","groups":[{"name":"Tragedies"
     + 'sense is claimed for a specific line.';
   inner.appendChild(col);
 
-  btn.addEventListener('click', () => {
-    const open = shelf.classList.toggle('open');
+  function setShelf(open) {
+    shelf.classList.toggle('open', open);
     btn.setAttribute('aria-expanded', String(open));
+  }
+  btn.addEventListener('click', ev => {
+    ev.stopPropagation();               // do not immediately re-close it
+    setShelf(!shelf.classList.contains('open'));
+  });
+  // clicking anywhere that is not the shelf itself dismisses it
+  document.addEventListener('click', ev => {
+    if (shelf.classList.contains('open') && !ev.target.closest('.shelf')) {
+      setShelf(false);
+    }
   });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && shelf.classList.contains('open')) {
-      shelf.classList.remove('open');
-      btn.setAttribute('aria-expanded', 'false');
+      setShelf(false);
       btn.focus();
     }
   });
@@ -577,27 +569,6 @@ document.addEventListener('keydown', ev => { if (ev.key === 'Escape') hide(); })
 
 /* ---------- figures ---------- */
 const pct = (DATA.tokens - DATA.stats.miss) / DATA.tokens * 100;
-const figs = [
-  [DATA.tokens.toLocaleString(), 'word tokens across 28 scenes'],
-  [pct.toFixed(1) + '%', 'resolved to a lexicon entry'],
-  [DATA.vocab && Object.keys(DATA.vocab).length.toLocaleString(), 'distinct Schmidt entries'],
-  [DATA.pinned.toLocaleString(), 'words pinned to their exact line'],
-];
-const figsEl = document.getElementById('figs');
-figs.forEach(([n, l]) => {
-  const d = document.createElement('div');
-  d.className = 'fig';
-  const a = document.createElement('div'); a.className = 'n'; a.textContent = n;
-  const b = document.createElement('div'); b.className = 'l'; b.textContent = l;
-  d.append(a, b);
-  figsEl.appendChild(d);
-});
-document.getElementById('note1').textContent =
-  'That last figure is the interesting one: ' + DATA.pinned.toLocaleString() +
-  ' times in this play, Schmidt named a specific sense for a specific line — roughly one word in ' +
-  Math.round(DATA.tokens / DATA.pinned) + '.';
-document.getElementById('snaps').textContent =
-  DATA.scenes.reduce((a, s) => a + s.snaps, 0);
 
 renderScene(0);
 </script>
