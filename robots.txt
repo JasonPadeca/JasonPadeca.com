@@ -1,6 +1,7 @@
 # Unlisted: reachable by direct link only.
 User-agent: *
 Disallow: /bard/
+Disallow: /bard2/
 
 # Text and data mining / model training crawlers
 User-agent: GPTBot
