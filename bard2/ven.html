@@ -231,7 +231,7 @@
     <div class="eyebrow">Proof of concept · full play</div>
     <h1>Venus and Adonis <em>— tap any word</em></h1>
     <p class="standfirst">
-      All 28 scenes, glossed live against Alexander Schmidt's <em>Shakespeare Lexicon</em>
+      All 10 scenes, glossed live against Alexander Schmidt's <em>Shakespeare Lexicon</em>
       of 1902. Words in oxblood are ones where Schmidt cited that exact line — tap one
       and you get the sense he meant there, not a list of everything the word can mean.
     </p>
@@ -345,20 +345,40 @@ const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V'];
 
 /* ---------- navigation ---------- */
 const nav = document.getElementById('nav');
-const byAct = {};
-DATA.scenes.forEach((s, i) => { (byAct[s.act] = byAct[s.act] || []).push(i); });
-Object.keys(byAct).forEach(act => {
+/* The front and back matter -- cast list, prologue, induction, epilogue --
+   are acts whose n is a word rather than a number. Two things follow.
+
+   Object.keys puts integer-like keys first whatever the insertion order, so
+   keying the shelf off it buries the prologue *after* Act V. The order the
+   scenes arrive in is already the order the play runs in, so take it from
+   there and leave it alone.
+
+   And ROMAN[+'cast'] is ROMAN[NaN], which is how the shelf came to offer
+   "Act undefined". These sections are named, not numbered. */
+const SECTION = { cast: 'Cast', prologue: 'Prologue', induction: 'Induction',
+                  ind: 'Induction', epilogue: 'Epilogue' };
+const actLabel = a => SECTION[a] || ('Act ' + ROMAN[+a]);
+
+const byAct = {}, actOrder = [];
+DATA.scenes.forEach((s, i) => {
+  if (!byAct[s.act]) { byAct[s.act] = []; actOrder.push(s.act); }
+  byAct[s.act].push(i);
+});
+actOrder.forEach(act => {
   const row = document.createElement('div');
   row.className = 'act-row';
   const lab = document.createElement('div');
   lab.className = 'act-label';
-  lab.textContent = 'Act ' + ROMAN[+act];
+  lab.textContent = actLabel(act);
   const chips = document.createElement('div');
   chips.className = 'chips';
   byAct[act].forEach(i => {
     const b = document.createElement('button');
     b.className = 'chip';
-    b.textContent = DATA.scenes[i].sc;
+    // a one-piece section is already named by its label; numbering it "cast"
+    // or "prologue" a second time just makes the chip too wide to scan
+    b.textContent = (SECTION[act] && byAct[act].length === 1)
+                      ? '·' : DATA.scenes[i].sc;
     b.dataset.i = i;
     chips.appendChild(b);
   });
@@ -378,7 +398,10 @@ function renderScene(i) {
   const s = DATA.scenes[i];
   nav.querySelectorAll('.chip').forEach(c =>
     c.setAttribute('aria-current', String(+c.dataset.i === i)));
-  titleEl.textContent = 'Act ' + ROMAN[+s.act] + ' · Scene ' + s.sc;
+  titleEl.textContent = SECTION[s.act]
+      ? (byAct[s.act].length > 1 ? SECTION[s.act] + ' · Scene ' + s.sc
+                                 : SECTION[s.act])
+      : 'Act ' + ROMAN[+s.act] + ' · Scene ' + s.sc;
   settingEl.textContent = s.setting || '';
   sceneEl.textContent = '';
 
