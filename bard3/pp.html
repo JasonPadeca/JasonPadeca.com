@@ -316,6 +316,27 @@ const LIB  = {"title":"The Passionate Pilgrim","self":"pp.html","groups":[{"name
     inner.appendChild(box);
   });
 
+  // Demo features: reading and rehearsal aids built off our own parse, kept
+  // in their own group so nothing here is mistaken for part of the lexicon.
+  // The lexicon link is the exception and belongs with them only because the
+  // shelf is where a reader is already looking for somewhere else to go.
+  const demo = document.createElement('div');
+  demo.className = 'kind';
+  const dh = document.createElement('h3');
+  dh.textContent = 'Demo features';
+  const dul = document.createElement('ul');
+  [['lexicon.html', 'Lexicon A\u2013Z'],
+   ['characters.html', 'Characters'],
+   ['monologues.html', 'Monologues'],
+   ['duologues.html', 'Duologues']].forEach(([f, t]) => {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.href = f; a.textContent = t;
+    li.appendChild(a); dul.appendChild(li);
+  });
+  demo.append(dh, dul);
+  inner.appendChild(demo);
+
   // the colophon rides in the shelf rather than on a landing page of its own,
   // so it is one tap away from anywhere and nothing is a dead end
   const col = document.createElement('div');
