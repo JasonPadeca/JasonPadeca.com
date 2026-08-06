@@ -124,6 +124,10 @@
   .ln .num { font-family:var(--mono); font-size:.625rem; font-variant-numeric:tabular-nums;
              color:var(--faint); text-align:right; opacity:.6; }
   .ln .verse { font-size:1.125rem; line-height:1.9; }
+  .ln.hit { background:var(--accent-wash, rgba(155,30,30,.10)); border-radius:3px;
+            box-shadow:0 0 0 .35rem var(--accent-wash, rgba(155,30,30,.10));
+            transition:background .5s ease, box-shadow .5s ease; }
+  .ln.hit.fade { background:transparent; box-shadow:none; }
 
   /* ---------- words ---------- */
   .w { font:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer;
@@ -477,6 +481,11 @@ function renderScene(i) {
     blk.lines.forEach(ln => {
       const row = document.createElement('div');
       row.className = 'ln';
+      // The address a lexicon citation links to. Globe numbers are milestones
+      // and 5.6% of lines share one with a neighbour, so this is not unique --
+      // a link lands on the first line carrying the number, which is the same
+      // Globe line either way.
+      if (ln.n != null) row.dataset.ref = s.act + '.' + s.sc + '.' + ln.n;
       const num = document.createElement('div');
       num.className = 'num';
       num.textContent = (ln.n % 5 === 0) ? ln.n : '';
@@ -704,7 +713,31 @@ document.addEventListener('keydown', ev => { if (ev.key === 'Escape') hide(); })
 /* ---------- figures ---------- */
 const pct = (DATA.tokens - DATA.stats.miss) / DATA.tokens * 100;
 
-renderScene(0);
+/* ---------- arriving from a lexicon citation ---------- */
+/* A link in the lexicon is an address inside a play: #L1.2.198 is Act I,
+   scene 2, line 198. The scene has to be rendered before the line exists in
+   the document, so this selects the scene first and then scrolls. */
+function gotoRef(hash) {
+  const m = /^#L([^.]+)\.([^.]+)\.(\d+)$/.exec(hash || '');
+  if (!m) return false;
+  const ref = m[1] + '.' + m[2] + '.' + m[3];
+  const i = DATA.scenes.findIndex(
+      s => String(s.act) === m[1] && String(s.sc) === m[2]);
+  if (i < 0) return false;
+  renderScene(i);
+  const row = sceneEl.querySelector('[data-ref="' + ref + '"]');
+  if (!row) return false;
+  row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  row.classList.remove('hit', 'fade');
+  void row.offsetWidth;
+  row.classList.add('hit');
+  setTimeout(() => row.classList.add('fade'), 1800);
+  setTimeout(() => row.classList.remove('hit', 'fade'), 2600);
+  return true;
+}
+window.addEventListener('hashchange', () => gotoRef(location.hash));
+
+if (!gotoRef(location.hash)) renderScene(0);
 </script>
 </body>
 </html>
