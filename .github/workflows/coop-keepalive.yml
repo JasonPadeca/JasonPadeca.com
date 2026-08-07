@@ -1,0 +1,53 @@
+# Keeps the co-op's free Supabase project awake (§31).
+#
+# Free Supabase projects pause after a stretch of inactivity, and a paused
+# project means a family clicking their registration link gets an error. A
+# request every six hours is enough to prevent that, and costs nothing on
+# either side.
+#
+# Setup (see coop/SETUP.md step 7): add two repository secrets —
+#   COOP_KEEPALIVE_URL     https://<project-ref>.supabase.co/functions/v1/keepalive
+#   COOP_KEEPALIVE_SECRET  the same value set as the KEEPALIVE_SECRET function secret
+#
+# Without those secrets the job exits quietly rather than failing every six
+# hours and emailing you about it.
+
+name: Co-op keepalive
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"   # 00:17, 06:17, 12:17, 18:17 UTC
+  workflow_dispatch:          # so you can prove it works without waiting
+
+# Nothing here touches the repository.
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping the keepalive endpoint
+        env:
+          URL: ${{ secrets.COOP_KEEPALIVE_URL }}
+          SECRET: ${{ secrets.COOP_KEEPALIVE_SECRET }}
+        run: |
+          if [ -z "$URL" ]; then
+            echo "COOP_KEEPALIVE_URL is not set — nothing to do."
+            echo "Add it under Settings > Secrets and variables > Actions once Supabase is set up."
+            exit 0
+          fi
+
+          # --max-time guards against a hung request holding a runner for hours.
+          code=$(curl -s -o /tmp/out.txt -w "%{http_code}" --max-time 30 \
+                   -H "x-keepalive-secret: $SECRET" "$URL")
+
+          echo "HTTP $code"
+          cat /tmp/out.txt
+          echo
+
+          if [ "$code" != "200" ]; then
+            echo "::error::Keepalive failed with HTTP $code. The Supabase project may be paused or the secret may be wrong."
+            exit 1
+          fi

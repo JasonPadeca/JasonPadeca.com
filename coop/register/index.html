@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Co-op Registration</title>
+
+<!-- This page shows a family their own children by name. Keep it out of search
+     results entirely (§45). -->
+<meta name="robots" content="noindex, nofollow, noarchive">
+<!-- Belt and braces on the token: never let it ride along in a Referer header. -->
+<meta name="referrer" content="no-referrer">
+
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <span class="brand" id="programName">Co-op Registration</span>
+    <div class="spacer"></div>
+    <span id="semesterName" class="small muted"></span>
+  </div>
+</header>
+
+<main id="app">
+  <div class="loading"><span class="spinner"></span> Loading your registration…</div>
+</main>
+
+<div id="toasts"></div>
+
+<script type="module" src="./app.js"></script>
+<noscript>
+  <div class="centered">
+    <h1>JavaScript required</h1>
+    <p class="muted">This registration page needs JavaScript to load your family's
+    information. Please enable it, or contact your co-op administrator and they
+    can register your children for you.</p>
+  </div>
+</noscript>
+</body>
+</html>

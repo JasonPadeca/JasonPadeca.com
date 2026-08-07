@@ -1,0 +1,34 @@
+# Supabase CLI project config.
+#
+# project_id is the local scratch name; the hosted project is chosen by
+# `supabase link --project-ref <ref>`.
+project_id = "homeschool-coop"
+
+# ---------------------------------------------------------------------------
+# Edge Functions
+#
+# verify_jwt = false on every function, deliberately.
+#
+# It is not the security control it looks like: the anon key is itself a valid
+# JWT, and the anon key ships in the front-end by design, so verify_jwt admits
+# anyone who can read the page source. It buys nothing and it would break the
+# two functions that legitimately have no JWT to present.
+#
+# The actual controls are per-function and stricter:
+#   family-session / family-submit — an invitation token, hashed in the
+#     database, resolved server-side on every single request.
+#   admin-invites — requireAdmin() re-reads the caller's Supabase Auth JWT and
+#     checks it against an active row in `admins` on every single request.
+#   keepalive — a shared secret, and nothing behind it worth reaching.
+# ---------------------------------------------------------------------------
+[functions.family-session]
+verify_jwt = false
+
+[functions.family-submit]
+verify_jwt = false
+
+[functions.admin-invites]
+verify_jwt = false
+
+[functions.keepalive]
+verify_jwt = false

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Co-op Administration</title>
+
+<!-- Administrative interface over children's records. Never index it (§45). -->
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
+
+<link rel="icon" type="image/svg+xml" href="../favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/app.css">
+</head>
+<body>
+
+<header class="topbar" id="topbar" hidden>
+  <div class="wrap">
+    <a href="#/" class="brand" id="brand">Co-op Admin</a>
+    <nav class="mainnav" id="nav"></nav>
+    <button class="btn btn-sm btn-ghost" id="signout">Sign out</button>
+  </div>
+</header>
+
+<main id="app">
+  <div class="loading"><span class="spinner"></span> Loading…</div>
+</main>
+
+<div id="toasts"></div>
+
+<script type="module" src="./app.js"></script>
+<noscript>
+  <div class="centered">
+    <h1>JavaScript required</h1>
+    <p class="muted">The administration interface needs JavaScript to run.</p>
+  </div>
+</noscript>
+</body>
+</html>
