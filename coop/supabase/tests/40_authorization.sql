@@ -55,6 +55,23 @@ select pg_temp.denied('anon cannot escalate via bind_admin_identity',
   $$select public.bind_admin_identity()$$);
 select pg_temp.denied('anon cannot read seat counts', 'select * from public.class_seats');
 
+-- The membership helpers are SECURITY DEFINER and reachable with a key printed
+-- in the page source. Postgres grants EXECUTE to PUBLIC by default, so these
+-- need an explicit revoke — 0012 granted them and forgot to. They answered
+-- harmlessly, which is exactly why it went unnoticed until the live check.
+select pg_temp.denied('anon cannot call current_family_ids',
+  'select public.current_family_ids()');
+select pg_temp.denied('anon cannot call current_child_ids',
+  'select public.current_child_ids()');
+select pg_temp.denied('anon cannot call is_family_member',
+  'select public.is_family_member()');
+select pg_temp.denied('anon cannot read family_users',
+  'select * from public.family_users');
+select pg_temp.denied('anon cannot read children at all',
+  'select * from public.children');
+select pg_temp.denied('anon cannot read the class catalogue',
+  'select * from public.classes');
+
 reset role;
 
 -- =============================================================================
