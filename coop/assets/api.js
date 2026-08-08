@@ -124,10 +124,10 @@ export const auth = {
    * function checks the address against family, parent and admin records first,
    * so an unrecognised one comes back as exactly that.
    *
-   * The email itself carries both a link and a code. Which one a parent uses
-   * matters: tapping a link in iOS Mail opens an in-app browser, so the session
-   * lands there rather than in Safari, and they return later to find themselves
-   * signed out. Typing the code puts the session where they expect it.
+   * The email carries a code and no link. Tapping a link in a phone's mail app
+   * opens it in that app's own browser, which signs the parent in there rather
+   * than in Chrome or Safari — so they are signed out again the moment they go
+   * back to their real browser.
    */
   async sendSignInEmail(email) {
     const res = await fetch(`${FUNCTIONS_URL}/request-signin`, {
@@ -139,11 +139,11 @@ export const auth = {
       },
       body: JSON.stringify({
         email: email.trim().toLowerCase(),
-        // Where the link should bring them back to. Without this, Supabase
-        // falls back to the project's Site URL, which ships as localhost —
-        // so every family's link pointed at a server on their own machine.
-        // The function validates this against its allowed origins before using
-        // it; an unchecked redirect on an auth endpoint is an open redirect.
+        // Unused while the email is code-only, and kept anyway: if a link is
+        // ever put back in the template, this is what stops it pointing at
+        // localhost, which is where Supabase's default Site URL sends it. The
+        // function validates it against its allowed origins — an unchecked
+        // redirect on an auth endpoint is an open redirect.
         redirect_to: window.location.origin + window.location.pathname,
       }),
     }).catch(() => null);
@@ -170,24 +170,6 @@ export const auth = {
       default:
         throw new Error("Something went wrong sending your sign-in email. Please try again.");
     }
-  },
-
-  /**
-   * Finish sign-in from a tapped link.
-   *
-   * The link carries a token hash rather than going through Supabase's own
-   * /verify redirect, so the page redeems it here. That keeps the whole exchange
-   * in query parameters, which survive redirects and in-app browsers; the
-   * fragment the standard flow uses does not.
-   */
-  async verifyTokenHash(tokenHash, type = "email") {
-    const db = await client();
-    const { data, error } = await db.auth.verifyOtp({
-      token_hash: tokenHash,
-      type,
-    });
-    if (error) throw new Error(friendlySignInError(error));
-    return data.session;
   },
 
   /** Finish sign-in with the code from the email. */
