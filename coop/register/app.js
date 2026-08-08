@@ -324,7 +324,13 @@ function renderPeriods(child, editable) {
     const chosen = pickedInPeriod(child.id, period);
     const waits = waitlistedInPeriod(child.id, period);
 
-    const options = period.classes.map((cls) => renderOption(cls, child, period, editable)).join("");
+    // A waitlist entry is interest, not a seat. Being on one with no confirmed
+    // class in the same period means the child has nowhere to be that hour —
+    // which is the thing families were missing, so it is called out loudly.
+    const uncovered = waits.length > 0 && !chosen;
+
+    const options = period.classes
+      .map((cls) => renderOption(cls, child, period, editable, !!chosen)).join("");
 
     // A fieldset, so the class options in a period are announced as one group.
     // The radios inside share a name, which is what gives arrow-key navigation
@@ -337,10 +343,24 @@ function renderPeriods(child, editable) {
             <span class="period-time small faint">${esc(fmtTimeRange(period.start_time, period.end_time))}</span>
             ${chosen
               ? `<span class="badge badge-accent">${esc(chosen.name)}</span>`
-              : `<span class="badge">Nothing chosen</span>`}
-            ${waits.length ? `<span class="badge badge-warn">${plural(waits.length, "waitlist")}</span>` : ""}
+              : uncovered
+                ? `<span class="badge badge-danger">No class this hour</span>`
+                : `<span class="badge">Nothing chosen</span>`}
+            ${waits.length
+              ? `<span class="badge ${uncovered ? "badge-danger" : "badge-warn"}">${
+                  plural(waits.length, "waitlist")}</span>`
+              : ""}
           </h3>
         </legend>
+
+        ${uncovered ? `<div class="note note-danger">
+          <strong>${esc(child.first_name)} does not have a seat this hour.</strong>
+          A waitlist only means we will contact you if a place opens up — it does
+          not hold a spot. Choose one of the classes below as well, so
+          ${esc(child.first_name)} has somewhere to be during
+          ${esc(period.display_name)}.
+        </div>` : ""}
+
         ${options || `<div class="empty small">No classes in this period.</div>`}
         ${renderSecondChoice(child, period, chosen, editable)}
         ${chosen && editable ? `<div class="clear">
@@ -384,7 +404,7 @@ function renderSecondChoice(child, period, chosen, editable) {
   </div>`;
 }
 
-function renderOption(cls, child, period, editable) {
+function renderOption(cls, child, period, editable, hasSeatThisPeriod = false) {
   const reasons = reasonsFor(cls, child.id);
   const eligible = reasons.length === 0;
 
@@ -396,9 +416,16 @@ function renderOption(cls, child, period, editable) {
   const full = left <= 0;
   const checked = state === "register" || state === "waitlist";
 
+  // A ticked waitlist with no seat elsewhere in the period is the state worth
+  // alarming about; a ticked waitlist alongside a confirmed class is merely
+  // hopeful, and colouring both the same would cry wolf.
+  const waitlisted = state === "waitlist";
+  const stranded = waitlisted && !hasSeatThisPeriod;
+
   const classes = ["opt"];
   if (!eligible) classes.push("inelig");
   else if (full) classes.push("full");
+  if (waitlisted) classes.push(stranded ? "wl-stranded" : "wl-covered");
 
   const meta = [
     eligibilityLabel(cls),
@@ -438,9 +465,20 @@ function renderOption(cls, child, period, editable) {
         ${meta ? `<span class="meta">${esc(meta)}</span>` : ""}
         ${cls.description ? `<span class="meta">${esc(cls.description)}</span>` : ""}
         ${!eligible ? `<span class="why">${esc(reasons.join(" · "))} — not eligible for ${esc(child.first_name)}</span>` : ""}
-        ${eligible && full && state !== "waitlist"
-          ? `<span class="why">This class is full. Ticking this joins the waitlist.</span>` : ""}
-        ${state === "waitlist" ? `<span class="why">On the waitlist for this class.</span>` : ""}
+        ${eligible && full && !waitlisted
+          ? `<span class="why">This class is full. Ticking this puts
+             ${esc(child.first_name)} on the waitlist — it does not hold a seat.</span>` : ""}
+
+        ${stranded ? `<span class="why-alarm">
+          <strong>Waitlisted — no seat.</strong> ${esc(child.first_name)} is not
+          in this class. Pick another class for ${esc(period.display_name)} as well.
+        </span>` : ""}
+
+        ${waitlisted && !stranded ? `<span class="why">
+          On the waitlist. ${esc(child.first_name)} keeps their place in
+          ${esc(pickedInPeriod(child.id, period)?.name ?? "their chosen class")}
+          unless a seat here opens up.
+        </span>` : ""}
       </span>
     </div>
   </label>`;
@@ -532,10 +570,13 @@ function renderSummary(editable) {
       const second = seconds[child.id]?.[period.id];
       const secondName = second
         ? period.classes.find((c) => c.id === second)?.name : null;
-      return `<div class="sum-row"><span class="p">${period.period_number}</span>
+      const stranded = waits.length > 0 && !chosen;
+      return `<div class="sum-row${stranded ? " stranded" : ""}">
+        <span class="p">${period.period_number}</span>
         <span class="c">${chosen ? esc(chosen.name) : `<span class="faint">—</span>`}
         ${chosen && secondName ? `<div class="alt">then ${esc(secondName)}</div>` : ""}
-        ${waits.map((w) => `<div class="wl">Waitlist: ${esc(w.name)}</div>`).join("")}
+        ${waits.map((w) => `<div class="wl${stranded ? " danger" : ""}">Waitlist: ${esc(w.name)}</div>`).join("")}
+        ${stranded ? `<div class="wl danger"><strong>No seat this hour</strong></div>` : ""}
         </span></div>`;
     }).join("");
 
@@ -544,10 +585,17 @@ function renderSummary(editable) {
   }).join("");
 
   const missing = countMissing();
+  const strandedCount = countStranded();
 
   return `<div class="card">
     <div class="card-head"><h3>Your Schedule</h3></div>
     ${rows}
+    ${strandedCount ? `<div class="note note-danger mt tiny">
+      <strong>${strandedCount === 1
+        ? "One hour has a waitlist but no class."
+        : `${strandedCount} hours have a waitlist but no class.`}</strong>
+      A waitlist does not hold a seat. Pick a class for those hours as well.
+    </div>` : ""}
     ${missing ? `<div class="note note-warn mt tiny">
       ${missing === 1 ? "One child has" : `${missing} children have`} an empty period.
       That is fine if it is what you want.
@@ -572,6 +620,18 @@ function countMissing() {
     !sittingOut.has(child.id) &&
     DATA.periods.some((p) => p.classes.length && !pickedInPeriod(child.id, p))
   ).length;
+}
+
+/** Child-hours where a waitlist was joined but no seat was taken. */
+function countStranded() {
+  let n = 0;
+  for (const child of DATA.children) {
+    if (sittingOut.has(child.id)) continue;
+    for (const p of DATA.periods) {
+      if (waitlistedInPeriod(child.id, p).length && !pickedInPeriod(child.id, p)) n++;
+    }
+  }
+  return n;
 }
 
 function wireChooser(editable) {
@@ -689,9 +749,12 @@ function renderReview() {
         ${secondName
           ? `<div class="tiny muted">If it fills up: ${esc(secondName)}</div>`
           : ""}</span></div>`);
-      for (const w of waits) bits.push(`<div class="review-row">
+      for (const w of waits) bits.push(`<div class="review-row${chosen ? "" : " danger"}">
         <strong>${esc(period.display_name)}</strong>
-        <span>${esc(w.name)} <span class="badge badge-warn">Waitlist</span></span></div>`);
+        <span>${esc(w.name)}
+          <span class="badge ${chosen ? "badge-warn" : "badge-danger"}">Waitlist</span>
+          ${chosen ? "" : `<div class="tiny" style="color:var(--danger)">
+            No seat this hour — a waitlist does not hold a place.</div>`}</span></div>`);
       if (!bits.length) bits.push(`<div class="review-row faint">
         <strong>${esc(period.display_name)}</strong><span>No class</span></div>`);
       return bits.join("");
@@ -704,6 +767,13 @@ function renderReview() {
       <h1>Review ${esc(DATA.semester.name)} Registration</h1>
       <div class="sub">${esc(DATA.family.display_name)}</div>
     </div></div>
+    ${countStranded() ? `<div class="note note-danger">
+      <strong>Some hours have a waitlist but no class.</strong>
+      Joining a waitlist does not hold a seat — if a place never opens up, your
+      child has no class that hour. You can still submit, and come back to
+      change it any time before registration closes.
+    </div>` : ""}
+
     <div class="card">${blocks}</div>
     <div class="btn-row mt2">
       <button class="btn" id="back">Back</button>

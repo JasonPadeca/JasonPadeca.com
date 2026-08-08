@@ -133,10 +133,29 @@ a:hover { color: var(--accent-strong); text-decoration: underline; }
 .topbar .wrap { display: flex; align-items: center; gap: 1.5rem; width: 100%; }
 
 .brand {
+  display: inline-flex; align-items: center; gap: .55rem;
   font-family: var(--font-heading); font-size: 1.15rem; font-weight: 700;
-  color: var(--text); white-space: nowrap;
+  color: var(--heading); white-space: nowrap;
 }
 .brand:hover { color: var(--accent); text-decoration: none; }
+
+/* The co-op's own mark, so families recognise where they have landed before
+   reading a word. Decorative beside the name, hence the empty alt. */
+.brand-mark { border-radius: 50%; flex: none; object-fit: cover; }
+.brand-sub { font-weight: 400; color: var(--text-muted); }
+
+.brand-hero {
+  border-radius: 50%; display: block; margin: 0 auto 1rem;
+  box-shadow: var(--shadow);
+}
+.centered .lede {
+  font-size: 1.05rem; color: var(--text-muted); margin-top: -.25rem;
+}
+
+@media (max-width: 600px) {
+  /* On a phone the mark carries the identity; the words would crowd the nav. */
+  .brand span { display: none; }
+}
 
 .mainnav { display: flex; gap: .25rem; flex: 1; flex-wrap: wrap; }
 .mainnav a {
@@ -497,6 +516,38 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
 .opt.full .mark { border-radius: 4px; }
 .opt.full input:checked + .body .mark::after { border-radius: 1px; }
 
+/* --- Ticked waitlist ---------------------------------------------------------
+   The default checked style is the accent colour, which reads as "sorted". A
+   waitlist is not sorted, so it must not borrow that reassurance.
+
+   Two states, deliberately different: stranded (waitlisted with no seat that
+   period) is red and loud, because the child has nowhere to be; covered
+   (waitlisted alongside a confirmed class) is a calm amber, because nothing is
+   wrong. Painting both red would train families to ignore the red. */
+.opt.wl-stranded input:checked + .body {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  box-shadow: inset 3px 0 0 var(--danger);
+}
+.opt.wl-stranded input:checked + .body .mark { border-color: var(--danger); }
+.opt.wl-stranded input:checked + .body .mark::after { background: var(--danger); }
+.opt.wl-stranded input:checked + .body .name { color: var(--danger); }
+
+.opt.wl-covered input:checked + .body {
+  background: var(--warn-bg);
+  border-color: color-mix(in srgb, var(--warn) 55%, transparent);
+}
+.opt.wl-covered input:checked + .body .mark { border-color: var(--warn); }
+.opt.wl-covered input:checked + .body .mark::after { background: var(--warn); }
+
+.opt .why-alarm {
+  display: block; margin-top: .4rem; padding: .4rem .55rem;
+  font-size: .84rem; line-height: 1.45;
+  color: var(--danger); background: var(--danger-bg);
+  border-radius: var(--radius-sm);
+}
+.opt .why-alarm strong { font-weight: 700; }
+
 /* Ineligible: visible with an explanation (§17 Option B), never selectable. */
 .opt.inelig > .body { opacity: .58; cursor: not-allowed; background: transparent; }
 .opt.inelig > .body:hover { border-color: var(--border); }
@@ -553,6 +604,10 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
 .sum-row .c { flex: 1; }
 .sum-row.none .c { color: var(--text-faint); font-style: italic; }
 .sum-row .wl { color: var(--warn); font-size: .8rem; }
+.sum-row .wl.danger { color: var(--danger); }
+.sum-row.stranded { background: var(--danger-bg); border-radius: var(--radius-sm);
+  margin: .15rem -.35rem; padding: .2rem .35rem; }
+.review-row.danger { background: var(--danger-bg); }
 
 .review-child { margin-bottom: 1.1rem; }
 .review-child .who { font-weight: 700; margin-bottom: .3rem; }
@@ -595,6 +650,8 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
   display: flex; align-items: flex-start; justify-content: space-between;
   gap: 1.5rem; padding-bottom: .75rem; border-bottom: 2px solid var(--text);
 }
+.sheet-title { display: flex; align-items: flex-start; gap: .75rem; }
+.sheet-mark { border-radius: 50%; flex: none; }
 .sheet-head h1 { font-size: 1.6rem; margin-bottom: .35rem; }
 .sheet-meta {
   display: flex; flex-wrap: wrap; gap: 1.1rem;

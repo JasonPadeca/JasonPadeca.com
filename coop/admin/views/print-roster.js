@@ -112,7 +112,10 @@ function sheet(cls, roster, period, semester, pageBreak = false) {
   return `
     <div class="sheet${pageBreak ? " page-break" : ""}">
       <header class="sheet-head">
-        <div>
+        <div class="sheet-title">
+          <img src="../assets/koinonia-logo.jpg" alt="" class="sheet-mark"
+               width="44" height="44">
+          <div>
           <h1>${esc(cls.name)}</h1>
           <div class="sheet-meta">
             <span><strong>Teacher</strong> ${esc(cls.teacher_name || "—")}</span>
@@ -126,6 +129,7 @@ function sheet(cls, roster, period, semester, pageBreak = false) {
               ? `<span><strong>Term</strong> ${esc(fmtDate(semester.class_start_date))} – ${esc(fmtDate(semester.class_end_date))}</span>`
               : ""}
             ${eligibilityLabel(cls) ? `<span><strong>Eligibility</strong> ${esc(eligibilityLabel(cls))}</span>` : ""}
+          </div>
           </div>
         </div>
         <div class="sheet-count">
