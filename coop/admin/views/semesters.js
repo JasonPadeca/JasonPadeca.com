@@ -8,7 +8,8 @@
 
 import { api } from "../../assets/api.js";
 import {
-  esc, $, render, fmtDate, fmtTimeRange, eligibilityLabel, ageAt, familyPhone,
+  esc, $, render, fmtDate, fmtTimeRange, eligibilityLabel, ageAt,
+  familyPhone, familyEmail,
   toastOk, toastErr, plural, formDialog, confirmDialog, modal,
 } from "../../assets/ui.js";
 import { refresh, go } from "../app.js";
@@ -620,18 +621,25 @@ function statTile(n, label) {
   return `<div class="stat"><span class="n">${esc(n)}</span><div class="l">${esc(label)}</div></div>`;
 }
 
+/** Email over phone, each only if present; an em dash when there is neither. */
+function contactCell(email, phone) {
+  if (!email && !phone) return `<span class="faint">—</span>`;
+  return `${email ? `<div>${esc(email)}</div>` : ""}
+          ${phone ? `<div class="mono${email ? " tiny faint" : ""}">${esc(phone)}</div>` : ""}`;
+}
+
 function studentTable(rows, isWaitlist, refDate) {
   return `<div class="table-scroll"><table>
     <thead><tr>
       ${isWaitlist ? "<th>#</th>" : ""}
-      <th>Student</th><th class="num">Age</th><th>Contact</th>
+      <th>Student</th><th class="num">Age</th>
+      <th>Student contact</th><th>Parent contact</th>
       <th>Allergies</th><th>Medical</th><th></th>
     </tr></thead>
     <tbody>${rows.map((r, i) => {
       const ch = r.children ?? {};
       const fam = ch.families ?? {};
       const age = ageAt(ch.birth_date, refDate);
-      const phone = familyPhone(fam);
       return `<tr>
       ${isWaitlist ? `<td class="num mono">${i + 1}</td>` : ""}
       <td><strong>${esc(ch.first_name)} ${esc(ch.last_name ?? "")}</strong>
@@ -640,11 +648,8 @@ function studentTable(rows, isWaitlist, refDate) {
         ${r.source === "admin" ? `<div class="tiny faint">Added by an administrator</div>` : ""}
         ${r.source === "waitlist_promotion" ? `<div class="tiny faint">Promoted from the waitlist</div>` : ""}</td>
       <td class="num mono">${age ?? `<span class="faint">—</span>`}</td>
-      <td class="small">
-        ${ch.email ? `<div>${esc(ch.email)}</div>` : ""}
-        ${fam.primary_email ? `<div class="tiny faint">${esc(fam.primary_email)}</div>` : ""}
-        ${phone ? `<div class="tiny faint mono">${esc(phone)}</div>` : ""}
-        ${!ch.email && !fam.primary_email && !phone ? `<span class="faint">—</span>` : ""}</td>
+      <td class="small">${contactCell(ch.email, ch.phone)}</td>
+      <td class="small">${contactCell(familyEmail(fam), familyPhone(fam))}</td>
       <td class="small">${ch.allergies
         ? `<span style="color:var(--danger)">${esc(ch.allergies)}</span>`
         : `<span class="faint">—</span>`}</td>

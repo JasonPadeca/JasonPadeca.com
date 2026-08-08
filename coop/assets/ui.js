@@ -102,12 +102,26 @@ export function ageAt(birthDate, refDate) {
   return age;
 }
 
-/** The number to ring for a family: theirs, else the first parent who has one. */
+/** Parents in the order an administrator entered them. */
+function sortedParents(family) {
+  return [...(family?.parents ?? [])]
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+}
+
+/**
+ * The number to ring for a family: the one set on the family, else the first
+ * parent who has one. The fallback matters because the family-level field is
+ * newer than the per-parent one, and older records only have the latter.
+ */
 export function familyPhone(family) {
   if (family?.primary_phone) return family.primary_phone;
-  const parents = [...(family?.parents ?? [])]
-    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
-  return parents.find((p) => p.phone)?.phone ?? null;
+  return sortedParents(family).find((p) => p.phone)?.phone ?? null;
+}
+
+/** The address to write to for a family, with the same fallback. */
+export function familyEmail(family) {
+  if (family?.primary_email) return family.primary_email;
+  return sortedParents(family).find((p) => p.email)?.email ?? null;
 }
 
 /** "Ages 11–14", "Ages 11 and up", "Girls · Ages 12–17", or "" */

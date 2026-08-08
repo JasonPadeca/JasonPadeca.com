@@ -15,7 +15,7 @@
 import { api } from "../../assets/api.js";
 import {
   esc, $, render, fmtDate, fmtTimeRange, eligibilityLabel,
-  ageAt, familyPhone, plural,
+  ageAt, familyPhone, familyEmail, plural,
 } from "../../assets/ui.js";
 
 export async function show(app, { id }) {
@@ -84,24 +84,28 @@ export async function show(app, { id }) {
         <thead><tr>
           <th style="width:1.6rem">#</th>
           <th>Student</th>
-          <th style="width:2.6rem">Age</th>
-          <th>Family &amp; contact</th>
+          <th style="width:2.4rem">Age</th>
+          <th>Student contact</th>
+          <th>Parent contact</th>
           <th>Allergies / medical</th>
-          <th style="width:7rem">Present</th>
+          <th style="width:5.5rem">Present</th>
         </tr></thead>
         <tbody>${registered.map((r, i) => {
           const ch = r.children ?? {};
           const fam = ch.families ?? {};
-          const phone = familyPhone(fam);
           const care = [ch.allergies, ch.medical_notes].filter(Boolean).join(" · ");
+          const pPhone = familyPhone(fam), pEmail = familyEmail(fam);
           return `<tr>
             <td class="num">${i + 1}</td>
-            <td><strong>${esc(ch.first_name)} ${esc(ch.last_name ?? "")}</strong>
-              ${ch.email ? `<div class="sub">${esc(ch.email)}</div>` : ""}</td>
+            <td><strong>${esc(ch.first_name)} ${esc(ch.last_name ?? "")}</strong></td>
             <td class="num">${ageAt(ch.birth_date, refDate) ?? "—"}</td>
+            <td>
+              ${ch.phone ? `<div class="mono">${esc(ch.phone)}</div>` : ""}
+              ${ch.email ? `<div class="sub">${esc(ch.email)}</div>` : ""}
+              ${!ch.phone && !ch.email ? `<span class="sub">—</span>` : ""}</td>
             <td>${esc(fam.display_name ?? "")}
-              ${phone ? `<div class="sub mono">${esc(phone)}</div>` : ""}
-              ${fam.primary_email ? `<div class="sub">${esc(fam.primary_email)}</div>` : ""}</td>
+              ${pPhone ? `<div class="mono">${esc(pPhone)}</div>` : ""}
+              ${pEmail ? `<div class="sub">${esc(pEmail)}</div>` : ""}</td>
             <td>${care ? esc(care) : ""}</td>
             <td></td>
           </tr>`;

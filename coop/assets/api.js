@@ -237,7 +237,7 @@ export const api = {
     const db = await client();
     return unwrap(await db.from("registrations")
       .select(`*, children(
-                 id, first_name, last_name, birth_date, sex, email,
+                 id, first_name, last_name, birth_date, sex, email, phone,
                  allergies, medical_notes, family_id,
                  families(id, display_name, primary_email, primary_phone,
                           parents(first_name, last_name, phone, email, sort_order)))`)
