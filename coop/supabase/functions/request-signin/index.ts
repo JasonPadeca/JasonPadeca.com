@@ -39,9 +39,11 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
 
   let email = "";
+  let wantedRedirect = "";
   try {
     const body = await req.json();
     email = String(body?.email ?? "").trim().toLowerCase();
+    wantedRedirect = String(body?.redirect_to ?? "").trim();
   } catch {
     return json(req, { ok: false, error: "bad_request" }, 400);
   }
@@ -50,6 +52,18 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return json(req, { ok: false, error: "invalid_email" }, 400);
   }
+
+  // --- Where should the link come back to? ----------------------------------
+  //
+  // Without this, Supabase falls back to the project's Site URL — which ships
+  // as http://localhost:3000 and sent every family's magic link to a server on
+  // their own machine that does not exist.
+  //
+  // The page asks to be returned to itself, but a client-supplied redirect is
+  // never taken on trust: an open redirect on an authentication endpoint hands
+  // an attacker a link that looks like ours and lands the session somewhere
+  // else. It has to match an origin we already publish to.
+  const redirectTo = safeRedirect(wantedRedirect);
 
   const db = serviceClient();
 
@@ -114,14 +128,24 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // the one configured in the dashboard — link and code together, from the
   // co-op's own SMTP. create_user is false now: the user exists by this point,
   // and leaving it true would quietly restore the hole this function closes.
-  const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/auth/v1/otp`, {
+  const otpUrl = new URL(`${Deno.env.get("SUPABASE_URL")}/auth/v1/otp`);
+  otpUrl.searchParams.set("redirect_to", redirectTo);
+
+  const res = await fetch(otpUrl, {
     method: "POST",
     headers: {
       "apikey": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
       "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ email, create_user: false }),
+    body: JSON.stringify({
+      email,
+      create_user: false,
+      // GoTrue reads this from the query string on /otp, not the body — so it
+      // goes in both. Passing it in the body alone silently does nothing, which
+      // is precisely how the localhost bug survived a green test.
+      redirect_to: redirectTo,
+    }),
   });
 
   if (!res.ok) {
@@ -137,3 +161,36 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   return json(req, { ok: true });
 });
+
+/**
+ * Only ever return a URL on an origin we publish to.
+ *
+ * ALLOWED_ORIGINS is the same secret the CORS layer uses, so there is one list
+ * to keep right rather than two that can drift. Anything else — a different
+ * host, a javascript: scheme, a typo — falls back to the portal on the first
+ * allowed origin, which is always somewhere safe to land.
+ */
+function safeRedirect(wanted: string): string {
+  const allowed = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
+    .split(",").map((s) => s.trim()).filter(Boolean);
+
+  const fallback = allowed.length
+    ? `${allowed[0].replace(/\/+$/, "")}/coop/portal/`
+    : `${Deno.env.get("SUPABASE_URL")}`;
+
+  if (!wanted) return fallback;
+
+  let url: URL;
+  try {
+    url = new URL(wanted);
+  } catch {
+    return fallback;
+  }
+
+  if (url.protocol !== "https:" && url.hostname !== "localhost") return fallback;
+  if (!allowed.includes(url.origin)) return fallback;
+
+  // Strip any query or fragment the caller attached; the destination is a page,
+  // and Supabase appends its own parameters on the way back.
+  return `${url.origin}${url.pathname}`;
+}

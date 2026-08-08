@@ -137,7 +137,15 @@ export const auth = {
         "apikey": SUPABASE_ANON_KEY,
         "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
       },
-      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+        // Where the link should bring them back to. Without this, Supabase
+        // falls back to the project's Site URL, which ships as localhost —
+        // so every family's link pointed at a server on their own machine.
+        // The function validates this against its allowed origins before using
+        // it; an unchecked redirect on an auth endpoint is an open redirect.
+        redirect_to: window.location.origin + window.location.pathname,
+      }),
     }).catch(() => null);
 
     if (!res) {
