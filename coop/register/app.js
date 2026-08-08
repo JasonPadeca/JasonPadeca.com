@@ -494,10 +494,31 @@ function renderOption(cls, child, period, editable, hasSeatThisPeriod = false) {
  * This records willingness. It assigns nobody to anything; an administrator
  * still does the actual asking.
  */
+/**
+ * Classes a student may offer to help with (§0009).
+ *
+ * Only the younger children's classes, matching the database's own rule, so a
+ * parent is never shown an option that would be silently discarded on submit.
+ */
+function volunteerableClasses(period) {
+  const limit = DATA.volunteer_max_class_age;
+  if (limit == null) return period.classes;
+  return period.classes.filter((c) => c.age_max != null && c.age_max <= limit);
+}
+
 function renderVolunteer(child, editable) {
   if (sittingOut.has(child.id)) return "";
 
   const v = volunteer[child.id] ?? { wants: false, note: "", slots: new Set() };
+  const limit = DATA.volunteer_max_class_age;
+
+  // Periods with nothing to help with are left out entirely.
+  const periods = DATA.periods.filter((p) => volunteerableClasses(p).length > 0);
+
+  if (!periods.length && v.wants !== true) {
+    // Nothing to offer, and they have not already said yes — do not ask.
+    return "";
+  }
 
   return `<fieldset class="volunteer ${v.wants ? "is-on" : ""}">
     <legend class="lbl">Would ${esc(child.first_name)} like to volunteer this semester?</legend>
@@ -515,12 +536,15 @@ function renderVolunteer(child, editable) {
     </div>
 
     ${v.wants ? `<div class="volunteer-detail">
-      <p class="tiny muted">Tick a period to offer any class in it, or pick out
-        particular classes. Anything you leave blank just means “no preference”.</p>
+      <p class="tiny muted">Helpers work with the younger children${
+        limit != null ? `, so only classes for ages ${limit} and under are listed` : ""}.
+        Tick a period to offer any class in it, or pick out particular classes.
+        Anything you leave blank just means “no preference”.</p>
 
-      ${DATA.periods.map((p) => {
+      ${periods.length ? periods.map((p) => {
         const anyKey = `${p.id}|`;
         const wholePeriod = v.slots.has(anyKey);
+        const classes = volunteerableClasses(p);
         return `<div class="vol-period">
           <label class="check">
             <input type="checkbox" data-vol-period="${esc(p.id)}"
@@ -529,7 +553,7 @@ function renderVolunteer(child, editable) {
             <span class="faint tiny">${esc(fmtTimeRange(p.start_time, p.end_time))}</span>
           </label>
           <div class="vol-classes">
-            ${p.classes.map((c) => {
+            ${classes.map((c) => {
               const key = `${p.id}|${c.id}`;
               return `<label class="chip">
                 <input type="checkbox" data-vol-class="${esc(c.id)}" data-vol-in="${esc(p.id)}"
@@ -537,10 +561,13 @@ function renderVolunteer(child, editable) {
                        ${editable && !wholePeriod ? "" : "disabled"}>
                 <span>${esc(c.name)}</span>
               </label>`;
-            }).join("") || `<span class="tiny faint">No classes in this period yet.</span>`}
+            }).join("")}
           </div>
         </div>`;
-      }).join("")}
+      }).join("")
+      : `<p class="tiny muted">This semester has no younger children's classes
+         yet, so there is nothing to sign up for. You can still say yes — an
+         administrator will see the offer.</p>`}
 
       <div class="field mt">
         <label for="volnote">Anything we should know? <span class="faint">(optional)</span></label>
@@ -697,6 +724,8 @@ function wireChooser(editable) {
       const period = DATA.periods.find((p) => p.id === pid);
       if (box.checked) {
         // Offering the whole period supersedes any individual classes in it.
+        // Cleared from the full class list, not the filtered one, so a tick
+        // made before the age limit changed cannot survive as an orphan.
         for (const c of period.classes) v.slots.delete(`${pid}|${c.id}`);
         v.slots.add(`${pid}|`);
       } else {

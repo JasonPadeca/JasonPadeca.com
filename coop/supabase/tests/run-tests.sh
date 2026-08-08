@@ -68,6 +68,14 @@ for f in 00_supabase_stub.sql "$MIGRATIONS"/0*.sql 10_seed.sql; do
 done
 P -d coop -f 70_preferences.sql 2>&1 | strip
 
+echo "\n=== Volunteering: age-limited to the younger children's classes ==="
+P -d postgres -tAc "drop database coop;" >/dev/null
+P -d postgres -tAc "create database coop;" >/dev/null
+for f in 00_supabase_stub.sql "$MIGRATIONS"/0*.sql 10_seed.sql; do
+  P -d coop -f "$f" >/dev/null
+done
+P -d coop -f 80_volunteer_limit.sql 2>&1 | strip
+
 echo "\n=== Family payload: shape, privacy, preflight ==="
 P -d postgres -tAc "drop database coop;" >/dev/null
 P -d postgres -tAc "create database coop;" >/dev/null

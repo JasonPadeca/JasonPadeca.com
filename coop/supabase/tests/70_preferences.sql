@@ -112,7 +112,14 @@ select pg_temp.check('resubmitting replaces the old preferences',
 
 -- =============================================================================
 -- Volunteering
+--
+-- The age limit is switched off here on purpose: this section exercises the
+-- mechanics of recording and clearing an offer. 80_volunteer_limit.sql covers
+-- the age rule itself, and keeping them apart means a change to one does not
+-- produce confusing failures in the other.
 -- =============================================================================
+update public.settings set volunteer_max_class_age = null;
+
 select public.submit_family_registration(:fam::uuid, :sem::uuid,
   '[{"child_id":"51111111-1111-1111-1111-111111111111","class_id":"32222222-2222-2222-2222-222222222222"}]'::jsonb,
   'family', false, '{}',

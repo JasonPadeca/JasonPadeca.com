@@ -58,6 +58,11 @@ export async function show(app) {
                 ? `${settings.normal_program_age_min ?? "any"} – ${settings.normal_program_age_max ?? "any"}`
                 : null,
               "Only used to flag children outside the usual range. Nobody is removed automatically.")}
+        ${row("Volunteering limited to classes for",
+              settings.volunteer_max_class_age != null
+                ? `Ages ${settings.volunteer_max_class_age} and under`
+                : "Any class",
+              "Students may only offer to help with classes at or below this upper age. Helpers work with the younger children.")}
       </tbody></table></div>
     </div>
 
@@ -129,6 +134,9 @@ export async function show(app) {
           value: settings.normal_program_age_min },
         { name: "normal_program_age_max", label: "Oldest normal age", type: "number", min: 0,
           value: settings.normal_program_age_max },
+        { name: "volunteer_max_class_age", label: "Volunteering limited to classes for ages",
+          type: "number", min: 0, value: settings.volunteer_max_class_age,
+          hint: "A student may only offer to help with classes whose upper age is at or below this. Blank removes the limit." },
       ],
     });
     if (!v) return;
