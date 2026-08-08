@@ -64,6 +64,34 @@ export function friendlyError(error) {
   return msg;
 }
 
+/**
+ * Sign-in errors, in words a parent can act on.
+ *
+ * Supabase's own messages are written for developers. "Signups not allowed for
+ * otp" is technically what happened, and tells a mother of four precisely
+ * nothing about what to do next.
+ */
+function friendlySignInError(error) {
+  const msg = (error?.message ?? String(error)).toLowerCase();
+
+  if (msg.includes("signups not allowed") || msg.includes("user not found")) {
+    return "We do not recognise that email address. It has to be the one the co-op has on file for your family — try another, or ask an administrator to check.";
+  }
+  if (msg.includes("token has expired") || msg.includes("expired")) {
+    return "That code has expired. Send yourself a new one and use it within the hour.";
+  }
+  if (msg.includes("invalid") && msg.includes("token")) {
+    return "That code was not right. Check the six digits in the email, or send yourself a new one.";
+  }
+  if (msg.includes("rate limit") || msg.includes("too many") || msg.includes("429")) {
+    return "That is a lot of emails in a short time. Wait a minute and try again.";
+  }
+  if (msg.includes("failed to fetch")) {
+    return "Could not reach the server. Check your connection and try again.";
+  }
+  return error?.message ?? "Something went wrong signing in.";
+}
+
 /** Throw on error, return data. Keeps call sites free of error plumbing. */
 function unwrap({ data, error }) {
   if (error) throw new Error(friendlyError(error));
@@ -84,6 +112,57 @@ export const auth = {
       },
     });
     if (error) throw new Error(friendlyError(error));
+  },
+
+  /**
+   * Send a sign-in email containing BOTH a link and a six-digit code.
+   *
+   * Which one a parent uses matters more than it sounds. Tapping a link in iOS
+   * Mail opens it in an in-app browser, so the session lands there rather than
+   * in Safari — they come back later, find themselves signed out, and conclude
+   * the site is broken. Typing the code into the browser they are already in
+   * puts the session where they expect it.
+   *
+   * Both arrive in one email; the template carries {{ .ConfirmationURL }} and
+   * {{ .Token }} side by side.
+   */
+  async sendSignInEmail(email) {
+    const db = await client();
+    const { error } = await db.auth.signInWithOtp({
+      email: email.trim().toLowerCase(),
+      options: {
+        // Nobody signs up here. An address either belongs to a family or an
+        // administrator, or it does not belong at all — and creating a user for
+        // a stranger would leave orphan accounts accumulating in Auth.
+        shouldCreateUser: false,
+        emailRedirectTo: window.location.origin + window.location.pathname,
+      },
+    });
+    if (error) throw new Error(friendlySignInError(error));
+  },
+
+  /** Finish sign-in with the six-digit code from the email. */
+  async verifyCode(email, code) {
+    const db = await client();
+    const { data, error } = await db.auth.verifyOtp({
+      email: email.trim().toLowerCase(),
+      token: code.trim(),
+      type: "email",
+    });
+    if (error) throw new Error(friendlySignInError(error));
+    return data.session;
+  },
+
+  /**
+   * Who is this, and what are they entitled to? One call, made once after
+   * sign-in: it links the verified address to a family and binds an admin
+   * identity if there is one.
+   */
+  async establishSession() {
+    const db = await client();
+    const { data, error } = await db.rpc("establish_session");
+    if (error) throw new Error(friendlyError(error));
+    return data;
   },
 
   async signOut() {
@@ -323,6 +402,42 @@ export const api = {
   async preflight(semesterId) {
     const db = await client();
     return unwrap(await db.rpc("registration_preflight", { p_semester_id: semesterId }));
+  },
+
+  // --- Family portal ---
+  //
+  // These deliberately use the ordinary table endpoints rather than any
+  // privileged path. What comes back is whatever RLS allows, so if the boundary
+  // in 0012 is wrong, it is wrong here in plain sight.
+
+  /**
+   * The signed-in parent's own children.
+   *
+   * familyIds is passed explicitly rather than leaning on RLS to narrow it. RLS
+   * decides what you MAY see; the query should still say what it MEANS. Without
+   * it, an administrator who is also a parent gets the admin policy on top and
+   * this returns every child in the co-op — which is authorised, and also not
+   * even slightly what "your children" means.
+   */
+  async myChildren(familyIds = []) {
+    const db = await client();
+    if (!familyIds.length) return [];
+    return unwrap(await db.from("children")
+      .select("id, first_name, last_name, birth_date, sex, active, archived_at, family_id")
+      .in("family_id", familyIds)
+      .order("birth_date", { nullsFirst: false }));
+  },
+
+  /** The semester a family should currently be looking at, if any. */
+  async currentSemester() {
+    const db = await client();
+    const rows = unwrap(await db.from("semesters")
+      .select("*")
+      .is("archived_at", null)
+      .in("status", ["registration_open", "registration_closed", "active"])
+      .order("class_start_date", { ascending: false, nullsFirst: false })
+      .limit(1));
+    return rows?.[0] ?? null;
   },
 
   async volunteers(semesterId) {

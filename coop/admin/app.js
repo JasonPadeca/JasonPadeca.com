@@ -96,8 +96,12 @@ function renderSignIn(error, authenticatedButUnauthorised = false) {
       <h1>No access</h1>
       <p class="muted mt">You do not have access to this administration system.</p>
       <p class="faint tiny mt">If you believe this is a mistake, ask the co-op's
-      site owner to add your Google address as an administrator.</p>
+      site owner to add this address as an administrator.</p>
       <div class="btn-row mt2" style="justify-content:center">
+        <!-- Most people who land here are parents who followed a link or typed
+             the address. Signing them out is the wrong first offer; they are
+             signed in perfectly well, just not as an administrator. -->
+        <a class="btn btn-primary" href="../portal/">Go to the family portal</a>
         <button class="btn" id="out">Sign out</button>
       </div>
     </div>`);
