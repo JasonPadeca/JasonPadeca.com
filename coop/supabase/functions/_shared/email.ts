@@ -1,10 +1,23 @@
 // Email, isolated behind one interface (§26).
 //
-// The rest of the system calls sendEmail() and never mentions Brevo. Swapping
-// providers later means rewriting the transport function below and nothing
-// else — no database change, no template change, no caller change.
+// The rest of the system calls openMailer()/sendEmail() and never names a
+// provider. Swapping transports means rewriting the block below and nothing
+// else — no database change, no template change, no caller change. That
+// promise has now been cashed once: this started as Brevo's HTTP API and
+// became SMTP without anything outside this file moving.
+//
+// SMTP rather than a transactional-email API, because a co-op sending ~35
+// invitations twice a year does not need a relay in the middle. Sending
+// straight from the co-op's own mailbox means no sender-verification dance,
+// and mail that genuinely originates from the address families already know —
+// which is also the best thing you can do for deliverability.
+//
+// Nothing here is Gmail-specific beyond the default hostname and port, so a
+// Workspace account, Fastmail, or a hosting provider's SMTP all work by
+// setting SMTP_HOST and SMTP_PORT.
 
 import { esc, type SupabaseClient } from "./deps.ts";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 export interface Email {
   to: string;
@@ -25,55 +38,131 @@ interface Sender {
   replyTo?: string;
 }
 
-// --- Transport -------------------------------------------------------------
+// --- Transport ---------------------------------------------------------------
 
-async function sendViaBrevo(email: Email, sender: Sender): Promise<SendResult> {
-  const key = Deno.env.get("BREVO_API_KEY");
-  if (!key) return { ok: false, error: "BREVO_API_KEY is not configured" };
-
-  try {
-    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: { "api-key": key, "content-type": "application/json" },
-      body: JSON.stringify({
-        sender: { email: sender.fromEmail, name: sender.fromName },
-        to: [{ email: email.to, name: email.toName }],
-        replyTo: sender.replyTo ? { email: sender.replyTo } : undefined,
-        subject: email.subject,
-        htmlContent: email.html,
-        textContent: email.text,
-      }),
-    });
-
-    if (!res.ok) {
-      return { ok: false, error: `Brevo ${res.status}: ${(await res.text()).slice(0, 300)}` };
-    }
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: `Brevo request failed: ${e instanceof Error ? e.message : String(e)}` };
-  }
+function smtpConfig() {
+  const user = Deno.env.get("SMTP_USER");
+  // App Passwords are displayed in four groups of four; people paste the
+  // spaces along with them, and the server rejects that without explanation.
+  const pass = (Deno.env.get("SMTP_PASSWORD") ?? "").replace(/\s+/g, "");
+  const host = Deno.env.get("SMTP_HOST") ?? "smtp.gmail.com";
+  const port = Number(Deno.env.get("SMTP_PORT") ?? "465");
+  return { user, pass, host, port };
 }
 
-export async function sendEmail(db: SupabaseClient, email: Email): Promise<SendResult> {
+/**
+ * A live SMTP connection.
+ *
+ * Opening registration sends one message per family, and dialling SMTP
+ * separately for each would spend most of its time on handshakes — with a real
+ * risk of hitting the function's wall clock on a larger co-op. One connection
+ * carries the whole batch.
+ */
+export interface Mailer {
+  send(email: Email): Promise<SendResult>;
+  close(): Promise<void>;
+  ready: boolean;
+  error?: string;
+}
+
+export async function openMailer(db: SupabaseClient): Promise<Mailer> {
+  const { user, pass, host, port } = smtpConfig();
   const { data: s } = await db.from("settings").select("*").eq("id", 1).single();
 
   const sender: Sender = {
-    fromEmail: s?.from_email ?? Deno.env.get("DEFAULT_FROM_EMAIL") ?? "",
-    fromName: s?.from_name ?? s?.program_name ?? "Homeschool Co-op",
-    replyTo: s?.reply_to_email ?? undefined,
+    // Gmail rejects a From that is neither the authenticated account nor one of
+    // its verified aliases, so the account address is the safe fallback.
+    fromEmail: s?.from_email || user || "",
+    fromName: s?.from_name || s?.program_name || "Homeschool Co-op",
+    replyTo: s?.reply_to_email || undefined,
   };
 
-  if (!sender.fromEmail) {
-    return { ok: false, error: "No sending address configured in Settings" };
+  const fail = (error: string): Mailer => ({
+    ready: false, error,
+    send: () => Promise.resolve({ ok: false, error }),
+    close: () => Promise.resolve(),
+  });
+
+  if (!user || !pass) {
+    return fail("SMTP_USER and SMTP_PASSWORD are not configured in Supabase.");
   }
-  if (!email.to) {
-    return { ok: false, error: "No recipient address" };
+  if (!sender.fromEmail) {
+    return fail("No sending address configured in Settings.");
   }
 
-  return await sendViaBrevo(email, sender);
+  let client: SMTPClient;
+  try {
+    client = new SMTPClient({
+      connection: {
+        hostname: host,
+        port,
+        // Port 465 is implicit TLS; 587 negotiates STARTTLS instead.
+        tls: port === 465,
+        auth: { username: user, password: pass },
+      },
+    });
+  } catch (e) {
+    return fail(`Could not open a mail connection: ${msg(e)}`);
+  }
+
+  return {
+    ready: true,
+    async send(email: Email): Promise<SendResult> {
+      if (!email.to) return { ok: false, error: "No recipient address" };
+      try {
+        await client.send({
+          from: `${sender.fromName} <${sender.fromEmail}>`,
+          to: email.toName ? `${email.toName} <${email.to}>` : email.to,
+          replyTo: sender.replyTo,
+          subject: email.subject,
+          content: email.text,
+          html: email.html,
+        });
+        return { ok: true };
+      } catch (e) {
+        return { ok: false, error: friendlySmtpError(msg(e)) };
+      }
+    },
+    async close() {
+      try { await client.close(); } catch { /* already gone */ }
+    },
+  };
 }
 
-// --- Templates -------------------------------------------------------------
+/** One-off send. Opens a connection, sends, closes. */
+export async function sendEmail(db: SupabaseClient, email: Email): Promise<SendResult> {
+  const mailer = await openMailer(db);
+  if (!mailer.ready) return { ok: false, error: mailer.error };
+  try {
+    return await mailer.send(email);
+  } finally {
+    await mailer.close();
+  }
+}
+
+function msg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
+/** SMTP errors are terse and numeric. Say what to actually do about them. */
+function friendlySmtpError(raw: string): string {
+  const s = raw.toLowerCase();
+  if (s.includes("535") || s.includes("username and password not accepted")) {
+    return "The mail server rejected the username or password. For Gmail this must be a 16-character App Password, not the account password, and the account needs 2-Step Verification switched on.";
+  }
+  if (s.includes("534")) {
+    return "Gmail requires an App Password for this account. Turn on 2-Step Verification, then generate one.";
+  }
+  if (s.includes("550") || s.includes("553")) {
+    return "The mail server refused the From address. It must be the account you are signing in as, or one of its verified aliases.";
+  }
+  if (s.includes("timeout") || s.includes("connection")) {
+    return `Could not reach the mail server: ${raw}`;
+  }
+  return raw;
+}
+
+// --- Templates ---------------------------------------------------------------
 //
 // Plain, table-free HTML with inline styles: co-op parents will open these in
 // Gmail, Outlook, and a phone, and the fanciest layout is the one that renders

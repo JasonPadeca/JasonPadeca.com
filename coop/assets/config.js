@@ -11,7 +11,7 @@
 // family's invitation token, and both are checked server-side on every request.
 //
 // What must NEVER appear in this file, or anywhere else under coop/:
-//   the service_role key, the database password, the Brevo API key,
+//   the service_role key, the database password, the mail account password,
 //   the Google OAuth client secret.
 // Those live only in Supabase's secret storage.
 // =============================================================================

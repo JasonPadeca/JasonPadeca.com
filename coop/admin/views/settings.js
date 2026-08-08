@@ -2,7 +2,7 @@
 // Settings (§43), administrator management (§5.10), and the audit log (§5.11).
 //
 // Only settings an administrator would actually change live here. Anything that
-// needs a secret — the Brevo key, the service role key — is in Supabase, not in
+// needs a secret — the mail password, the service role key — is in Supabase, not in
 // a form on a web page.
 // =============================================================================
 
@@ -33,7 +33,7 @@ export async function show(app) {
         ${row("Registration link address", settings.registration_base_url,
               "The address families are sent. Must point at this site's /coop/register/ page.")}
         ${row("Sending address", settings.from_email,
-              "The From address on invitation and confirmation emails. Must be verified with Brevo.")}
+              "The From address on invitation and confirmation emails. Must be the mail account you send through, or one of its verified aliases.")}
         ${row("Sender name", settings.from_name)}
         ${row("Reply-to address", settings.reply_to_email,
               "Where replies from families go — usually the co-op's normal inbox.")}
@@ -103,7 +103,7 @@ export async function show(app) {
           value: settings.registration_base_url ?? `${location.origin}/coop/register/`,
           hint: "Families' links are built from this. It must end at /coop/register/." },
         { name: "from_email", label: "Sending address", type: "email", value: settings.from_email,
-          hint: "Must be an address verified in Brevo, or mail will not go out." },
+          hint: "Must be the account set as SMTP_USER, or one of its verified aliases. Anything else is refused by the mail server." },
         { name: "from_name", label: "Sender name", value: settings.from_name },
         { name: "reply_to_email", label: "Reply-to address", type: "email", value: settings.reply_to_email },
         { name: "timezone", label: "Time zone", value: settings.timezone,

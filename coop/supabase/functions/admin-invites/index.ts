@@ -20,7 +20,7 @@
 //   Kill the link without issuing a replacement.
 
 import { json, preflight, requireAdmin, serviceClient, type SupabaseClient } from "../_shared/deps.ts";
-import { invitationEmail, sendEmail } from "../_shared/email.ts";
+import { invitationEmail, openMailer, type Mailer } from "../_shared/email.ts";
 
 interface Settings {
   program_name: string;
@@ -42,6 +42,7 @@ function formatClosing(iso: string | null, tz: string): string | null {
 /** Mint a token, mail it, and record what happened on the invitation row. */
 async function issueAndSend(
   db: SupabaseClient,
+  mailer: Mailer,
   family: { id: string; display_name: string; primary_email: string | null },
   semester: { id: string; name: string; registration_close_at: string | null },
   settings: Settings,
@@ -77,7 +78,7 @@ async function issueAndSend(
   mail.to = family.primary_email;
   mail.toName = family.display_name;
 
-  const sent = await sendEmail(db, mail);
+  const sent = await mailer.send(mail);
 
   await db.from("registration_invites")
     .update({
@@ -137,10 +138,16 @@ Deno.serve(async (req) => {
         .is("archived_at", null)
         .order("display_name");
 
+      // One SMTP connection for the whole co-op, not one per family.
+      const mailer = await openMailer(db);
       const results: { family: string; ok: boolean; error?: string }[] = [];
-      for (const f of families ?? []) {
-        const r = await issueAndSend(db, f, semester, settings);
-        results.push({ family: f.display_name, ok: r.ok, error: r.error });
+      try {
+        for (const f of families ?? []) {
+          const r = await issueAndSend(db, mailer, f, semester, settings);
+          results.push({ family: f.display_name, ok: r.ok, error: r.error });
+        }
+      } finally {
+        await mailer.close();
       }
 
       await db.from("semesters")
@@ -180,7 +187,13 @@ Deno.serve(async (req) => {
       // one, so a "resend" quietly supersedes the old link rather than mailing
       // a duplicate — which is the behaviour an admin actually wants when a
       // parent says "I can't find the email."
-      const r = await issueAndSend(db, family, semester, settings);
+      const mailer = await openMailer(db);
+      let r: { ok: boolean; error?: string };
+      try {
+        r = await issueAndSend(db, mailer, family, semester, settings);
+      } finally {
+        await mailer.close();
+      }
 
       await db.from("audit_log").insert({
         actor_type: "admin",

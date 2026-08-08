@@ -7,7 +7,8 @@ yours to do.
 Budget about 30 minutes. Nothing here is reversible in a way that matters; if a
 step goes wrong you can redo it.
 
-You will create two free accounts (Supabase and Brevo), run one SQL file, and
+You will create one free account (Supabase), generate a mail App Password, run
+one SQL file, and
 paste four values into two places.
 
 ---
@@ -151,9 +152,17 @@ but the CLI handles the shared `_shared/` files for you, so it is the easier pat
 
 | Name | Value |
 |---|---|
-| `BREVO_API_KEY` | from step 6 |
+| `SMTP_USER` | the co-op's email address — see step 6 |
+| `SMTP_PASSWORD` | a 16-character App Password, **not** the account password |
 | `ALLOWED_ORIGINS` | `https://jasonpadeca.com` |
 | `KEEPALIVE_SECRET` | any long random string you invent — used in step 7 |
+
+Optional, only if you are not using Gmail:
+
+| Name | Default |
+|---|---|
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_PORT` | `465` (implicit TLS; use `587` for STARTTLS) |
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are provided automatically; you
 do not add those.
@@ -162,26 +171,42 @@ do not add those.
 
 ## 6. Set up email
 
-1. Sign up at <https://www.brevo.com> (the free tier is 300 emails/day, which is
-   far more than a co-op of this size sends).
-2. **Senders, Domains & Dedicated IPs**:
-   - Simplest: add a **sender** — a single address like
-     `registration@yourcoop.org` — and click the verification link Brevo emails
-     to it. You must be able to receive mail at that address.
-   - Better: verify the whole **domain** by adding Brevo's DNS records. Mail is
-     much less likely to land in spam.
-3. **SMTP & API** › **API Keys** › **Generate a new API key**. Copy it into the
-   `BREVO_API_KEY` secret from step 5.
+Mail is sent straight from the co-op's own mailbox over SMTP. There is no
+third-party relay, no sender-verification process to get stuck in, and nothing
+to sign up for — and because the mail genuinely originates from the address
+families already recognise, it is far less likely to be treated as spam than
+anything sent on your behalf by a bulk provider.
+
+Gmail allows 500 recipients a day on a free account, and 2,000 on Workspace. A
+co-op sending a few dozen invitations twice a year is nowhere near either.
+
+**To generate the App Password**, signed in as the co-op's Google account:
+
+1. <https://myaccount.google.com/security> — turn on **2-Step Verification** if
+   it is not already on. App Passwords do not exist without it.
+2. <https://myaccount.google.com/apppasswords> — create one, name it anything
+   (`Co-op registration` is a good choice).
+3. Google shows 16 characters in four groups. Copy it into the `SMTP_PASSWORD`
+   secret from step 5, and put the account's own address in `SMTP_USER`.
+
+An App Password is a credential for that mailbox. It belongs only in Supabase's
+secret storage — never in this repository, never in a file, never in a chat.
+You can revoke it from the same page at any time without touching the account
+password.
 
 Then in the co-op admin site, **Settings** › **Program** › **Edit**:
 
 | Field | Value |
 |---|---|
 | Registration link address | `https://jasonpadeca.com/coop/register/` |
-| Sending address | the address you verified with Brevo |
+| Sending address | the same address as `SMTP_USER` |
 | Sender name | e.g. `Maple Grove Co-op` |
 | Reply-to address | your normal co-op inbox, so replies reach a human |
 | Time zone | e.g. `America/Chicago` |
+
+**The sending address must match `SMTP_USER`** (or be one of its verified
+"Send mail as" aliases in Gmail). Gmail refuses to send as anything else, and
+the semester page will show that refusal against each family.
 
 **The registration link address must be exactly right.** It is what every
 family's personalised link is built from; if it is wrong, every invitation
@@ -279,9 +304,10 @@ You signed in with a Google account that is not an active row in `admins`. Check
 the address matches exactly, and that `active` is true.
 
 **Nobody receives invitation emails.**
-Check the sending address in Settings is the one verified with Brevo, and that
-`BREVO_API_KEY` is set as a function secret. The semester page shows a specific
-error against each family whose email failed.
+Check that `SMTP_USER` and `SMTP_PASSWORD` are set as function secrets, and that
+the sending address in Settings matches `SMTP_USER`. The semester page shows a
+specific error against each family whose email failed — "username and password
+not accepted" means the App Password is wrong or 2-Step Verification is off.
 
 **Families see "This link is not valid."**
 Usually the registration link address in Settings is wrong or was changed after
