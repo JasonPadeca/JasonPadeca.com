@@ -560,8 +560,105 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
   .mainnav a { padding: .35rem .5rem; font-size: .76rem; }
 }
 
+/* =============================================================================
+   Printable roster
+   =============================================================================
+   Black on white with no reliance on colour, because these go through
+   photocopiers and get read in bad light. The allergy panel sits above the
+   table rather than only inside it, so nothing important depends on a teacher
+   scanning across a row. */
+
+.print-toolbar {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .75rem 1.25rem; border-bottom: 1px solid var(--border);
+  background: var(--surface); position: sticky; top: 0; z-index: 10;
+}
+
+.sheet {
+  max-width: 7.9in; margin: 1.5rem auto 4rem; padding: 0 1.25rem;
+  color: var(--text);
+}
+
+.sheet-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 1.5rem; padding-bottom: .75rem; border-bottom: 2px solid var(--text);
+}
+.sheet-head h1 { font-size: 1.6rem; margin-bottom: .35rem; }
+.sheet-meta {
+  display: flex; flex-wrap: wrap; gap: 1.1rem;
+  font-size: .86rem; color: var(--text-muted); margin-top: .15rem;
+}
+.sheet-meta strong { color: var(--text-faint); font-weight: 600; margin-right: .2rem; }
+.sheet-count { text-align: right; flex: none; }
+.sheet-count .n { font-family: var(--font-serif); font-size: 2.1rem; font-weight: 600; display: block; line-height: 1; }
+.sheet-count .l { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); }
+
+.alerts {
+  margin-top: 1rem; padding: .75rem .9rem;
+  border: 1.5px solid var(--text); border-radius: 4px;
+}
+.alerts h2 {
+  font-family: var(--font-sans); font-size: .74rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em; margin-bottom: .4rem;
+}
+.alert-row { font-size: .88rem; padding: .15rem 0; }
+.alert-row .tag {
+  display: inline-block; font-size: .66rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em;
+  border: 1px solid currentColor; border-radius: 2px;
+  padding: 0 .25rem; margin: 0 .25rem 0 .35rem;
+}
+
+.sheet-table { width: 100%; border-collapse: collapse; margin-top: 1.1rem; font-size: .86rem; }
+.sheet-table th {
+  text-align: left; font-size: .68rem; text-transform: uppercase; letter-spacing: .06em;
+  border-bottom: 1.5px solid var(--text); padding: .3rem .4rem; color: var(--text);
+}
+.sheet-table td {
+  padding: .42rem .4rem; border-bottom: 1px solid var(--border-strong);
+  vertical-align: top;
+}
+.sheet-table .sub { font-size: .76rem; color: var(--text-muted); }
+.sheet-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.waitlist-print { margin-top: 1.4rem; }
+.waitlist-print h2 {
+  font-family: var(--font-sans); font-size: .74rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em; margin-bottom: .4rem;
+}
+.waitlist-print ol { margin-left: 1.2rem; font-size: .88rem; }
+.waitlist-print .sub { color: var(--text-muted); font-size: .78rem; }
+
+.empty-print { margin-top: 1.5rem; color: var(--text-muted); }
+
+.sheet-foot {
+  margin-top: 1.6rem; padding-top: .5rem; border-top: 1px solid var(--border-strong);
+  font-size: .72rem; color: var(--text-faint);
+}
+
 @media print {
-  .topbar, .btn, .no-print { display: none !important; }
-  body { background: #fff; color: #000; }
+  .topbar, .btn, .no-print, #toasts, .print-toolbar { display: none !important; }
+
+  /* Force plain black-on-white regardless of the viewer's OS theme — a roster
+     printed from a dark-mode laptop must not come out as a black rectangle. */
+  :root {
+    --text: #000; --text-muted: #333; --text-faint: #555;
+    --border: #bbb; --border-strong: #888;
+    --bg: #fff; --surface: #fff; --surface-2: #fff;
+  }
+  html, body { background: #fff !important; color: #000 !important; }
+
+  @page { margin: 12mm; }
+
+  .sheet { max-width: none; margin: 0; padding: 0; }
+  .sheet-head { border-bottom-width: 1.5pt; }
+  .alerts { border-width: 1pt; break-inside: avoid; }
+
+  /* Keep the header row on every page and never split a student across a break. */
+  .sheet-table thead { display: table-header-group; }
+  .sheet-table tr { break-inside: avoid; }
+  .waitlist-print, .sheet-foot { break-inside: avoid; }
+
   .card { border-color: #ccc; break-inside: avoid; }
+  a { color: #000 !important; text-decoration: none !important; }
 }

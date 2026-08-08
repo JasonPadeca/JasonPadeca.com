@@ -91,6 +91,25 @@ export function plural(n, one, many) {
   return `${n} ${n === 1 ? one : (many ?? one + "s")}`;
 }
 
+/** Age on a given reference date — normally the semester's first class day. */
+export function ageAt(birthDate, refDate) {
+  if (!birthDate || !refDate) return null;
+  const [by, bm, bd] = String(birthDate).slice(0, 10).split("-").map(Number);
+  const [ry, rm, rd] = String(refDate).slice(0, 10).split("-").map(Number);
+  if (!by || !ry) return null;
+  let age = ry - by;
+  if (rm < bm || (rm === bm && rd < bd)) age--;
+  return age;
+}
+
+/** The number to ring for a family: theirs, else the first parent who has one. */
+export function familyPhone(family) {
+  if (family?.primary_phone) return family.primary_phone;
+  const parents = [...(family?.parents ?? [])]
+    .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  return parents.find((p) => p.phone)?.phone ?? null;
+}
+
 /** "Ages 11–14", "Ages 11 and up", "Girls · Ages 12–17", or "" */
 export function eligibilityLabel(c) {
   const bits = [];

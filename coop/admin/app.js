@@ -14,6 +14,7 @@ import * as Families   from "./views/families.js";
 import * as Semesters  from "./views/semesters.js";
 import * as Enrollment from "./views/enrollment.js";
 import * as Volunteers from "./views/volunteers.js";
+import * as PrintRoster from "./views/print-roster.js";
 import * as Exports    from "./views/exports.js";
 import * as Settings   from "./views/settings.js";
 
@@ -33,6 +34,7 @@ const ROUTES = [
   ["#/semesters/:id",          Semesters.detail],
   ["#/periods/:id",            Semesters.periodDetail],
   ["#/classes/:id",            Semesters.classDetail],
+  ["#/classes/:id/print",      PrintRoster.show],
   ["#/enrollment",             Enrollment.show],
   ["#/volunteers",             Volunteers.show],
   ["#/exports",                Exports.show],

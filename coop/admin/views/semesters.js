@@ -8,7 +8,7 @@
 
 import { api } from "../../assets/api.js";
 import {
-  esc, $, render, fmtDate, fmtTimeRange, eligibilityLabel,
+  esc, $, render, fmtDate, fmtTimeRange, eligibilityLabel, ageAt, familyPhone,
   toastOk, toastErr, plural, formDialog, confirmDialog, modal,
 } from "../../assets/ui.js";
 import { refresh, go } from "../app.js";
@@ -403,6 +403,8 @@ async function classDialog(period, existing, siblings = []) {
       { name: "name", label: "Class name", value: existing?.name, required: true },
       { name: "teacher_name", label: "Teacher", value: existing?.teacher_name,
         placeholder: "Jane Smith", hint: "Free text — \"Jane Smith & Bob Jones\" is fine." },
+      { name: "location", label: "Location", value: existing?.location,
+        placeholder: "Fellowship Hall", hint: "Where the class meets. Appears on the printed roster." },
       { name: "description", label: "Description", type: "textarea", value: existing?.description,
         hint: "Families see this on the registration page." },
       { name: "capacity", label: "Capacity", type: "number", min: 0, value: existing?.capacity,
@@ -447,6 +449,8 @@ export async function classDetail(app, { id }) {
     .sort((a, b) => (a.waitlisted_at ?? "").localeCompare(b.waitlisted_at ?? ""));
   const past = roster.filter((r) => r.status === "cancelled" || r.status === "withdrawn");
   const over = s.capacity != null && s.registered_count > s.capacity;
+  // Ages are always quoted as of the semester's first class day (§5.3).
+  const refDate = semester.class_start_date;
 
   // Children who named this class as their first choice and are not in it —
   // the people to look at first when a seat frees up (§22).
@@ -468,9 +472,11 @@ export async function classDetail(app, { id }) {
         <h1>${esc(cls.name)}${cls.archived_at ? ` <span class="badge">Cancelled</span>` : ""}</h1>
         <div class="sub">${esc(fmtTimeRange(period.start_time, period.end_time))}
           ${cls.teacher_name ? ` · ${esc(cls.teacher_name)}` : ""}
+          ${cls.location ? ` · ${esc(cls.location)}` : ""}
           ${eligibilityLabel(cls) ? ` · ${esc(eligibilityLabel(cls))}` : ""}</div>
       </div>
       <div class="btn-row">
+        <a class="btn" href="#/classes/${esc(cls.id)}/print">Print Roster</a>
         <button class="btn" id="editclass">Edit Class</button>
         <button class="btn btn-primary" id="addstudent">+ Add Student</button>
       </div>
@@ -491,13 +497,13 @@ export async function classDetail(app, { id }) {
 
     <div class="card">
       <div class="card-head"><h3>Students</h3></div>
-      ${registered.length ? studentTable(registered, false)
+      ${registered.length ? studentTable(registered, false, refDate)
         : `<p class="muted">No students enrolled yet.</p>`}
     </div>
 
     ${waitlisted.length ? `<div class="card">
       <div class="card-head"><h3>Waitlist</h3></div>
-      ${studentTable(waitlisted, true)}
+      ${studentTable(waitlisted, true, refDate)}
     </div>` : ""}
 
     ${missedOut.length ? `<div class="card">
@@ -614,22 +620,42 @@ function statTile(n, label) {
   return `<div class="stat"><span class="n">${esc(n)}</span><div class="l">${esc(label)}</div></div>`;
 }
 
-function studentTable(rows, isWaitlist) {
+function studentTable(rows, isWaitlist, refDate) {
   return `<div class="table-scroll"><table>
-    <thead><tr>${isWaitlist ? "<th>#</th>" : ""}<th>Student</th><th>Family</th><th></th></tr></thead>
-    <tbody>${rows.map((r, i) => `<tr>
+    <thead><tr>
+      ${isWaitlist ? "<th>#</th>" : ""}
+      <th>Student</th><th class="num">Age</th><th>Contact</th>
+      <th>Allergies</th><th>Medical</th><th></th>
+    </tr></thead>
+    <tbody>${rows.map((r, i) => {
+      const ch = r.children ?? {};
+      const fam = ch.families ?? {};
+      const age = ageAt(ch.birth_date, refDate);
+      const phone = familyPhone(fam);
+      return `<tr>
       ${isWaitlist ? `<td class="num mono">${i + 1}</td>` : ""}
-      <td><strong>${esc(r.children.first_name)} ${esc(r.children.last_name ?? "")}</strong>
+      <td><strong>${esc(ch.first_name)} ${esc(ch.last_name ?? "")}</strong>
+        <div class="tiny faint"><a href="#/families/${esc(ch.family_id)}">${esc(fam.display_name ?? "")}</a></div>
         ${r.override_reason ? `<div class="tiny" style="color:var(--warn)">Override: ${esc(r.override_reason)}</div>` : ""}
         ${r.source === "admin" ? `<div class="tiny faint">Added by an administrator</div>` : ""}
         ${r.source === "waitlist_promotion" ? `<div class="tiny faint">Promoted from the waitlist</div>` : ""}</td>
-      <td class="small"><a href="#/families/${esc(r.children.family_id)}">${esc(r.children.families?.display_name ?? "")}</a>
-        ${r.children.families?.primary_email
-          ? `<div class="tiny faint">${esc(r.children.families.primary_email)}</div>` : ""}</td>
+      <td class="num mono">${age ?? `<span class="faint">—</span>`}</td>
+      <td class="small">
+        ${ch.email ? `<div>${esc(ch.email)}</div>` : ""}
+        ${fam.primary_email ? `<div class="tiny faint">${esc(fam.primary_email)}</div>` : ""}
+        ${phone ? `<div class="tiny faint mono">${esc(phone)}</div>` : ""}
+        ${!ch.email && !fam.primary_email && !phone ? `<span class="faint">—</span>` : ""}</td>
+      <td class="small">${ch.allergies
+        ? `<span style="color:var(--danger)">${esc(ch.allergies)}</span>`
+        : `<span class="faint">—</span>`}</td>
+      <td class="small">${ch.medical_notes
+        ? `<span style="color:var(--warn)">${esc(ch.medical_notes)}</span>`
+        : `<span class="faint">—</span>`}</td>
       <td class="right nowrap">
         ${isWaitlist ? `<button class="btn btn-sm" data-promote="${esc(r.id)}">Promote</button>` : ""}
         <button class="btn btn-sm btn-ghost" data-remove="${esc(r.id)}">Remove</button>
-      </td></tr>`).join("")}</tbody></table></div>`;
+      </td></tr>`;
+    }).join("")}</tbody></table></div>`;
 }
 
 // -----------------------------------------------------------------------------

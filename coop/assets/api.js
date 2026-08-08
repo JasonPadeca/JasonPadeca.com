@@ -226,10 +226,21 @@ export const api = {
   async archiveClass(id, on)      { return this.updateClass(id, { archived_at: on ? new Date().toISOString() : null }); },
 
   // --- Registrations ---
+  /**
+   * A class roster with everything a printed sheet needs: age, contact details,
+   * allergies, and medical notes.
+   *
+   * parents(...) comes along so a family with no primary_phone set still shows
+   * a number — the first parent who has one.
+   */
   async classRoster(classId) {
     const db = await client();
     return unwrap(await db.from("registrations")
-      .select("*, children(id, first_name, last_name, birth_date, sex, family_id, families(id, display_name, primary_email))")
+      .select(`*, children(
+                 id, first_name, last_name, birth_date, sex, email,
+                 allergies, medical_notes, family_id,
+                 families(id, display_name, primary_email, primary_phone,
+                          parents(first_name, last_name, phone, email, sort_order)))`)
       .eq("class_id", classId)
       .order("status").order("waitlisted_at", { nullsFirst: true }).order("created_at"));
   },
