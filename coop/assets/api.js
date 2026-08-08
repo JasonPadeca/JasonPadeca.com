@@ -186,23 +186,39 @@ export const api = {
   async updatePeriod(id, f)       { const db = await client(); return unwrap(await db.from("periods").update(f).eq("id", id).select().single()); },
   async archivePeriod(id, on)     { return this.updatePeriod(id, { archived_at: on ? new Date().toISOString() : null }); },
 
-  /** Classes with live seat counts joined in. */
+  /**
+   * Classes with live seat counts attached as `c.seats`.
+   *
+   * The counts are fetched in a second request rather than embedded via
+   * `select("*, class_seats(*)")`. PostgREST resolves embedded resources
+   * through foreign keys, and class_seats is a view — a view cannot have one,
+   * so the embed fails with "Could not find a relationship … in the schema
+   * cache". Two round trips, and no dependence on relationship inference.
+   */
   async classes(where = {}, { includeArchived = false } = {}) {
     const db = await client();
-    let q = db.from("classes").select("*, class_seats(*)").order("option_number", { nullsFirst: false }).order("name");
+    let q = db.from("classes").select("*")
+      .order("option_number", { nullsFirst: false }).order("name");
     for (const [k, v] of Object.entries(where)) q = q.eq(k, v);
     if (!includeArchived) q = q.is("archived_at", null);
+
     const rows = unwrap(await q);
-    // class_seats comes back as a one-element array from the view join; flatten
-    // it so callers can just read c.seats.registered_count.
-    return rows.map((c) => ({ ...c, seats: c.class_seats?.[0] ?? c.class_seats ?? {} }));
+    if (!rows.length) return rows;
+
+    const seats = unwrap(await db.from("class_seats").select("*")
+      .in("class_id", rows.map((c) => c.id)));
+    const byId = new Map(seats.map((s) => [s.class_id, s]));
+    return rows.map((c) => ({ ...c, seats: byId.get(c.id) ?? {} }));
   },
 
   async klass(id) {
     const db = await client();
+    // periods and semesters embed fine — those are real foreign keys.
     const row = unwrap(await db.from("classes")
-      .select("*, class_seats(*), periods(*), semesters(*)").eq("id", id).single());
-    return { ...row, seats: row.class_seats?.[0] ?? row.class_seats ?? {} };
+      .select("*, periods(*), semesters(*)").eq("id", id).single());
+    const seats = unwrap(await db.from("class_seats").select("*")
+      .eq("class_id", id).maybeSingle());
+    return { ...row, seats: seats ?? {} };
   },
 
   async createClass(f)            { const db = await client(); return unwrap(await db.from("classes").insert(f).select().single()); },
