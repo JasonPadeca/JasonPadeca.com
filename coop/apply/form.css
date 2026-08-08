@@ -1,0 +1,121 @@
+/* =============================================================================
+   The application form, and nothing else.
+   =============================================================================
+
+   This page is the co-op's own WordPress page with one block swapped out. It
+   must NOT load the app's stylesheet: that begins with
+
+       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+   which is fine for an application we control and quietly restyles somebody
+   else's theme everywhere it is loaded. A group that likes its website should
+   not get a subtly different one as the price of a working form.
+
+   So every rule here is scoped under #coop-apply-form, and the form inherits
+   the page's own typography rather than importing ours.
+   ============================================================================= */
+
+#coop-apply-form {
+  --k-line: #cfd6db;
+  --k-muted: #5f6b73;
+  --k-faint: #8a959c;
+  --k-accent: #1279be;
+  --k-danger: #c02626;
+  max-width: 40rem;
+}
+
+#coop-apply-form .field { margin-bottom: 1.35rem; }
+
+#coop-apply-form label {
+  display: block;
+  margin-bottom: .35rem;
+  font-weight: 700;
+  font-size: .95rem;
+}
+
+#coop-apply-form input[type="text"],
+#coop-apply-form input[type="email"],
+#coop-apply-form input[type="tel"],
+#coop-apply-form textarea {
+  display: block;
+  width: 100%;
+  padding: .6rem .7rem;
+  border: 1px solid var(--k-line);
+  border-radius: 4px;
+  background: #fff;
+  font: inherit;
+  font-size: 1rem;
+  color: inherit;
+  box-sizing: border-box;   /* scoped, not global */
+}
+
+#coop-apply-form textarea { resize: vertical; min-height: 5rem; }
+
+#coop-apply-form input:focus,
+#coop-apply-form textarea:focus {
+  outline: 2px solid var(--k-accent);
+  outline-offset: 1px;
+  border-color: var(--k-accent);
+}
+
+#coop-apply-form .hint {
+  margin-top: .3rem;
+  font-size: .85rem;
+  color: var(--k-muted);
+}
+
+#coop-apply-form .faint { color: var(--k-faint); font-weight: 400; }
+
+#coop-apply-form .check {
+  display: flex;
+  align-items: flex-start;
+  gap: .6rem;
+  font-weight: 400;
+  cursor: pointer;
+}
+#coop-apply-form .check input { margin-top: .25rem; flex: none; }
+
+#coop-apply-form button {
+  padding: .7rem 1.6rem;
+  border: 0;
+  border-radius: 4px;
+  background: var(--k-accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+}
+#coop-apply-form button:hover:not(:disabled) { background: #0f5f96; }
+#coop-apply-form button:disabled { opacity: .6; cursor: default; }
+
+#coop-apply-form .note,
+#coop-apply-form .card {
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--k-line);
+  border-radius: 4px;
+  background: #fff;
+}
+#coop-apply-form .mt { margin-top: .75rem; }
+#coop-apply-form h2 { margin-top: 0; }
+
+/* The honeypot: off-screen rather than display:none, because some bots skip
+   anything hidden and the whole point is that they fill it in. */
+#coop-apply-form .hp {
+  position: absolute; left: -9999px;
+  width: 1px; height: 1px; overflow: hidden;
+}
+
+/* Messages. The app's toast styles live in its own stylesheet, which is not
+   loaded here, so they are restated in miniature. */
+#toasts {
+  position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%);
+  z-index: 9999; display: flex; flex-direction: column; gap: .5rem;
+}
+#toasts .toast {
+  padding: .7rem 1.1rem; border-radius: 4px;
+  background: #2e4453; color: #fff; font-size: .95rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,.18);
+}
+#toasts .toast.err { background: var(--k-danger); }
+#toasts .toast.ok  { background: #2e7d32; }

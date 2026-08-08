@@ -6,16 +6,21 @@
 // rather than writing to the database, because the key in this page's source is
 // public and anything the browser may do, anybody may do.
 //
-// The questions are the ones the co-op already asks on paper. Rewording them to
-// suit a database would lose the thing that makes them useful — they are how the
-// leadership decides whether a family is a fit, which is a judgement, not a
-// filter.
+// The questions are the ones the co-op already asks, word for word. Rewording
+// them to suit a database would lose the thing that makes them useful — they are
+// how the leadership decides whether a family is a fit, which is a judgement,
+// not a filter.
+//
+// It mounts INSIDE the co-op's own page, replacing only the WordPress form. The
+// header, navigation, wording and footer around it are the site's own, because
+// a group that likes its website should not have to accept a new one to get a
+// working application.
 // =============================================================================
 
 import { SUPABASE_ANON_KEY, FUNCTIONS_URL, IS_CONFIGURED } from "../assets/config.js";
 import { esc, $, render, toastErr } from "../assets/ui.js";
 
-const form = document.getElementById("form");
+const form = document.getElementById("coop-apply-form");
 
 const FIELDS = [
   { name: "parent_names", label: "Parents' names", required: true,
