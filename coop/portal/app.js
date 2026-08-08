@@ -21,7 +21,7 @@
 // =============================================================================
 
 import { auth, api, IS_CONFIGURED } from "../assets/api.js";
-import { esc, $, render, toastOk, toastErr, plural, ageAt } from "../assets/ui.js";
+import { esc, $, render, toastErr, ageAt } from "../assets/ui.js";
 
 const app = document.getElementById("app");
 

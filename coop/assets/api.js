@@ -74,6 +74,9 @@ export function friendlyError(error) {
 function friendlySignInError(error) {
   const msg = (error?.message ?? String(error)).toLowerCase();
 
+  if (msg.includes("email logins are disabled") || msg.includes("email_provider_disabled")) {
+    return "Sign-in by email is switched off for this site. An administrator needs to enable the Email provider in Supabase.";
+  }
   if (msg.includes("signups not allowed") || msg.includes("user not found")) {
     return "We do not recognise that email address. It has to be the one the co-op has on file for your family — try another, or ask an administrator to check.";
   }
@@ -131,10 +134,20 @@ export const auth = {
     const { error } = await db.auth.signInWithOtp({
       email: email.trim().toLowerCase(),
       options: {
-        // Nobody signs up here. An address either belongs to a family or an
-        // administrator, or it does not belong at all — and creating a user for
-        // a stranger would leave orphan accounts accumulating in Auth.
-        shouldCreateUser: false,
+        // A family signing in for the first time has no auth user yet, so one
+        // has to be created here — refusing would mean nobody could ever get in.
+        //
+        // It is not a way past anything. Being authenticated buys nothing on its
+        // own: establish_session only links a family when the verified address
+        // is already on a family or parent record, and every RLS policy hangs
+        // off that link. A stranger who signs in reaches "we do not recognise
+        // that address" and can read nothing at all.
+        //
+        // It also avoids leaking who is a member. With creation refused, an
+        // unknown address gets a distinct error, which lets anyone test whether
+        // a given family is in the co-op. This way every address gets the same
+        // "check your email".
+        shouldCreateUser: true,
         emailRedirectTo: window.location.origin + window.location.pathname,
       },
     });
