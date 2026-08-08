@@ -7,7 +7,11 @@
 // =============================================================================
 
 import { api } from "../../assets/api.js";
-import { esc, $, render, toastErr, plural, downloadCSV, debounce } from "../../assets/ui.js";
+import {
+  esc, $, render, toastOk, toastErr, plural, downloadCSV, debounce,
+  formDialog, confirmDialog, modal,
+} from "../../assets/ui.js";
+import { refresh } from "../app.js";
 
 export async function show(app) {
   const semesters = await api.semesters();
@@ -22,16 +26,21 @@ export async function show(app) {
   const semesterId = params.get("s") ?? semesters[0].id;
   const semester = semesters.find((s) => s.id === semesterId) ?? semesters[0];
 
-  const [report, periods] = await Promise.all([
+  const [report, periods, classes] = await Promise.all([
     api.volunteers(semester.id),
     api.periods(semester.id),
+    api.classes({ semester_id: semester.id }),
   ]);
+  const byPeriod = new Map(periods.map((p) => [p.id, p]));
+  const placed = report.filter((r) => r.assignments?.length).length;
 
   render(app, `<div class="wrap page">
     <div class="page-head">
       <div><h1>Volunteers</h1>
         <div class="sub">${esc(semester.name)} ·
-          ${plural(report.length, "family member", "family members")} offered to help</div></div>
+          ${plural(report.length, "person", "people")} offered ·
+          ${placed} placed${report.length - placed > 0
+            ? ` · <span style="color:var(--warn)">${report.length - placed} still unplaced</span>` : ""}</div></div>
       <div class="btn-row">
         <button class="btn" id="csv" ${report.length ? "" : "disabled"}>Export CSV</button>
       </div>
@@ -87,7 +96,7 @@ export async function show(app) {
 
     render("#results", `<div class="table-scroll"><table>
       <thead><tr>
-        <th>Who</th><th>Family</th><th>Offered for</th><th>Notes</th>
+        <th>Who</th><th>Family</th><th>Offered for</th><th>Assigned to</th><th>Notes</th><th></th>
       </tr></thead>
       <tbody>${rows.map((r) => `<tr>
         <td><strong>${esc(r.child_name)}</strong>
@@ -101,9 +110,33 @@ export async function show(app) {
                 : ` <span class="faint">(any class)</span>`}
             </div>`).join("")
           : `<span class="faint">No preference</span>`}</td>
+        <td class="small">${r.assignments?.length
+          ? r.assignments.map((a) => `<div>
+              <span class="faint mono">${esc(a.period_number)}</span>
+              <a href="#/classes/${esc(a.class_id)}">${esc(a.class_name)}</a>
+              <button class="btn btn-sm btn-ghost" data-unassign="${esc(a.id)}"
+                      title="Remove from this class">×</button>
+            </div>`).join("")
+          : `<span class="badge badge-warn">Not placed</span>`}</td>
         <td class="small muted">${esc(r.note ?? "")}</td>
+        <td class="right nowrap">
+          <button class="btn btn-sm" data-assign="${esc(r.child_id)}">Assign</button></td>
       </tr>`).join("")}</tbody></table></div>
       <p class="tiny faint mt">${plural(rows.length, "offer")} shown.</p>`);
+
+    document.querySelectorAll("[data-assign]").forEach((b) =>
+      b.addEventListener("click", () =>
+        assignFromOffer(report.find((r) => r.child_id === b.dataset.assign), classes, byPeriod)));
+
+    document.querySelectorAll("[data-unassign]").forEach((b) =>
+      b.addEventListener("click", async () => {
+        const ok = await confirmDialog("Remove this assignment?",
+          "They will no longer be listed as helping with that class. They are not put back into whatever they left to volunteer.",
+          "Remove", true);
+        if (!ok) return;
+        try { await api.removeVolunteer(b.dataset.unassign); toastOk("Removed."); refresh(); }
+        catch (e) { toastErr(e.message); }
+      }));
   };
 
   draw();
@@ -125,6 +158,77 @@ export async function show(app) {
     }
     downloadCSV(`${semester.name.replace(/\s+/g, "-").toLowerCase()}-volunteers.csv`, data);
   });
+}
+
+/**
+ * Place someone from their offer.
+ *
+ * The class list is ordered so the ones they actually asked for come first —
+ * an administrator working down this page is trying to honour those requests,
+ * and making them hunt through every class in the semester works against that.
+ */
+async function assignFromOffer(offer, classes, byPeriod) {
+  if (!offer) return;
+
+  const wanted = new Set(offer.slots.filter((s) => s.class_id).map((s) => s.class_id));
+  const wantedPeriods = new Set(offer.slots.map((s) => s.period_id));
+
+  const rank = (c) =>
+    wanted.has(c.id) ? 0 : wantedPeriods.has(c.period_id) ? 1 : 2;
+
+  const options = [...classes]
+    .sort((a, b) =>
+      rank(a) - rank(b) ||
+      (byPeriod.get(a.period_id)?.period_number ?? 0) - (byPeriod.get(b.period_id)?.period_number ?? 0) ||
+      a.name.localeCompare(b.name))
+    .map((c) => {
+      const p = byPeriod.get(c.period_id);
+      const mark = wanted.has(c.id) ? "★ " : wantedPeriods.has(c.period_id) ? "· " : "  ";
+      return {
+        value: c.id,
+        label: `${mark}${p?.display_name ?? "?"} — ${c.name}`,
+      };
+    });
+
+  if (!options.length) return toastErr("This semester has no classes yet.");
+
+  const v = await formDialog({
+    title: `Where should ${offer.child_name} help?`,
+    submitLabel: "Assign",
+    fields: [
+      { name: "class_id", label: "Class", type: "select", required: true, options,
+        hint: "★ is a class they asked for; · is a period they offered." },
+      { name: "note", label: "Note", value: offer.note ?? "",
+        hint: "Optional. Shown on the class page and the printed roster." },
+    ],
+  });
+  if (!v) return;
+
+  const cls = classes.find((c) => c.id === v.class_id);
+  let res;
+  try { res = await api.assignVolunteer(offer.child_id, v.class_id, v.note, false); }
+  catch (e) { return toastErr(e.message); }
+
+  if (res?.needs_confirmation) {
+    const ok = await modal({
+      title: `Assign ${offer.child_name} to ${cls?.name ?? "this class"}?`,
+      body: `${(res.warnings ?? []).map((w) =>
+              `<div class="note note-warn">${esc(w.message)}</div>`).join("")}
+             <p class="small mt">Volunteers do not take up a seat.</p>`,
+      buttons: [
+        { value: false, label: "Cancel" },
+        { value: true, label: "Move them", class: "btn-danger" },
+      ],
+    });
+    if (!ok) return;
+    try { res = await api.assignVolunteer(offer.child_id, v.class_id, v.note, true); }
+    catch (e) { return toastErr(e.message); }
+  }
+
+  toastOk(res?.withdrew_from
+    ? `${offer.child_name} assigned, and withdrawn from ${res.withdrew_from}.`
+    : `${offer.child_name} assigned to ${cls?.name ?? "the class"}.`);
+  refresh();
 }
 
 /** Collapse a flat slot list into one line per period. */

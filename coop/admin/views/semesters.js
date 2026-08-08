@@ -439,9 +439,10 @@ async function classDialog(period, existing, siblings = []) {
 // Class detail — roster, waitlist, manual changes (§14, §22)
 // =============================================================================
 export async function classDetail(app, { id }) {
-  const [cls, roster, prefs] = await Promise.all([
+  const [cls, roster, prefs, volunteers] = await Promise.all([
     api.klass(id), api.classRoster(id),
     api.classPreferences(id).catch(() => []),
+    api.classVolunteers(id).catch(() => []),
   ]);
   const period = cls.periods, semester = cls.semesters;
   const s = cls.seats ?? {};
@@ -503,6 +504,31 @@ export async function classDetail(app, { id }) {
         : `<p class="muted">No students enrolled yet.</p>`}
     </div>
 
+    <div class="card">
+      <div class="card-head"><h3>Volunteers</h3>
+        <button class="btn btn-sm" id="addvolunteer">+ Add Volunteer</button></div>
+      ${volunteers.length ? `<div class="table-scroll"><table>
+        <thead><tr><th>Helper</th><th class="num">Age</th><th>Contact</th><th>Note</th><th></th></tr></thead>
+        <tbody>${volunteers.map((v) => {
+          const ch = v.children ?? {};
+          const fam = ch.families ?? {};
+          return `<tr>
+            <td><strong>${esc(ch.first_name)} ${esc(ch.last_name ?? "")}</strong>
+              <div class="tiny faint"><a href="#/families/${esc(ch.family_id)}">${
+                esc(fam.display_name ?? "")}</a></div></td>
+            <td class="num mono">${ageAt(ch.birth_date, refDate) ?? `<span class="faint">—</span>`}</td>
+            <td class="small">${contactCell(ch.email || familyEmail(fam),
+                                            ch.phone || familyPhone(fam))}</td>
+            <td class="small muted">${esc(v.note ?? "")}</td>
+            <td class="right nowrap">
+              <button class="btn btn-sm btn-ghost" data-rmvol="${esc(v.id)}">Remove</button></td>
+          </tr>`;
+        }).join("")}</tbody></table></div>
+        <p class="tiny faint mt">Volunteers do not use a seat — the class still has
+          ${s.capacity == null ? "no limit" : plural(s.seats_open ?? 0, "seat") + " open"}.</p>`
+        : `<p class="muted">No volunteers assigned. Helpers do not take up a seat.</p>`}
+    </div>
+
     ${waitlisted.length ? `<div class="card">
       <div class="card-head"><h3>Waitlist</h3></div>
       ${studentTable(waitlisted, true, refDate)}
@@ -545,6 +571,19 @@ export async function classDetail(app, { id }) {
 
   $("#editclass").addEventListener("click", () => classDialog(period, cls));
   $("#addstudent").addEventListener("click", () => addStudent(cls));
+  $("#addvolunteer").addEventListener("click", () => addVolunteer(cls, semester));
+
+  app.querySelectorAll("[data-rmvol]").forEach((b) =>
+    b.addEventListener("click", async () => {
+      const v = volunteers.find((x) => x.id === b.dataset.rmvol);
+      const name = `${v.children?.first_name ?? ""} ${v.children?.last_name ?? ""}`.trim();
+      const ok = await confirmDialog("Remove this volunteer?",
+        `${name} will no longer be listed as helping with ${cls.name}. They are NOT put back into whatever class they left to volunteer — that seat may have gone to someone else, so re-enrol them by hand if you need to.`,
+        "Remove", true);
+      if (!ok) return;
+      try { await api.removeVolunteer(v.id); toastOk("Volunteer removed."); refresh(); }
+      catch (e) { toastErr(e.message); }
+    }));
 
   app.querySelectorAll("[data-remove]").forEach((b) =>
     b.addEventListener("click", async () => {
@@ -705,6 +744,76 @@ async function addStudent(cls) {
   }
 
   toastOk("Student added.");
+  refresh();
+}
+
+/**
+ * Assign a helper to this class.
+ *
+ * Anyone active can be picked, not only those who offered — an administrator
+ * asking someone directly is how most of this actually happens. Those who did
+ * offer are marked, so the list still carries that information.
+ */
+export async function addVolunteer(cls, semester) {
+  const [families, offers] = await Promise.all([
+    api.families(),
+    api.volunteers(semester.id).catch(() => []),
+  ]);
+
+  const offered = new Set(offers.map((o) => o.child_id));
+  const candidates = families.flatMap((f) =>
+    (f.children ?? [])
+      .filter((c) => c.active && !c.archived_at)
+      .map((c) => ({ ...c, familyName: f.display_name })))
+    .sort((a, b) =>
+      (offered.has(b.id) ? 1 : 0) - (offered.has(a.id) ? 1 : 0) ||
+      `${a.first_name}${a.last_name}`.localeCompare(`${b.first_name}${b.last_name}`));
+
+  if (!candidates.length) return toastErr("There are no active children to assign.");
+
+  const v = await formDialog({
+    title: `Add a volunteer to ${cls.name}`,
+    submitLabel: "Add",
+    fields: [
+      { name: "child_id", label: "Helper", type: "select", required: true,
+        options: candidates.map((c) => ({
+          value: c.id,
+          label: `${offered.has(c.id) ? "★ " : ""}${c.first_name} ${c.last_name ?? ""} — ${c.familyName}`,
+        })),
+        hint: "★ marks students who offered to volunteer during registration." },
+      { name: "note", label: "Note", placeholder: "Good with the little ones",
+        hint: "Optional. Shown on the class page and the printed roster." },
+    ],
+  });
+  if (!v) return;
+
+  const child = candidates.find((c) => c.id === v.child_id);
+  let res;
+  try { res = await api.assignVolunteer(v.child_id, cls.id, v.note, false); }
+  catch (e) { return toastErr(e.message); }
+
+  // The displacement is the whole reason this asks: it costs a child a class
+  // they chose, and that should never happen as a side effect.
+  if (res?.needs_confirmation) {
+    const ok = await modal({
+      title: `Add ${child.first_name} as a volunteer?`,
+      body: `${(res.warnings ?? []).map((w) =>
+              `<div class="note note-warn">${esc(w.message)}</div>`).join("")}
+             <p class="small mt">Volunteers do not take up a seat in
+             ${esc(cls.name)}.</p>`,
+      buttons: [
+        { value: false, label: "Cancel" },
+        { value: true, label: "Move them", class: "btn-danger" },
+      ],
+    });
+    if (!ok) return;
+    try { res = await api.assignVolunteer(v.child_id, cls.id, v.note, true); }
+    catch (e) { return toastErr(e.message); }
+  }
+
+  toastOk(res?.withdrew_from
+    ? `${child.first_name} is now helping with ${cls.name}, and was withdrawn from ${res.withdrew_from}.`
+    : `${child.first_name} is now helping with ${cls.name}.`);
   refresh();
 }
 

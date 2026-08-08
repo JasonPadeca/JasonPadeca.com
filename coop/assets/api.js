@@ -326,6 +326,36 @@ export const api = {
     return unwrap(await db.rpc("volunteer_report", { p_semester_id: semesterId })) ?? [];
   },
 
+  /** Helpers assigned to one class, with their family for contact. */
+  async classVolunteers(classId) {
+    const db = await client();
+    return unwrap(await db.from("class_volunteers")
+      .select(`id, note, created_at, child_id,
+               children(id, first_name, last_name, birth_date, email, phone, family_id,
+                        families(display_name, primary_email, primary_phone,
+                                 parents(first_name, phone, email, sort_order)))`)
+      .eq("class_id", classId)
+      .order("created_at"));
+  },
+
+  async checkVolunteer(childId, classId) {
+    const db = await client();
+    return unwrap(await db.rpc("check_volunteer_assignment",
+      { p_child_id: childId, p_class_id: classId }));
+  },
+
+  async assignVolunteer(childId, classId, note = null, confirm = false) {
+    const db = await client();
+    return unwrap(await db.rpc("admin_assign_volunteer", {
+      p_child_id: childId, p_class_id: classId, p_note: note, p_confirm: confirm,
+    }));
+  },
+
+  async removeVolunteer(id) {
+    const db = await client();
+    return unwrap(await db.rpc("admin_remove_volunteer", { p_id: id }));
+  },
+
   /** Who named this class as a choice, whether or not they got in. */
   async classPreferences(classId) {
     const db = await client();

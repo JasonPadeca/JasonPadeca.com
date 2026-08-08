@@ -19,7 +19,9 @@ import {
 } from "../../assets/ui.js";
 
 export async function show(app, { id }) {
-  const [cls, roster] = await Promise.all([api.klass(id), api.classRoster(id)]);
+  const [cls, roster, helpers] = await Promise.all([
+    api.klass(id), api.classRoster(id), api.classVolunteers(id).catch(() => []),
+  ]);
 
   render(app, `
     <div class="print-toolbar no-print">
@@ -28,7 +30,7 @@ export async function show(app, { id }) {
       <span class="small muted">This sheet contains medical information. Hand it only to the teacher.</span>
       <button class="btn btn-primary" id="doprint">Print</button>
     </div>
-    ${sheet(cls, roster, cls.periods, cls.semesters)}`);
+    ${sheet(cls, roster, cls.periods, cls.semesters, false, helpers)}`);
 
   $("#doprint")?.addEventListener("click", () => window.print());
 }
@@ -51,7 +53,10 @@ export async function all(app, { id }) {
   // classes, and firing that many roster queries at once is a poor way to treat
   // a database on a free plan.
   const rosters = [];
-  for (const c of classes) rosters.push([c, await api.classRoster(c.id)]);
+  for (const c of classes) {
+    rosters.push([c, await api.classRoster(c.id),
+                  await api.classVolunteers(c.id).catch(() => [])]);
+  }
 
   rosters.sort(([a], [b]) =>
     ((byPeriod.get(a.period_id)?.period_number ?? 0) - (byPeriod.get(b.period_id)?.period_number ?? 0)) ||
@@ -83,15 +88,15 @@ export async function all(app, { id }) {
     </div>` : ""}
 
     ${rosters.length
-      ? rosters.map(([c, roster], i) =>
-          sheet(c, roster, byPeriod.get(c.period_id), semester, i > 0)).join("")
+      ? rosters.map(([c, roster, helpers], i) =>
+          sheet(c, roster, byPeriod.get(c.period_id), semester, i > 0, helpers)).join("")
       : `<div class="sheet"><p class="empty-print">This semester has no classes yet.</p></div>`}`);
 
   $("#doprint")?.addEventListener("click", () => window.print());
 }
 
 /** One roster sheet. `pageBreak` starts it on a fresh sheet of paper. */
-function sheet(cls, roster, period, semester, pageBreak = false) {
+function sheet(cls, roster, period, semester, pageBreak = false, helpers = []) {
   const refDate = semester?.class_start_date;
 
   const registered = roster
@@ -179,6 +184,26 @@ function sheet(cls, roster, period, semester, pageBreak = false) {
           </tr>`;
         }).join("")}</tbody>
       </table>` : `<p class="empty-print">No students enrolled.</p>`}
+
+      ${helpers.length ? `<section class="helpers-print">
+        <h2>Volunteers</h2>
+        <p class="helpers-note">Helping with this class. They are not students here
+          and do not use a seat.</p>
+        <table class="sheet-table">
+          <tbody>${helpers.map((v) => {
+            const ch = v.children ?? {};
+            const fam = ch.families ?? {};
+            const phone = ch.phone || familyPhone(fam);
+            return `<tr>
+              <td><strong>${esc(ch.first_name)} ${esc(ch.last_name ?? "")}</strong>
+                <div class="sub">${esc(fam.display_name ?? "")}</div></td>
+              <td class="num">${ageAt(ch.birth_date, refDate) ?? "—"}</td>
+              <td>${phone ? `<span class="mono">${esc(phone)}</span>` : ""}</td>
+              <td>${esc(v.note ?? "")}</td>
+            </tr>`;
+          }).join("")}</tbody>
+        </table>
+      </section>` : ""}
 
       ${waitlisted.length ? `<section class="waitlist-print">
         <h2>Waitlist</h2>

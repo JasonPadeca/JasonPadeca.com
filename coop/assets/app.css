@@ -690,6 +690,15 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
 .sheet-table .sub { font-size: .76rem; color: var(--text-muted); }
 .sheet-table .num { text-align: right; font-variant-numeric: tabular-nums; }
 
+.helpers-print { margin-top: 1.4rem; }
+.helpers-print h2 {
+  font-family: var(--font-sans); font-size: .74rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em; margin-bottom: .2rem;
+}
+.helpers-print .helpers-note { font-size: .76rem; color: var(--text-muted); margin-bottom: .3rem; }
+.helpers-print .sheet-table { margin-top: 0; }
+.helpers-print .sheet-table td { border-bottom: 1px dotted var(--border-strong); }
+
 .waitlist-print { margin-top: 1.4rem; }
 .waitlist-print h2 {
   font-family: var(--font-sans); font-size: .74rem; font-weight: 700;
