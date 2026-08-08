@@ -573,6 +573,33 @@ export const api = {
     }));
   },
 
+  // --- Applications ---
+  async applications() {
+    const db = await client();
+    return unwrap(await db.from("applications").select("*")
+      .order("created_at", { ascending: false }));
+  },
+
+  async approveApplication(id, displayName) {
+    const db = await client();
+    return unwrap(await db.rpc("approve_application", {
+      p_id: id, p_display_name: displayName,
+    }));
+  },
+
+  async setApplicationStatus(id, status, notes = null) {
+    const db = await client();
+    return unwrap(await db.rpc("set_application_status", {
+      p_id: id, p_status: status, p_notes: notes,
+    }));
+  },
+
+  /** The signed-in person's own application, if they have one. */
+  async myApplication() {
+    const db = await client();
+    return unwrap(await db.rpc("my_application"));
+  },
+
   // --- Announcements ---
   async announcements({ classId = null, semesterId = null } = {}) {
     const db = await client();

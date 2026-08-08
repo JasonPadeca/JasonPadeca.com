@@ -219,9 +219,12 @@ function wireDialog(dlg, resolve, onSettle) {
  * Show a modal and resolve with the value of whichever button was pressed
  * (null if dismissed). `buttons` is [{ value, label, class }].
  */
-export function modal({ title, body, buttons = [{ value: null, label: "Close" }] }) {
+export function modal({ title, body, buttons = [{ value: null, label: "Close" }], wide = false }) {
   return new Promise((resolve) => {
     const dlg = document.createElement("dialog");
+    // `wide` is for dialogs holding prose rather than a question — a membership
+    // application read at confirmation-dialog width is unreadable.
+    if (wide) dlg.classList.add("dialog-wide");
     dlg.innerHTML = `
       <div class="dialog-head"><h3>${esc(title)}</h3></div>
       <div class="dialog-body">${body}</div>

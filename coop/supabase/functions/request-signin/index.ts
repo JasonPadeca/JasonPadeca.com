@@ -71,7 +71,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // Archived and inactive families are deliberately excluded: someone who has
   // left the co-op should not keep a way in. Administrators are checked
   // separately, since an admin need not be a parent.
-  const [famRes, parentRes, adminRes] = await Promise.all([
+  const [famRes, parentRes, adminRes, teacherRes, applicantRes] = await Promise.all([
     db.from("families")
       .select("id")
       .ilike("primary_email", email)
@@ -89,12 +89,24 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .ilike("email", email)
       .eq("active", true)
       .limit(1),
+    // A teacher need not be a parent — the grandfather taking the automotive
+    // class has no family record to be found in.
+    db.from("teachers")
+      .select("id")
+      .ilike("email", email)
+      .eq("active", true)
+      .limit(1),
+    // Somebody who has applied to join. Applying IS the request for a login:
+    // they sign in to follow the application rather than waiting on email.
+    db.rpc("is_open_applicant", { p_email: email }),
   ]);
 
   const known =
     (famRes.data?.length ?? 0) > 0 ||
     (parentRes.data?.length ?? 0) > 0 ||
-    (adminRes.data?.length ?? 0) > 0;
+    (adminRes.data?.length ?? 0) > 0 ||
+    (teacherRes.data?.length ?? 0) > 0 ||
+    applicantRes.data === true;
 
   if (!known) {
     // 200, not 404. This is a normal answer to a reasonable question, and the

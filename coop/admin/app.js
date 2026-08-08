@@ -16,6 +16,7 @@ import * as Enrollment from "./views/enrollment.js";
 import * as Volunteers from "./views/volunteers.js";
 import * as PrintRoster from "./views/print-roster.js";
 import * as Absences from "./views/absences.js";
+import * as Applications from "./views/applications.js";
 import * as Exports    from "./views/exports.js";
 import * as Settings   from "./views/settings.js";
 
@@ -37,6 +38,7 @@ const ROUTES = [
   ["#/classes/:id",            Semesters.classDetail],
   ["#/classes/:id/print",      PrintRoster.show],
   ["#/absences",               Absences.show],
+  ["#/applications",           Applications.show],
   ["#/semesters/:id/rosters",  PrintRoster.all],
   ["#/enrollment",             Enrollment.show],
   ["#/volunteers",             Volunteers.show],
@@ -47,6 +49,7 @@ const ROUTES = [
 
 const NAV = [
   ["#/",           "Dashboard"],
+  ["#/applications", "Applications"],
   ["#/families",   "Families"],
   ["#/semesters",  "Semesters"],
   ["#/enrollment", "Enrollment"],

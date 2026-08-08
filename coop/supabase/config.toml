@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.request-signin]
 verify_jwt = false
+
+[functions.submit-application]
+verify_jwt = false
