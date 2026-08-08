@@ -16,6 +16,8 @@ $$;
 \set emma  '''51111111-1111-1111-1111-111111111111'''
 \set billy '''53333333-3333-3333-3333-333333333333'''
 \set carol '''54444444-4444-4444-4444-444444444444'''
+-- Dana is in nothing, so placing her needs no period override.
+\set dana  '''55555555-5555-5555-5555-555555555555'''
 
 \set u_grandpa '''00000000-0000-0000-0000-00000000dd01'''
 \set u_mary    '''00000000-0000-0000-0000-00000000dd02'''
@@ -123,29 +125,81 @@ select pg_temp.check('...so two notices exist and she sees one',
   (select count(*)::text from public.announcements), '1');
 
 -- =============================================================================
--- Classmates: names, and nothing else
+-- The class as a parent sees it
 -- =============================================================================
 select pg_temp.be(:u_mary, 'mary@example.org');
 
-select pg_temp.check('a parent can list their child''s classmates',
-  jsonb_array_length(public.classmates(:chem::uuid))::text, '1');
+select pg_temp.check('a parent can open their child''s class',
+  (public.family_class_view(:chem::uuid) ->> 'ok'), 'true');
 
-select pg_temp.check('...and the entry carries a name',
-  (public.classmates(:chem::uuid) -> 0 ->> 'name'), 'Emma Johnson');
+select pg_temp.check('...seeing the class name',
+  (public.family_class_view(:chem::uuid) -> 'class' ->> 'name'), 'Beginning Chemistry');
 
-select pg_temp.check('...and NOTHING else — no email, no medical, no birth date',
-  (select count(*)::text from jsonb_object_keys(public.classmates(:chem::uuid) -> 0)), '1');
+select pg_temp.check('...and who else is in it',
+  jsonb_array_length(public.family_class_view(:chem::uuid) -> 'students')::text, '1');
+
+select pg_temp.check('...by name',
+  (public.family_class_view(:chem::uuid) -> 'students' -> 0 ->> 'name'), 'Emma Johnson');
+
+-- The guarantee. Two keys, name and absent, and no way to widen it.
+select pg_temp.check('...and NOTHING else about them — no email, medical, or birth date',
+  (select count(*)::text from jsonb_object_keys(
+     public.family_class_view(:chem::uuid) -> 'students' -> 0)), '2');
+
+select pg_temp.check('...the keys being exactly name and absent',
+  (select string_agg(k, ',' order by k) from jsonb_object_keys(
+     public.family_class_view(:chem::uuid) -> 'students' -> 0) k), 'absent,name');
+
+select pg_temp.check('...and this week''s posts come with it',
+  jsonb_array_length(public.family_class_view(:chem::uuid, :'m1'::uuid) -> 'posts')::text, '1');
 
 do $$
 begin
   begin
-    perform public.classmates('32222222-2222-2222-2222-222222222222');
-    raise warning 'FAIL  a parent could list a class their child is not in';
+    perform public.family_class_view('32222222-2222-2222-2222-222222222222');
+    raise warning 'FAIL  a parent could open a class their child is not in';
   exception when others then
-    raise notice 'PASS  a parent cannot list a class their child is not in';
+    raise notice 'PASS  a parent cannot open a class their child is not in';
   end;
 end;
 $$;
+
+-- =============================================================================
+-- Another child being away shows, but not why.
+--
+-- A child in that room on Thursday can see who is missing. The reason is often
+-- medical and is nobody else's business.
+-- =============================================================================
+select set_config('role', 'postgres', false);
+select set_config('test.jwt', '{"email":"owner@example.org"}', false);
+select public.admin_place_child(:dana::uuid, :chem::uuid);
+select public.report_absence(:dana::uuid,
+  (select meets_on from public.meeting_dates where id = :'m1'::uuid),
+  true, '{}', 'Chickenpox');
+
+select pg_temp.be(:u_mary, 'mary@example.org');
+
+select pg_temp.check('another family''s child shows as away',
+  (select s ->> 'absent' from jsonb_array_elements(
+     public.family_class_view(:chem::uuid, :'m1'::uuid) -> 'students') s
+    where s ->> 'name' = 'Dana Green'), 'true');
+
+select pg_temp.check('...and Emma, who is there, does not',
+  (select s ->> 'absent' from jsonb_array_elements(
+     public.family_class_view(:chem::uuid, :'m1'::uuid) -> 'students') s
+    where s ->> 'name' = 'Emma Johnson'), 'false');
+
+select pg_temp.check('...and the REASON is nowhere in the payload',
+  (public.family_class_view(:chem::uuid, :'m1'::uuid)::text like '%Chickenpox%')::text, 'false');
+
+select pg_temp.check('...nor is the absence readable directly',
+  (select count(*)::text from public.absences where child_id = :carol::uuid), '0');
+
+-- With no week named, nobody is marked away — absence is a property of a day.
+select pg_temp.check('with no week in view, nobody is marked away',
+  (select count(*)::text from jsonb_array_elements(
+     public.family_class_view(:chem::uuid) -> 'students') s
+    where (s ->> 'absent')::boolean), '0');
 
 -- =============================================================================
 -- Handout folders

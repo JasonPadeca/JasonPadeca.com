@@ -89,16 +89,14 @@ export async function render_(container, { meetings, onNeedsRefresh }) {
             ch.absence_whole_day ? "Away all day" : "Away part of the day"}</span>` : ""}
         </div>
         ${ch.classes.length ? `<div class="table-scroll"><table>
-          <tbody>${ch.classes.map((c) => `<tr${c.missing ? ' style="opacity:.5"' : ""}>
+          <tbody>${ch.classes.map((c) => `<tr class="rowlink" data-class="${esc(c.class_id)}"
+                 tabindex="0" role="link"${c.missing ? ' style="opacity:.5"' : ""}>
             <td style="width:7rem" class="small muted">${esc(c.period_name)}<br>
               <span class="tiny faint">${esc(fmtTimeRange(c.start_time, c.end_time))}</span></td>
             <td><strong${c.missing ? ' style="text-decoration:line-through"' : ""}>${esc(c.class_name)}</strong>
               <div class="tiny faint">${esc(c.teacher_name ?? "")}${
                 c.location ? ` · ${esc(c.location)}` : ""}</div></td>
-            <td class="right nowrap">
-              <button class="btn btn-sm btn-ghost" data-who="${esc(c.class_id)}"
-                      data-name="${esc(c.class_name)}">Who else?</button>
-            </td>
+            <td class="right nowrap faint">›</td>
           </tr>`).join("")}</tbody></table></div>`
           : `<p class="muted small">Not registered for any classes this semester.</p>`}
       </div>`).join("")
@@ -113,33 +111,13 @@ export async function render_(container, { meetings, onNeedsRefresh }) {
       } catch (err) { toastErr(err.message); }
     }));
 
-  // Names only. The function behind this returns nothing else, so there is no
-  // filtering here to get wrong.
-  container.querySelectorAll("[data-who]").forEach((b) =>
-    b.addEventListener("click", async () => {
-      b.disabled = true;
-      try {
-        const list = await api.classmates(b.dataset.who);
-        const dlg = document.createElement("dialog");
-        dlg.className = "modal";
-        dlg.innerHTML = `<form method="dialog">
-          <h3>${esc(b.dataset.name)}</h3>
-          <p class="small muted">${plural(list.length, "student")} in this class.</p>
-          <div class="mt">${list.length
-            ? list.map((s) => `<div>${esc(s.name)}</div>`).join("")
-            : `<span class="muted">Nobody registered yet.</span>`}</div>
-          <div class="modal-actions">
-            <button class="btn btn-primary" value="ok" type="submit">Close</button>
-          </div></form>`;
-        document.body.appendChild(dlg);
-        dlg.showModal();
-        dlg.addEventListener("close", () => dlg.remove());
-      } catch (e) {
-        toastErr(e.message);
-      } finally {
-        b.disabled = false;
-      }
-    }));
+  const openRow = (el) => openClass(el.dataset.class, meeting);
+  container.querySelectorAll(".rowlink").forEach((row) => {
+    row.addEventListener("click", () => openRow(row));
+    row.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openRow(row); }
+    });
+  });
 }
 
 /** The named week, else the next one still to come, else the last one held. */
@@ -158,3 +136,86 @@ function todayISO() {
 }
 
 function isToday(iso) { return iso === todayISO(); }
+
+
+// -----------------------------------------------------------------------------
+// One class, as a parent.
+//
+// The teacher's page without the parts that are not a parent's business: no
+// birth dates, no contact details, and no allergies or medical notes for
+// somebody else's child.
+//
+// The other children are here as one line among the teacher, the room, and this
+// week's handouts — not behind a button of their own. A control labelled "Who
+// else?" makes the roster look like the point of the page, which is a strange
+// thing to imply about a list of nine-year-olds.
+// -----------------------------------------------------------------------------
+async function openClass(classId, meeting) {
+  const dlg = document.createElement("dialog");
+  dlg.className = "modal modal-wide";
+  dlg.innerHTML = `<div class="loading"><span class="spinner"></span> Loading…</div>`;
+  document.body.appendChild(dlg);
+  dlg.showModal();
+  dlg.addEventListener("close", () => dlg.remove());
+
+  let v;
+  try {
+    v = await api.familyClass(classId, meeting?.id ?? null);
+  } catch (e) {
+    dlg.innerHTML = `<form method="dialog">
+      <div class="note note-danger">${esc(e.message)}</div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" value="ok" type="submit">Close</button>
+      </div></form>`;
+    return;
+  }
+
+  const c = v.class, p = v.period;
+  const students = v.students ?? [];
+  const posts = v.posts ?? [];
+  const away = students.filter((s) => s.absent);
+
+  dlg.innerHTML = `<form method="dialog">
+    <h3>${esc(c.name)}</h3>
+    <p class="small muted">${esc(p?.name ?? "")}
+      ${esc(fmtTimeRange(p?.start_time, p?.end_time))}${
+      c.teacher_name ? ` · ${esc(c.teacher_name)}` : ""}${
+      c.location ? ` · ${esc(c.location)}` : ""}</p>
+
+    ${c.description ? `<p class="mt">${esc(c.description)}</p>` : ""}
+
+    ${posts.length ? `<div class="mt2">
+      <h4>Notes &amp; handouts</h4>
+      ${posts.map((x) => `<div class="post">
+        <div class="post-head"><strong>${esc(x.title)}</strong>
+          ${x.for_this_week ? "" : `<span class="tiny faint">all term</span>`}</div>
+        ${x.body ? `<div class="small mt">${esc(x.body)}</div>` : ""}
+        ${x.link_url ? `<div class="mt"><a href="${esc(x.link_url)}" target="_blank"
+          rel="noopener noreferrer">${esc(x.link_label || "Open the link")}</a></div>` : ""}
+        ${x.file_path ? `<div class="mt">
+          <a href="#" data-file="${esc(x.file_path)}">${esc(x.file_name || "Download")}</a></div>` : ""}
+      </div>`).join("")}
+    </div>` : ""}
+
+    <div class="mt2">
+      <h4>In this class</h4>
+      <p class="small muted">${plural(students.length, "student")}${
+        meeting && away.length ? ` · ${away.length} away this week` : ""}</p>
+      <div class="mt namelist">${students.length
+        ? students.map((s) => `<div${s.absent ? ' class="faint"' : ""}>${esc(s.name)}${
+            s.absent ? ` <span class="tiny">— absent this week</span>` : ""}</div>`).join("")
+        : `<span class="muted">Nobody registered yet.</span>`}</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary" value="ok" type="submit">Close</button>
+    </div></form>`;
+
+  dlg.querySelectorAll("[data-file]").forEach((a) =>
+    a.addEventListener("click", async (e) => {
+      e.preventDefault();
+      try {
+        window.open(await api.handoutUrl(a.dataset.file), "_blank", "noopener");
+      } catch (err) { toastErr(err.message); }
+    }));
+}

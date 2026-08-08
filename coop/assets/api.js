@@ -562,10 +562,15 @@ export const api = {
     return unwrap(await db.rpc("family_week", { p_meeting_id: meetingId }));
   },
 
-  /** Names of the other children in a class. Names only — see 0018. */
-  async classmates(classId) {
+  /**
+   * A class as a parent may see it: the class itself, this week's posts, and
+   * who else is in it — names and whether they are in, and nothing more.
+   */
+  async familyClass(classId, meetingId = null) {
     const db = await client();
-    return unwrap(await db.rpc("classmates", { p_class_id: classId })) ?? [];
+    return unwrap(await db.rpc("family_class_view", {
+      p_class_id: classId, p_meeting_id: meetingId,
+    }));
   },
 
   // --- Announcements ---
