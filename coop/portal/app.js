@@ -266,7 +266,7 @@ async function home() {
 
   // Read straight through RLS rather than any privileged path. If the boundary
   // is wrong this is where it shows, in the plainest possible way.
-  let children = [], semester = null, periods = [], absences = [];
+  let children = [], semester = null, periods = [], absences = [], meetings = [];
   try {
     children = await api.myChildren(families.map((f) => f.id));
     semester = await api.currentSemester();
@@ -275,6 +275,7 @@ async function home() {
       // Only what is still ahead. A parent looking at this page wants to know
       // what they have already told the co-op, not a diary of past illnesses.
       absences = await api.myAbsences({ from: todayISO() });
+      meetings = await api.meetings(semester.id);
     }
   } catch (e) {
     toastErr(e.message);
@@ -336,7 +337,7 @@ async function home() {
     </div>`);
 
   Absences.render_($("#absences"), {
-    children: active, semester, periods, absences,
+    children: active, semester, periods, absences, meetings,
     onChange: () => home(),
   });
 

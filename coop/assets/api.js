@@ -473,14 +473,51 @@ export const api = {
 
   // --- Absences ---
 
-  /** Upcoming absences for whoever is signed in. RLS scopes it. */
+  /**
+   * Upcoming absences for whoever is signed in. RLS scopes it.
+   *
+   * The date lives on the meeting now, not the absence — filtering and ordering
+   * go through the embedded meeting_dates row. `!inner` makes the embed a real
+   * join so the filter applies to the outer rows rather than just emptying the
+   * embedded object.
+   */
   async myAbsences({ from = null } = {}) {
     const db = await client();
     let q = db.from("absences")
-      .select("*, absence_periods(period_id), children(id, first_name, last_name)")
-      .order("absence_date");
-    if (from) q = q.gte("absence_date", from);
+      .select(`*, absence_periods(period_id),
+               children(id, first_name, last_name),
+               meeting_dates!inner(id, meets_on, cancelled, cancel_reason, note)`)
+      .order("meets_on", { referencedTable: "meeting_dates" });
+    if (from) q = q.gte("meeting_dates.meets_on", from);
     return unwrap(await q);
+  },
+
+  async generateMeetings(semesterId) {
+    const db = await client();
+    return unwrap(await db.rpc("generate_meeting_dates", { p_semester_id: semesterId }));
+  },
+
+  async updateMeeting(id, fields) {
+    const db = await client();
+    return unwrap(await db.from("meeting_dates").update(fields).eq("id", id).select().single());
+  },
+
+  async addMeeting(semesterId, meetsOn) {
+    const db = await client();
+    return unwrap(await db.from("meeting_dates")
+      .insert({ semester_id: semesterId, meets_on: meetsOn }).select().single());
+  },
+
+  async deleteMeeting(id) {
+    const db = await client();
+    return unwrap(await db.from("meeting_dates").delete().eq("id", id));
+  },
+
+  /** The class days of a semester — the calendar the portal is built around. */
+  async meetings(semesterId) {
+    const db = await client();
+    return unwrap(await db.from("meeting_dates")
+      .select("*").eq("semester_id", semesterId).order("meets_on"));
   },
 
   async reportAbsence(childId, date, wholeDay, periodIds = [], reason = null) {

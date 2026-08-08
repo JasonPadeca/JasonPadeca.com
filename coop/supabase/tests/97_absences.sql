@@ -22,8 +22,9 @@ update public.families set primary_email = 'mary@example.org'
  where id = '41111111-1111-1111-1111-111111111111';
 
 -- A date inside the seeded term.
-\set d1 '''2027-09-16'''
-\set d2 '''2027-09-23'''
+-- Both are Fridays, which is when the seeded term meets.
+\set d1 '''2027-09-17'''
+\set d2 '''2027-09-24'''
 
 create or replace function pg_temp.be(uid text, email text)
 returns void language sql as $$
@@ -43,7 +44,7 @@ select pg_temp.check('a whole day can be reported',
 
 select pg_temp.check('...and is stored as a whole day',
   (select whole_day::text from public.absences
-    where child_id = :emma::uuid and absence_date = :d1::date), 'true');
+    where child_id = :emma::uuid and meeting_id = (select id from meeting_dates where meets_on = :d1::date)), 'true');
 
 select pg_temp.check('...with no periods attached',
   (select count(*)::text from public.absence_periods ap
@@ -59,16 +60,17 @@ select pg_temp.check('specific periods can be reported',
 
 select pg_temp.check('...stored as a partial day',
   (select whole_day::text from public.absences
-    where child_id = :emma::uuid and absence_date = :d2::date), 'false');
+    where child_id = :emma::uuid and meeting_id = (select id from meeting_dates where meets_on = :d2::date)), 'false');
 
 select pg_temp.check('...with both periods recorded',
   (select count(*)::text from public.absence_periods ap
     join public.absences a on a.id = ap.absence_id
-   where a.child_id = :emma::uuid and a.absence_date = :d2::date), '2');
+   where a.child_id = :emma::uuid
+     and a.meeting_id = (select id from meeting_dates where meets_on = :d2::date)), '2');
 
 select pg_temp.check('...and the reason kept',
   (select reason from public.absences
-    where child_id = :emma::uuid and absence_date = :d2::date), 'Dentist');
+    where child_id = :emma::uuid and meeting_id = (select id from meeting_dates where meets_on = :d2::date)), 'Dentist');
 
 -- =============================================================================
 -- Re-reporting the same day corrects it rather than adding a second
@@ -77,17 +79,17 @@ select public.report_absence(:emma::uuid, :d2::date, false, array[:p1::uuid], 'B
 
 select pg_temp.check('a second report for the same day does not duplicate',
   (select count(*)::text from public.absences
-    where child_id = :emma::uuid and absence_date = :d2::date), '1');
+    where child_id = :emma::uuid and meeting_id = (select id from meeting_dates where meets_on = :d2::date)), '1');
 
 select pg_temp.check('...and the period list is REPLACED, not merged',
   (select count(*)::text from public.absence_periods ap
     join public.absences a on a.id = ap.absence_id
-   where a.absence_date = :d2::date and a.child_id = :emma::uuid), '1');
+   where a.meeting_id = (select id from meeting_dates where meets_on = :d2::date) and a.child_id = :emma::uuid), '1');
 
 select pg_temp.check('...the remaining period being the one just named',
   (select ap.period_id::text from public.absence_periods ap
     join public.absences a on a.id = ap.absence_id
-   where a.absence_date = :d2::date and a.child_id = :emma::uuid),
+   where a.meeting_id = (select id from meeting_dates where meets_on = :d2::date) and a.child_id = :emma::uuid),
   '21111111-1111-1111-1111-111111111111');
 
 -- Whole day again clears the periods.
@@ -95,7 +97,7 @@ select public.report_absence(:emma::uuid, :d2::date, true);
 select pg_temp.check('switching back to a whole day clears the periods',
   (select count(*)::text from public.absence_periods ap
     join public.absences a on a.id = ap.absence_id
-   where a.absence_date = :d2::date and a.child_id = :emma::uuid), '0');
+   where a.meeting_id = (select id from meeting_dates where meets_on = :d2::date) and a.child_id = :emma::uuid), '0');
 
 -- =============================================================================
 -- Nonsense is refused
@@ -104,7 +106,15 @@ select pg_temp.check('a partial day with no periods is refused',
   (public.report_absence(:emma::uuid, :d1::date, false, '{}') ->> 'error'), 'no_periods');
 
 select pg_temp.check('a date outside any term is refused',
-  (public.report_absence(:emma::uuid, '2035-01-01'::date) ->> 'error'), 'not_a_term_date');
+  (public.report_absence(:emma::uuid, '2035-01-01'::date) ->> 'error'), 'not_a_class_day');
+
+-- The case the old free-date version accepted without complaint.
+select pg_temp.check('a weekday the co-op does not meet is refused',
+  (public.report_absence(:emma::uuid, '2027-09-15'::date) ->> 'error'), 'not_a_class_day');
+
+select pg_temp.check('...and the message names real class days',
+  ((public.report_absence(:emma::uuid, '2027-09-15'::date) ->> 'message')
+    like '%class days%')::text, 'true');
 
 -- =============================================================================
 -- THE BOUNDARY: a parent cannot speak for someone else's child
@@ -145,11 +155,11 @@ select pg_temp.check('...and that absence is still there',
 select pg_temp.check('a parent can withdraw their own',
   (public.cancel_absence(
      (select id from public.absences where child_id = :emma::uuid
-       and absence_date = :d1::date)) ->> 'ok'), 'true');
+       and meeting_id = (select id from meeting_dates where meets_on = :d1::date))) ->> 'ok'), 'true');
 
 select pg_temp.check('...and it is gone',
   (select count(*)::text from public.absences
-    where child_id = :emma::uuid and absence_date = :d1::date), '0');
+    where child_id = :emma::uuid and meeting_id = (select id from meeting_dates where meets_on = :d1::date)), '0');
 
 -- =============================================================================
 -- The administrator's view

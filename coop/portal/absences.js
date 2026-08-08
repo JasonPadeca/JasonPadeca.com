@@ -14,52 +14,24 @@
 import { api } from "../assets/api.js";
 import { esc, $, render, fmtDate, toastOk, toastErr, plural } from "../assets/ui.js";
 
-/** Meeting days from today to the end of term, given the semester's weekday. */
-export function meetingDates(semester, limit = 20) {
-  if (!semester?.class_start_date) return [];
-
-  const parse = (s) => {
-    const [y, m, d] = String(s).slice(0, 10).split("-").map(Number);
-    return new Date(y, m - 1, d);          // local midnight, no timezone drift
-  };
-  const iso = (dt) =>
-    `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
-
-  const start = parse(semester.class_start_date);
-  const end = semester.class_end_date ? parse(semester.class_end_date) : null;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Reporting an absence for a day already gone helps nobody, so begin at the
-  // later of today and the first class.
-  let cursor = start > today ? new Date(start) : new Date(today);
-
-  const weekday = semester.meeting_weekday;
-  const out = [];
-
-  if (weekday == null) {
-    // No meeting day on record. Offer the next few weeks day by day rather than
-    // nothing at all, and let the parent pick.
-    for (let i = 0; i < limit; i++) {
-      if (end && cursor > end) break;
-      out.push(iso(cursor));
-      cursor.setDate(cursor.getDate() + 1);
-    }
-    return out;
-  }
-
-  while (cursor.getDay() !== weekday) cursor.setDate(cursor.getDate() + 1);
-  while (out.length < limit) {
-    if (end && cursor > end) break;
-    out.push(iso(cursor));
-    cursor.setDate(cursor.getDate() + 7);
-  }
-  return out;
+/**
+ * Class days still to come, from the co-op's actual calendar.
+ *
+ * This used to be computed from semesters.meeting_weekday, which could only ever
+ * say "every Thursday" — it had no way to know the co-op is not meeting on
+ * Thanksgiving, and would happily offer a parent a day with no class on it.
+ * meeting_dates knows, so cancelled weeks are left out entirely.
+ */
+export function upcomingMeetings(meetings, limit = 20) {
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return (meetings ?? [])
+    .filter((m) => !m.cancelled && m.meets_on >= today)
+    .slice(0, limit);
 }
 
-export function render_(container, { children, semester, periods, absences, onChange }) {
-  const dates = meetingDates(semester);
+export function render_(container, { children, semester, periods, absences, meetings, onChange }) {
+  const dates = upcomingMeetings(meetings);
   const upcoming = absences ?? [];
 
   render(container, `
@@ -71,7 +43,7 @@ export function render_(container, { children, semester, periods, absences, onCh
       </div>
 
       ${!semester ? `<p class="muted">No semester is running at the moment.</p>`
-        : !dates.length ? `<p class="muted">This term has finished.</p>`
+        : !dates.length ? `<p class="muted">No class days left this term.</p>`
         : upcoming.length ? `<div class="table-scroll"><table>
             <thead><tr><th>Who</th><th>When</th><th>Missing</th><th></th></tr></thead>
             <tbody>${upcoming.map((a) => {
@@ -81,7 +53,7 @@ export function render_(container, { children, semester, periods, absences, onCh
                 .sort((x, y) => x.period_number - y.period_number);
               return `<tr>
                 <td><strong>${esc(a.children?.first_name ?? "")}</strong></td>
-                <td>${esc(fmtDate(a.absence_date))}</td>
+                <td>${esc(fmtDate(a.meeting_dates?.meets_on))}</td>
                 <td class="small">${a.whole_day
                   ? "The whole day"
                   : named.length
@@ -132,7 +104,7 @@ function openForm({ children, semester, periods, dates, onChange }) {
       <div class="field">
         <label for="a-date">Which day</label>
         <select id="a-date" required>
-          ${dates.map((d) => `<option value="${esc(d)}">${esc(fmtDate(d))}</option>`).join("")}
+          ${dates.map((m) => `<option value="${esc(m.meets_on)}">${esc(fmtDate(m.meets_on))}${m.note ? ` — ${esc(m.note)}` : ""}</option>`).join("")}
         </select>
       </div>
 

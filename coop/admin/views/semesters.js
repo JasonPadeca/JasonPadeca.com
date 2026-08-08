@@ -66,6 +66,14 @@ async function semesterDialog(existing = null) {
         value: existing?.class_start_date,
         hint: "Ages are calculated as of this date, so eligibility depends on it." },
       { name: "class_end_date", label: "Last class date", type: "date", value: existing?.class_end_date },
+      { name: "meeting_weekday", label: "Meets on", type: "select",
+        value: existing?.meeting_weekday ?? "",
+        options: [{ value: "", label: "Not set" },
+                  { value: "0", label: "Sunday" }, { value: "1", label: "Monday" },
+                  { value: "2", label: "Tuesday" }, { value: "3", label: "Wednesday" },
+                  { value: "4", label: "Thursday" }, { value: "5", label: "Friday" },
+                  { value: "6", label: "Saturday" }],
+        hint: "Which day of the week classes meet. The class calendar is built from this." },
       { name: "registration_close_at", label: "Registration closes", type: "datetime-local",
         value: existing?.registration_close_at ? existing.registration_close_at.slice(0, 16) : null,
         hint: "Family registration links stop working after this." },
@@ -135,6 +143,12 @@ export async function detail(app, { id }) {
       <div id="inviteList"></div>
     </div>` : ""}
 
+    <div class="card">
+      <div class="card-head"><h3>Class Calendar</h3>
+        <button class="btn btn-sm" id="gencal">Build from meeting day</button></div>
+      <div id="calendar"><div class="loading"><span class="spinner"></span></div></div>
+    </div>
+
     <div class="card-head mt2"><h2>Periods</h2>
       <button class="btn btn-sm" id="addperiod">+ Add Period</button></div>
 
@@ -166,6 +180,8 @@ export async function detail(app, { id }) {
   </div>`);
 
   if (semester.status === "registration_open") await drawInvites(semester, invites);
+
+  drawCalendar(semester);
 
   $("#editsem").addEventListener("click", () => semesterDialog(semester));
   $("#addperiod").addEventListener("click", () => periodDialog(semester.id, null, periods));
@@ -861,4 +877,87 @@ async function overrideDialog(title, warnings, question, askReason = false) {
     dlg.showModal();
     dlg.querySelector("#ovr, .btn")?.focus();
   });
+}
+
+
+// =============================================================================
+// The class calendar.
+//
+// Generated from the semester's meeting day, then adjusted by hand — a co-op
+// skips weeks for holidays, and "no class this week" is information a parent
+// needs rather than a row to delete.
+// =============================================================================
+async function drawCalendar(semester) {
+  let meetings = [];
+  try {
+    meetings = await api.meetings(semester.id);
+  } catch (e) {
+    return render("#calendar", `<div class="note note-danger">${esc(e.message)}</div>`);
+  }
+
+  if (!meetings.length) {
+    render("#calendar", `<p class="muted">No class days yet.
+      ${semester.meeting_weekday == null
+        ? `Set which day of the week this semester meets, then build the calendar.`
+        : `Use <strong>Build from meeting day</strong> to fill in every
+           ${["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][semester.meeting_weekday]}
+           between the first and last class dates.`}</p>`);
+  } else {
+    const today = new Date().toISOString().slice(0, 10);
+    render("#calendar", `<div class="table-scroll"><table>
+      <thead><tr><th>Date</th><th>Status</th><th>Note</th><th></th></tr></thead>
+      <tbody>${meetings.map((m) => `<tr${m.meets_on < today ? ' style="opacity:.55"' : ""}>
+        <td><strong>${esc(fmtDate(m.meets_on))}</strong>
+          ${m.meets_on < today ? `<span class="tiny faint"> · past</span>` : ""}</td>
+        <td>${m.cancelled
+          ? `<span class="badge badge-danger">No class</span>
+             ${m.cancel_reason ? `<div class="tiny faint">${esc(m.cancel_reason)}</div>` : ""}`
+          : `<span class="badge badge-ok">Meeting</span>`}</td>
+        <td class="small muted">${esc(m.note ?? "")}</td>
+        <td class="right nowrap">
+          <button class="btn btn-sm btn-ghost" data-editmeet="${esc(m.id)}">Edit</button>
+        </td></tr>`).join("")}</tbody></table></div>
+      <p class="tiny faint mt">${plural(meetings.filter((m) => !m.cancelled).length, "class day")}
+        · ${meetings.filter((m) => m.cancelled).length} cancelled</p>`);
+  }
+
+  $("#gencal")?.addEventListener("click", async () => {
+    try {
+      const res = await api.generateMeetings(semester.id);
+      if (!res?.ok) return toastErr(res?.message ?? "Could not build the calendar.");
+      toastOk(res.added ? `Added ${plural(res.added, "class day")}.` : "Already up to date.");
+      drawCalendar(semester);
+    } catch (e) { toastErr(e.message); }
+  });
+
+  document.querySelectorAll("[data-editmeet]").forEach((b) =>
+    b.addEventListener("click", async () => {
+      const m = meetings.find((x) => x.id === b.dataset.editmeet);
+      const v = await formDialog({
+        title: fmtDate(m.meets_on),
+        submitLabel: "Save",
+        fields: [
+          { name: "cancelled", label: "Is there class this day?", type: "select",
+            value: m.cancelled ? "true" : "false",
+            options: [{ value: "false", label: "Yes — class as usual" },
+                      { value: "true", label: "No — cancelled" }] },
+          { name: "cancel_reason", label: "Why not", value: m.cancel_reason,
+            placeholder: "Thanksgiving break",
+            hint: "Shown to families. Only used when cancelled." },
+          { name: "note", label: "Note for this week", value: m.note,
+            placeholder: "Bring a packed lunch",
+            hint: "Shown to families alongside the date." },
+        ],
+      });
+      if (!v) return;
+      try {
+        await api.updateMeeting(m.id, {
+          cancelled: v.cancelled === "true",
+          cancel_reason: v.cancelled === "true" ? (v.cancel_reason || null) : null,
+          note: v.note || null,
+        });
+        toastOk("Saved.");
+        drawCalendar(semester);
+      } catch (e) { toastErr(e.message); }
+    }));
 }
