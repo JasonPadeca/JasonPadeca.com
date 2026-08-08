@@ -30,6 +30,10 @@ create table if not exists public.schema_migrations (
 
 alter table public.schema_migrations enable row level security;
 
+-- Idempotent, so re-running this file reaches the guard in the NEXT migration
+-- and reports "already applied" rather than dying here on "policy already
+-- exists" — which is a true message about the wrong thing.
+drop policy if exists admin_reads on public.schema_migrations;
 create policy admin_reads on public.schema_migrations
   for select to authenticated
   using (public.is_active_admin());
@@ -37,6 +41,42 @@ create policy admin_reads on public.schema_migrations
 revoke all on public.schema_migrations from anon, authenticated;
 grant select on public.schema_migrations to authenticated;
 grant all on public.schema_migrations to service_role;
+
+-- -----------------------------------------------------------------------------
+-- migration_guard('0015', '0014') — the one call a migration opens with.
+--
+-- Checks both directions at once: the update it depends on is present, and this
+-- update is not already applied. Both have to be checked BEFORE any DDL runs,
+-- because CREATE TABLE fails with "already exists" on a second run and that
+-- error arrives before any guard placed at the foot of the file — which is
+-- exactly what happened the first time this was written.
+-- -----------------------------------------------------------------------------
+create or replace function public.migration_guard(
+  p_version  text,
+  p_requires text default null
+)
+returns void
+language plpgsql
+as $$
+declare
+  v_when timestamptz;
+begin
+  if p_requires is not null then
+    perform public.require_migration(p_requires);
+  end if;
+
+  select applied_at into v_when
+    from public.schema_migrations where version = p_version;
+
+  if found then
+    raise exception
+      E'Update % has already been applied (on %).\n'
+      'Nothing has been changed.',
+      p_version, to_char(v_when, 'DD Mon YYYY at HH24:MI')
+    using hint = 'This file is not designed to be run twice.';
+  end if;
+end;
+$$;
 
 -- -----------------------------------------------------------------------------
 -- require_migration('0012') — refuse to continue if it has not been applied.
@@ -84,6 +124,8 @@ exception when unique_violation then
 end;
 $$;
 
+revoke execute on function public.migration_guard(text, text) from public, anon, authenticated;
+grant execute on function public.migration_guard(text, text) to service_role;
 revoke execute on function public.require_migration(text) from public, anon, authenticated;
 revoke execute on function public.record_migration(text)  from public, anon, authenticated;
 grant execute on function public.require_migration(text) to service_role;

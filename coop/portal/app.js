@@ -19,6 +19,7 @@
 
 import { auth, api, IS_CONFIGURED } from "../assets/api.js";
 import { esc, $, render, toastErr, ageAt } from "../assets/ui.js";
+import * as Absences from "./absences.js";
 
 const app = document.getElementById("app");
 
@@ -265,11 +266,16 @@ async function home() {
 
   // Read straight through RLS rather than any privileged path. If the boundary
   // is wrong this is where it shows, in the plainest possible way.
-  let children = [];
-  let semester = null;
+  let children = [], semester = null, periods = [], absences = [];
   try {
     children = await api.myChildren(families.map((f) => f.id));
     semester = await api.currentSemester();
+    if (semester) {
+      periods = await api.periods(semester.id);
+      // Only what is still ahead. A parent looking at this page wants to know
+      // what they have already told the co-op, not a diary of past illnesses.
+      absences = await api.myAbsences({ from: todayISO() });
+    }
   } catch (e) {
     toastErr(e.message);
   }
@@ -319,18 +325,31 @@ async function home() {
              can add them.</p>`}
       </div>
 
+      <div id="absences"></div>
+
       <div class="card">
         <div class="card-head"><h3>Coming soon</h3></div>
-        <p class="muted">The calendar, handouts, absences, and class proposals will
-          appear here. Registration still happens through the link emailed to you
-          when a semester opens.</p>
+        <p class="muted">The calendar, handouts, and class proposals will appear
+          here. Registration still happens through the link emailed to you when a
+          semester opens.</p>
       </div>
     </div>`);
+
+  Absences.render_($("#absences"), {
+    children: active, semester, periods, absences,
+    onChange: () => home(),
+  });
 
   $("#out").addEventListener("click", async () => {
     await auth.signOut();
     location.reload();
   });
+}
+
+/** Today, as YYYY-MM-DD in local time — not UTC, which can be yesterday here. */
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 start();

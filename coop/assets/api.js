@@ -471,6 +471,42 @@ export const api = {
     return rows?.[0] ?? null;
   },
 
+  // --- Absences ---
+
+  /** Upcoming absences for whoever is signed in. RLS scopes it. */
+  async myAbsences({ from = null } = {}) {
+    const db = await client();
+    let q = db.from("absences")
+      .select("*, absence_periods(period_id), children(id, first_name, last_name)")
+      .order("absence_date");
+    if (from) q = q.gte("absence_date", from);
+    return unwrap(await q);
+  },
+
+  async reportAbsence(childId, date, wholeDay, periodIds = [], reason = null) {
+    const db = await client();
+    return unwrap(await db.rpc("report_absence", {
+      p_child_id: childId,
+      p_date: date,
+      p_whole_day: wholeDay,
+      p_period_ids: periodIds,
+      p_reason: reason,
+    }));
+  },
+
+  async cancelAbsence(id) {
+    const db = await client();
+    return unwrap(await db.rpc("cancel_absence", { p_id: id }));
+  },
+
+  /** Admin: everyone away, from a date onwards. */
+  async absenceReport(semesterId, from = null) {
+    const db = await client();
+    return unwrap(await db.rpc("absence_report", {
+      p_semester_id: semesterId, p_from: from,
+    })) ?? [];
+  },
+
   async volunteers(semesterId) {
     const db = await client();
     return unwrap(await db.rpc("volunteer_report", { p_semester_id: semesterId })) ?? [];

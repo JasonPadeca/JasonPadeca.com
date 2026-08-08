@@ -15,6 +15,7 @@ import * as Semesters  from "./views/semesters.js";
 import * as Enrollment from "./views/enrollment.js";
 import * as Volunteers from "./views/volunteers.js";
 import * as PrintRoster from "./views/print-roster.js";
+import * as Absences from "./views/absences.js";
 import * as Exports    from "./views/exports.js";
 import * as Settings   from "./views/settings.js";
 
@@ -35,6 +36,7 @@ const ROUTES = [
   ["#/periods/:id",            Semesters.periodDetail],
   ["#/classes/:id",            Semesters.classDetail],
   ["#/classes/:id/print",      PrintRoster.show],
+  ["#/absences",               Absences.show],
   ["#/semesters/:id/rosters",  PrintRoster.all],
   ["#/enrollment",             Enrollment.show],
   ["#/volunteers",             Volunteers.show],
@@ -48,6 +50,7 @@ const NAV = [
   ["#/families",   "Families"],
   ["#/semesters",  "Semesters"],
   ["#/enrollment", "Enrollment"],
+  ["#/absences",   "Absences"],
   ["#/volunteers", "Volunteers"],
   ["#/exports",    "Exports"],
   ["#/settings",   "Settings"],
@@ -155,9 +158,16 @@ function match(hash) {
 
 async function route() {
   const hash = location.hash || "#/";
-  const found = match(hash);
 
-  renderNav(hash);
+  // Match on the path only. Several views carry state in a query string —
+  // #/families?archived=1, #/absences?past=1 — and match() compares segments
+  // literally, so "families?archived=1" never equalled "families" and every one
+  // of those links rendered "Page not found". Views read the query for
+  // themselves from location.hash, so nothing else needs to change.
+  const path = hash.split("?")[0] || "#/";
+  const found = match(path);
+
+  renderNav(path);
   loading(app);
 
   if (!found) {
