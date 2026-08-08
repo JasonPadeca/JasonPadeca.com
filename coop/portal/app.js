@@ -20,6 +20,7 @@
 import { auth, api, IS_CONFIGURED } from "../assets/api.js";
 import { esc, $, render, toastErr, ageAt, plural } from "../assets/ui.js";
 import * as Absences from "./absences.js";
+import * as Week from "./week.js";
 
 const app = document.getElementById("app");
 
@@ -219,7 +220,18 @@ function awaitingCode(email) {
     btn.textContent = "Signing in…";
     try {
       await auth.verifyCode(email, code);
-      await start();
+      await // The week arrows change #on=…, which must redraw that section and nothing else.
+window.addEventListener("hashchange", () => {
+  const el = $("#week");
+  if (el && state.me?.recognised) {
+    api.currentSemester()
+      .then((sem) => sem ? api.meetings(sem.id) : [])
+      .then((meetings) => Week.render_(el, { meetings, onNeedsRefresh: () => home() }))
+      .catch(() => {});
+  }
+});
+
+start();
     } catch (err) {
       toastErr(err.message);
       btn.disabled = false;
@@ -286,19 +298,25 @@ async function home() {
 
   // Read straight through RLS rather than any privileged path. If the boundary
   // is wrong this is where it shows, in the plainest possible way.
+  // Fetched independently, and deliberately not in one try block. Sharing one
+  // meant a failure in any single call skipped the rest — and the page then
+  // reported "no calendar" when the real fault was somewhere else entirely.
+  // Each section now fails on its own or not at all.
+  const settle = async (fn, fallback) => {
+    try { return await fn(); } catch (e) { toastErr(e.message); return fallback; }
+  };
+
   let children = [], semester = null, periods = [], absences = [], meetings = [];
-  try {
-    children = await api.myChildren(families.map((f) => f.id));
-    semester = await api.currentSemester();
-    if (semester) {
-      periods = await api.periods(semester.id);
-      // Only what is still ahead. A parent looking at this page wants to know
-      // what they have already told the co-op, not a diary of past illnesses.
-      absences = await api.myAbsences({ from: todayISO() });
-      meetings = await api.meetings(semester.id);
-    }
-  } catch (e) {
-    toastErr(e.message);
+
+  children = await settle(() => api.myChildren(families.map((f) => f.id)), []);
+  semester = await settle(() => api.currentSemester(), null);
+
+  if (semester) {
+    [periods, absences, meetings] = await Promise.all([
+      settle(() => api.periods(semester.id), []),
+      settle(() => api.myAbsences({ from: todayISO() }), []),
+      settle(() => api.meetings(semester.id), []),
+    ]);
   }
 
   const refDate = semester?.class_start_date;
@@ -351,15 +369,18 @@ async function home() {
              can add them.</p>`}
       </div>
 
+      <div id="week"></div>
+
       <div id="absences"></div>
 
       <div class="card">
         <div class="card-head"><h3>Coming soon</h3></div>
-        <p class="muted">The calendar, handouts, and class proposals will appear
-          here. Registration still happens through the link emailed to you when a
-          semester opens.</p>
+        <p class="muted">Class proposals will appear here. Registration still
+          happens through the link emailed to you when a semester opens.</p>
       </div>
     </div>`);
+
+  Week.render_($("#week"), { meetings, onNeedsRefresh: () => home() });
 
   Absences.render_($("#absences"), {
     children: active, semester, periods, absences, meetings,
@@ -377,5 +398,16 @@ function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+
+// The week arrows change #on=…, which must redraw that section and nothing else.
+window.addEventListener("hashchange", () => {
+  const el = $("#week");
+  if (el && state.me?.recognised) {
+    api.currentSemester()
+      .then((sem) => sem ? api.meetings(sem.id) : [])
+      .then((meetings) => Week.render_(el, { meetings, onNeedsRefresh: () => home() }))
+      .catch(() => {});
+  }
+});
 
 start();

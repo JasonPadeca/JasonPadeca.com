@@ -483,13 +483,18 @@ export const api = {
    */
   async myAbsences({ from = null } = {}) {
     const db = await client();
-    let q = db.from("absences")
+    const rows = unwrap(await db.from("absences")
       .select(`*, absence_periods(period_id),
                children(id, first_name, last_name),
-               meeting_dates!inner(id, meets_on, cancelled, cancel_reason, note)`)
-      .order("meets_on", { referencedTable: "meeting_dates" });
-    if (from) q = q.gte("meeting_dates.meets_on", from);
-    return unwrap(await q);
+               meeting_dates(id, meets_on, cancelled, cancel_reason, note)`));
+
+    // Filtered and sorted here rather than in the query. PostgREST can filter on
+    // an embedded table, but a family has a handful of absences at most, and
+    // doing it in JavaScript is one less thing whose behaviour differs between
+    // the real server and anything standing in for it.
+    return rows
+      .filter((a) => !from || (a.meeting_dates?.meets_on ?? "") >= from)
+      .sort((a, b) => (a.meeting_dates?.meets_on ?? "").localeCompare(b.meeting_dates?.meets_on ?? ""));
   },
 
   async generateMeetings(semesterId) {
@@ -549,6 +554,69 @@ export const api = {
       // Empty means the whole day, which is every period.
       periods: (a.absence_periods ?? []).map((ap) => byId.get(ap.period_id)).filter(Boolean),
     }));
+  },
+
+  /** A parent's view of one class day: their children, and anything posted. */
+  async familyWeek(meetingId) {
+    const db = await client();
+    return unwrap(await db.rpc("family_week", { p_meeting_id: meetingId }));
+  },
+
+  /** Names of the other children in a class. Names only — see 0018. */
+  async classmates(classId) {
+    const db = await client();
+    return unwrap(await db.rpc("classmates", { p_class_id: classId })) ?? [];
+  },
+
+  // --- Announcements ---
+  async announcements({ classId = null, semesterId = null } = {}) {
+    const db = await client();
+    let q = db.from("announcements")
+      .select("*, meeting_dates(meets_on), classes(id, name)")
+      .order("created_at", { ascending: false });
+    if (classId) q = q.eq("class_id", classId);
+    if (semesterId) q = q.eq("semester_id", semesterId);
+    return unwrap(await q);
+  },
+
+  async postAnnouncement(fields) {
+    const db = await client();
+    return unwrap(await db.from("announcements").insert(fields).select().single());
+  },
+
+  async deleteAnnouncement(id) {
+    const db = await client();
+    return unwrap(await db.from("announcements").delete().eq("id", id));
+  },
+
+  /**
+   * Upload a handout.
+   *
+   * The class id is the first path segment because the storage policy reads it
+   * from there — the same rule that guards the row guards the file. Co-op-wide
+   * handouts go under "general".
+   */
+  async uploadHandout(classId, file) {
+    const db = await client();
+    const folder = classId ?? "general";
+    const safe = file.name.replace(/[^\w.\-]+/g, "_").slice(-80);
+    const path = `${folder}/${crypto.randomUUID()}-${safe}`;
+    const { error } = await db.storage.from("handouts").upload(path, file, { upsert: false });
+    if (error) throw new Error(friendlyError(error));
+    return { path, name: file.name, size: file.size };
+  },
+
+  /**
+   * A time-limited URL for a handout.
+   *
+   * Signed rather than public: the bucket is private, and a link that worked
+   * forever for anyone who had once been sent it would defeat the policy.
+   */
+  async handoutUrl(path, seconds = 3600) {
+    const db = await client();
+    const { data, error } = await db.storage.from("handouts").createSignedUrl(path, seconds);
+    if (error) throw new Error(friendlyError(error));
+    return data.signedUrl;
   },
 
   // --- Teacher administration ---

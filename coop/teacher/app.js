@@ -18,7 +18,7 @@
 
 import { auth, api, IS_CONFIGURED } from "../assets/api.js";
 import {
-  esc, $, render, fmtDate, fmtTimeRange, toastErr, plural, eligibilityLabel,
+  esc, $, render, fmtDate, fmtTimeRange, toastOk, toastErr, plural, eligibilityLabel,
 } from "../assets/ui.js";
 
 const app = document.getElementById("app");
@@ -279,6 +279,12 @@ async function classView(classId) {
         ? ` <span class="faint">(${esc(s.absence_reason)})</span>` : ""}`).join(", ")}
     </div>` : ""}
 
+    <div class="card">
+      <div class="card-head"><h3>This week's notes &amp; handouts</h3>
+        <button class="btn btn-sm btn-primary" id="post">+ Post something</button></div>
+      <div id="posts"><div class="loading"><span class="spinner"></span></div></div>
+    </div>
+
     ${flagged.length ? `<div class="card">
       <div class="card-head"><h3>Allergies &amp; medical</h3></div>
       ${flagged.map((s) => `<div class="alert-row">
@@ -321,6 +327,151 @@ async function classView(classId) {
   </div>`));
 
   wireChrome();
+  drawPosts(classId, view, meeting);
+}
+
+// -----------------------------------------------------------------------------
+// Notes and handouts for a class.
+//
+// Anything attached to THIS week, plus anything standing for the term — a
+// supply list posted in September is still what a parent needs in November.
+// -----------------------------------------------------------------------------
+async function drawPosts(classId, view, meeting) {
+  let posts = [];
+  try {
+    posts = await api.announcements({ classId });
+  } catch (e) {
+    return render("#posts", `<div class="note note-danger">${esc(e.message)}</div>`);
+  }
+
+  const shown = posts.filter((p) =>
+    !p.meeting_id || (meeting && p.meeting_id === meeting.id));
+
+  render("#posts", shown.length ? shown.map((p) => `
+    <div class="post">
+      <div class="post-head">
+        <strong>${esc(p.title)}</strong>
+        ${p.meeting_id
+          ? `<span class="badge">${esc(fmtDate(p.meeting_dates?.meets_on))}</span>`
+          : `<span class="badge badge-ok">All term</span>`}
+      </div>
+      ${p.body ? `<div class="small mt">${esc(p.body)}</div>` : ""}
+      ${p.link_url ? `<div class="mt"><a href="${esc(p.link_url)}" target="_blank"
+        rel="noopener noreferrer">${esc(p.link_label || p.link_url)}</a></div>` : ""}
+      ${p.file_path ? `<div class="mt">
+        <a href="#" data-file="${esc(p.file_path)}">${esc(p.file_name || "Download")}</a></div>` : ""}
+      <div class="tiny faint mt">${esc(p.posted_by_name ?? "")}
+        · ${esc(new Date(p.created_at).toLocaleDateString())}
+        · <a href="#" data-del="${esc(p.id)}">remove</a></div>
+    </div>`).join("")
+    : `<p class="muted">Nothing posted for this week. Anything you add here is
+       visible to the families of children in this class, and to nobody else.</p>`);
+
+  // Signed on demand rather than stored: the bucket is private, and a URL that
+  // worked forever would outlive the policy that granted it.
+  document.querySelectorAll("[data-file]").forEach((a) =>
+    a.addEventListener("click", async (e) => {
+      e.preventDefault();
+      try {
+        window.open(await api.handoutUrl(a.dataset.file), "_blank", "noopener");
+      } catch (err) { toastErr(err.message); }
+    }));
+
+  document.querySelectorAll("[data-del]").forEach((a) =>
+    a.addEventListener("click", async (e) => {
+      e.preventDefault();
+      if (!confirm("Remove this post? Families will no longer see it.")) return;
+      try {
+        await api.deleteAnnouncement(a.dataset.del);
+        drawPosts(classId, view, meeting);
+      } catch (err) { toastErr(err.message); }
+    }));
+
+  $("#post")?.addEventListener("click", () => openPostForm(classId, view, meeting));
+}
+
+function openPostForm(classId, view, meeting) {
+  const dlg = document.createElement("dialog");
+  dlg.className = "modal";
+  dlg.innerHTML = `
+    <form method="dialog">
+      <h3>Post to ${esc(view.class.name)}</h3>
+      <div class="field">
+        <label for="p-title">Title</label>
+        <input type="text" id="p-title" maxlength="120" required
+               placeholder="Worksheet for this week">
+      </div>
+      <div class="field">
+        <label for="p-body">Message <span class="faint">(optional)</span></label>
+        <textarea id="p-body" rows="3" placeholder="Please print it before Thursday."></textarea>
+      </div>
+      <div class="field">
+        <label for="p-link">Link <span class="faint">(optional)</span></label>
+        <input type="url" id="p-link" placeholder="https://drive.google.com/…">
+        <div class="hint">A Google Drive link works well and uses none of the
+          co-op's storage.</div>
+      </div>
+      <div class="field">
+        <label for="p-file">Or upload a file <span class="faint">(optional)</span></label>
+        <input type="file" id="p-file">
+        <div class="hint">Up to 10 MB.</div>
+      </div>
+      <div class="field">
+        <label for="p-when">Applies to</label>
+        <select id="p-when">
+          ${meeting ? `<option value="week">Just ${esc(fmtDate(meeting.meets_on))}</option>` : ""}
+          <option value="term">The whole term</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" value="cancel" type="submit">Cancel</button>
+        <button class="btn btn-primary" id="p-save" type="button">Post it</button>
+      </div>
+    </form>`;
+  document.body.appendChild(dlg);
+  dlg.showModal();
+  dlg.addEventListener("close", () => dlg.remove());
+
+  dlg.querySelector("#p-save").addEventListener("click", async () => {
+    const title = dlg.querySelector("#p-title").value.trim();
+    const body = dlg.querySelector("#p-body").value.trim() || null;
+    const link = dlg.querySelector("#p-link").value.trim() || null;
+    const file = dlg.querySelector("#p-file").files[0] ?? null;
+    const when = dlg.querySelector("#p-when").value;
+
+    if (!title) return toastErr("Give it a title.");
+    if (!body && !link && !file) {
+      return toastErr("Add a message, a link, or a file — otherwise there is nothing to post.");
+    }
+
+    const btn = dlg.querySelector("#p-save");
+    btn.disabled = true;
+    btn.textContent = file ? "Uploading…" : "Posting…";
+    try {
+      let uploaded = null;
+      if (file) uploaded = await api.uploadHandout(classId, file);
+
+      await api.postAnnouncement({
+        semester_id: view.semester.id,
+        class_id: classId,
+        meeting_id: when === "week" && meeting ? meeting.id : null,
+        title, body,
+        link_url: link,
+        link_label: link ? "Open the link" : null,
+        file_path: uploaded?.path ?? null,
+        file_name: uploaded?.name ?? null,
+        file_size: uploaded?.size ?? null,
+        posted_by_name: ME.teacher_name || ME.email,
+      });
+      dlg.close();
+      toastOk("Posted. Families in this class will see it.");
+      drawPosts(classId, view, meeting);
+    } catch (e) {
+      toastErr(e.message);
+      btn.disabled = false;
+      btn.textContent = "Post it";
+    }
+  });
 }
 
 // -----------------------------------------------------------------------------
