@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.keepalive]
 verify_jwt = false
+
+[functions.request-signin]
+verify_jwt = false

@@ -65,26 +65,23 @@ export function friendlyError(error) {
 }
 
 /**
- * Sign-in errors, in words a parent can act on.
+ * Code-verification errors, in words a parent can act on.
  *
- * Supabase's own messages are written for developers. "Signups not allowed for
- * otp" is technically what happened, and tells a mother of four precisely
- * nothing about what to do next.
+ * Supabase's own messages are written for developers. "Token has expired or is
+ * invalid" is accurate and tells a mother of four nothing about what to do
+ * next — which is to send herself a fresh one.
+ *
+ * Only verifyOtp reaches this now; the send path is gated by the request-signin
+ * Edge Function and reports its own errors.
  */
 function friendlySignInError(error) {
   const msg = (error?.message ?? String(error)).toLowerCase();
 
-  if (msg.includes("email logins are disabled") || msg.includes("email_provider_disabled")) {
-    return "Sign-in by email is switched off for this site. An administrator needs to enable the Email provider in Supabase.";
-  }
-  if (msg.includes("signups not allowed") || msg.includes("user not found")) {
-    return "We do not recognise that email address. It has to be the one the co-op has on file for your family — try another, or ask an administrator to check.";
-  }
   if (msg.includes("token has expired") || msg.includes("expired")) {
     return "That code has expired. Send yourself a new one and use it within the hour.";
   }
   if (msg.includes("invalid") && msg.includes("token")) {
-    return "That code was not right. Check the six digits in the email, or send yourself a new one.";
+    return "That code was not right. Check it against the email, or send yourself a new one.";
   }
   if (msg.includes("rate limit") || msg.includes("too many") || msg.includes("429")) {
     return "That is a lot of emails in a short time. Wait a minute and try again.";
@@ -118,40 +115,53 @@ export const auth = {
   },
 
   /**
-   * Send a sign-in email containing BOTH a link and a six-digit code.
+   * Ask for a sign-in email, via the request-signin Edge Function.
    *
-   * Which one a parent uses matters more than it sounds. Tapping a link in iOS
-   * Mail opens it in an in-app browser, so the session lands there rather than
-   * in Safari — they come back later, find themselves signed out, and conclude
-   * the site is broken. Typing the code into the browser they are already in
-   * puts the session where they expect it.
+   * Deliberately NOT supabase.auth.signInWithOtp. That call creates a user for
+   * whatever address it is handed, which means anyone can make the co-op's Gmail
+   * send mail to an address of their choosing — and a mistyped address would get
+   * a cheerful "check your email" for a message that was never sent. The
+   * function checks the address against family, parent and admin records first,
+   * so an unrecognised one comes back as exactly that.
    *
-   * Both arrive in one email; the template carries {{ .ConfirmationURL }} and
-   * {{ .Token }} side by side.
+   * The email itself carries both a link and a code. Which one a parent uses
+   * matters: tapping a link in iOS Mail opens an in-app browser, so the session
+   * lands there rather than in Safari, and they return later to find themselves
+   * signed out. Typing the code puts the session where they expect it.
    */
   async sendSignInEmail(email) {
-    const db = await client();
-    const { error } = await db.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: {
-        // A family signing in for the first time has no auth user yet, so one
-        // has to be created here — refusing would mean nobody could ever get in.
-        //
-        // It is not a way past anything. Being authenticated buys nothing on its
-        // own: establish_session only links a family when the verified address
-        // is already on a family or parent record, and every RLS policy hangs
-        // off that link. A stranger who signs in reaches "we do not recognise
-        // that address" and can read nothing at all.
-        //
-        // It also avoids leaking who is a member. With creation refused, an
-        // unknown address gets a distinct error, which lets anyone test whether
-        // a given family is in the co-op. This way every address gets the same
-        // "check your email".
-        shouldCreateUser: true,
-        emailRedirectTo: window.location.origin + window.location.pathname,
+    const res = await fetch(`${FUNCTIONS_URL}/request-signin`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
       },
-    });
-    if (error) throw new Error(friendlySignInError(error));
+      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+    }).catch(() => null);
+
+    if (!res) {
+      throw new Error("Could not reach the server. Check your connection and try again.");
+    }
+
+    let body = {};
+    try { body = await res.json(); } catch { /* fall through to the status */ }
+
+    if (body.ok) return;
+
+    switch (body.error) {
+      case "not_recognised":
+        throw new Error(
+          "That email address is not on file for any family in the co-op. " +
+          "Check the spelling, or try the other address your family uses. " +
+          "If it still does not work, ask an administrator to check what is on your record.");
+      case "invalid_email":
+        throw new Error("That does not look like an email address.");
+      case "rate_limited":
+        throw new Error("Too many sign-in emails have gone out in the last hour. Please wait a little and try again.");
+      default:
+        throw new Error("Something went wrong sending your sign-in email. Please try again.");
+    }
   },
 
   /** Finish sign-in with the six-digit code from the email. */

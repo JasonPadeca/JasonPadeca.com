@@ -99,6 +99,14 @@ function signedOut(errorMessage) {
     </div>
   </div>`);
 
+  // After a rejected address, put the cursor in the field with the text
+  // selected, so correcting it is one action rather than a hunt.
+  if (errorMessage) {
+    const field = $("#email");
+    field.focus();
+    field.select();
+  }
+
   $("#emailform").addEventListener("submit", async (e) => {
     e.preventDefault();
     const email = $("#email").value.trim();
@@ -112,9 +120,13 @@ function signedOut(errorMessage) {
       localStorage.setItem(PENDING_EMAIL, email);
       awaitingCode(email);
     } catch (err) {
-      toastErr(err.message);
-      btn.disabled = false;
-      btn.textContent = "Email me a sign-in link";
+      // Rendered into the card rather than raised as a toast. The message that
+      // matters here is "we do not have that address", which a parent needs to
+      // read, think about, and act on — a notice that fades after a few seconds
+      // is the wrong shape for it. Re-rendering also puts what they typed back
+      // in the field, so the typo is in front of them while they fix it.
+      localStorage.setItem(PENDING_EMAIL, email);
+      signedOut(err.message);
     }
   });
 }
