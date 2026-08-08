@@ -116,6 +116,7 @@ export async function detail(app, { id }) {
             ? ` · ${esc(fmtDate(semester.class_start_date))} – ${esc(fmtDate(semester.class_end_date))}` : ""}</div>
       </div>
       <div class="btn-row">
+        <a class="btn" href="#/semesters/${esc(semester.id)}/rosters">Print All Rosters</a>
         <button class="btn" id="editsem">Edit</button>
         ${semester.status === "registration_open"
           ? `<button class="btn" id="closereg">Close Registration</button>`

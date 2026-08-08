@@ -35,6 +35,7 @@ const ROUTES = [
   ["#/periods/:id",            Semesters.periodDetail],
   ["#/classes/:id",            Semesters.classDetail],
   ["#/classes/:id/print",      PrintRoster.show],
+  ["#/semesters/:id/rosters",  PrintRoster.all],
   ["#/enrollment",             Enrollment.show],
   ["#/volunteers",             Volunteers.show],
   ["#/exports",                Exports.show],

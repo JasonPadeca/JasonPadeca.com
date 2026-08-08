@@ -20,7 +20,78 @@ import {
 
 export async function show(app, { id }) {
   const [cls, roster] = await Promise.all([api.klass(id), api.classRoster(id)]);
-  const period = cls.periods, semester = cls.semesters;
+
+  render(app, `
+    <div class="print-toolbar no-print">
+      <a class="btn" href="#/classes/${esc(cls.id)}">← Back to class</a>
+      <div class="spacer"></div>
+      <span class="small muted">This sheet contains medical information. Hand it only to the teacher.</span>
+      <button class="btn btn-primary" id="doprint">Print</button>
+    </div>
+    ${sheet(cls, roster, cls.periods, cls.semesters)}`);
+
+  $("#doprint")?.addEventListener("click", () => window.print());
+}
+
+/**
+ * Every roster in a semester, one class per page.
+ *
+ * The point is a single trip to the printer at the start of term rather than
+ * opening each class in turn — and, on the screen before that, one place to see
+ * that every class has a teacher and a room.
+ */
+export async function all(app, { id }) {
+  render(app, `<div class="loading"><span class="spinner"></span> Gathering rosters…</div>`);
+
+  const [semester, classes] = await Promise.all([api.semester(id), api.classes({ semester_id: id })]);
+  const periods = await api.periods(id);
+  const byPeriod = new Map(periods.map((p) => [p.id, p]));
+
+  // Sequential rather than parallel: a semester can hold a couple of dozen
+  // classes, and firing that many roster queries at once is a poor way to treat
+  // a database on a free plan.
+  const rosters = [];
+  for (const c of classes) rosters.push([c, await api.classRoster(c.id)]);
+
+  rosters.sort(([a], [b]) =>
+    ((byPeriod.get(a.period_id)?.period_number ?? 0) - (byPeriod.get(b.period_id)?.period_number ?? 0)) ||
+    (a.option_number ?? 0) - (b.option_number ?? 0) ||
+    a.name.localeCompare(b.name));
+
+  const totalSeats = rosters.reduce((n, [, r]) =>
+    n + r.filter((x) => x.status === "registered").length, 0);
+  const missing = rosters.filter(([c]) => !c.teacher_name?.trim() || !c.location?.trim());
+
+  render(app, `
+    <div class="print-toolbar no-print">
+      <a class="btn" href="#/semesters/${esc(semester.id)}">← Back to semester</a>
+      <div class="spacer"></div>
+      <span class="small muted">${plural(rosters.length, "roster")} ·
+        ${plural(totalSeats, "seat")} · one class per page</span>
+      <button class="btn btn-primary" id="doprint">Print all</button>
+    </div>
+
+    ${missing.length ? `<div class="no-print" style="max-width:7.9in;margin:1rem auto 0;padding:0 1.25rem">
+      <div class="note note-warn">
+        <strong>${plural(missing.length, "class", "classes")} missing a teacher or a room.</strong>
+        Those lines will print blank:
+        <ul>${missing.map(([c]) => `<li>${esc(c.name)} —
+          ${!c.teacher_name?.trim() ? "no teacher" : ""}${
+            !c.teacher_name?.trim() && !c.location?.trim() ? ", " : ""}${
+            !c.location?.trim() ? "no location" : ""}</li>`).join("")}</ul>
+      </div>
+    </div>` : ""}
+
+    ${rosters.length
+      ? rosters.map(([c, roster], i) =>
+          sheet(c, roster, byPeriod.get(c.period_id), semester, i > 0)).join("")
+      : `<div class="sheet"><p class="empty-print">This semester has no classes yet.</p></div>`}`);
+
+  $("#doprint")?.addEventListener("click", () => window.print());
+}
+
+/** One roster sheet. `pageBreak` starts it on a fresh sheet of paper. */
+function sheet(cls, roster, period, semester, pageBreak = false) {
   const refDate = semester?.class_start_date;
 
   const registered = roster
@@ -38,15 +109,8 @@ export async function show(app, { id }) {
   // Anything a teacher might have to act on, gathered where it cannot be missed.
   const flagged = registered.filter((r) => r.children?.allergies || r.children?.medical_notes);
 
-  render(app, `
-    <div class="print-toolbar no-print">
-      <a class="btn" href="#/classes/${esc(cls.id)}">← Back to class</a>
-      <div class="spacer"></div>
-      <span class="small muted">This sheet contains medical information. Hand it only to the teacher.</span>
-      <button class="btn btn-primary" id="doprint">Print</button>
-    </div>
-
-    <div class="sheet">
+  return `
+    <div class="sheet${pageBreak ? " page-break" : ""}">
       <header class="sheet-head">
         <div>
           <h1>${esc(cls.name)}</h1>
@@ -124,7 +188,5 @@ export async function show(app, { id }) {
           { year: "numeric", month: "long", day: "numeric" }))}
         · Contains medical information about children — do not leave unattended.
       </footer>
-    </div>`);
-
-  $("#doprint")?.addEventListener("click", () => window.print());
+    </div>`;
 }

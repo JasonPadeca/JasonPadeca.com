@@ -245,6 +245,27 @@ export const api = {
       .order("status").order("waitlisted_at", { nullsFirst: true }).order("created_at"));
   },
 
+  /**
+   * Mark a child as taking classes this semester, or not.
+   *
+   * Deliberately the same row a parent writes from the registration page, with
+   * no precedence between them — whoever touched it last is who is right. An
+   * administrator marking a child out is usually acting on something the family
+   * told them; a family changing their mind afterwards is the family knowing
+   * better. Locking either side out would only produce phone calls.
+   */
+  async setParticipation(childId, semesterId, participating) {
+    const db = await client();
+    return unwrap(await db.from("semester_participation")
+      .upsert({
+        child_id: childId,
+        semester_id: semesterId,
+        participating,
+        set_by: "admin",
+      }, { onConflict: "child_id,semester_id" })
+      .select().single());
+  },
+
   /** Child ids sitting this semester out, as a Set. */
   async sittingOut(semesterId) {
     const db = await client();

@@ -1,71 +1,81 @@
 /* =============================================================================
-   Homeschool Co-op Registration — shared stylesheet
+   Koinonia Homeschool Group — registration, shared stylesheet
    =============================================================================
 
-   Design continuity with jasonpadeca.com: same font pairing (Crimson Pro for
-   headings, Inter for everything else) and the same warm #8b7355 accent.
+   Styled to sit alongside koinoniaphx.com: PT Sans throughout, the same blue
+   (#1279BE) for anything actionable, the same slate (#2E4453) for headings,
+   and #303030 body text on white. Headings are bold PT Sans rather than a
+   contrasting serif, which is what that site does and is the single biggest
+   reason the two now read as related.
 
-   Departure from the main site: this one follows the visitor's OS theme instead
-   of being dark always. The main site is a reading experience; this is a dense
-   data application that a parent may well be filling in on a phone in daylight
-   with a child on their hip. Light default, dark honoured, both legible.
+   PT Sans ships 400 and 700 only. Weights are written accordingly — asking for
+   500 or 600 gets a synthesised face that looks subtly wrong next to the real
+   bold, which is exactly the sort of thing that makes a page feel off without
+   anyone being able to say why.
+
+   Unlike the marketing site this follows the visitor's OS theme. That site is a
+   reading experience; this is a dense data application a parent may be filling
+   in on a phone with a child on their hip.
    ============================================================================= */
 
 :root {
-  --accent:        #8b7355;
-  --accent-strong: #6f5c43;
-  --accent-soft:   rgba(139, 115, 85, 0.10);
+  --accent:        #1279be;   /* koinoniaphx.com link + button blue */
+  --accent-strong: #0f5f96;
+  --accent-soft:   rgba(18, 121, 190, 0.10);
+  --heading:       #2e4453;   /* their slate */
 
-  --bg:        #faf9f7;
+  --bg:        #f4f7f9;
   --surface:   #ffffff;
-  --surface-2: #f2efea;
-  --text:      #23201d;
-  --text-muted:#6f675f;
-  --text-faint:#948b81;
-  --border:    #e3ded7;
-  --border-strong: #cfc7bc;
+  --surface-2: #eef2f5;
+  --text:      #303030;
+  --text-muted:#5f6b73;
+  --text-faint:#8a959c;
+  --border:    #dde5ea;
+  --border-strong: #c3ced6;
 
-  --ok:      #2f6f4f;
-  --ok-bg:   rgba(47, 111, 79, 0.10);
-  --warn:    #9a6b3f;
-  --warn-bg: rgba(154, 107, 63, 0.12);
-  --danger:  #a33a3a;
-  --danger-bg: rgba(163, 58, 58, 0.10);
-  --info-bg: rgba(139, 115, 85, 0.10);
+  --ok:      #2e7d32;
+  --ok-bg:   rgba(46, 125, 50, 0.10);
+  --warn:    #a15c00;
+  --warn-bg: rgba(161, 92, 0, 0.12);
+  --danger:  #c02626;
+  --danger-bg: rgba(192, 38, 38, 0.10);
+  --info-bg: rgba(18, 121, 190, 0.08);
 
-  --radius: 8px;
-  --radius-sm: 5px;
-  --shadow: 0 1px 2px rgba(35, 32, 29, 0.05), 0 4px 12px rgba(35, 32, 29, 0.05);
-  --shadow-lg: 0 8px 32px rgba(35, 32, 29, 0.16);
+  --radius: 6px;
+  --radius-sm: 4px;
+  --shadow: 0 1px 2px rgba(46, 68, 83, 0.06), 0 4px 12px rgba(46, 68, 83, 0.06);
+  --shadow-lg: 0 8px 32px rgba(46, 68, 83, 0.20);
 
-  --font-serif: 'Crimson Pro', Georgia, serif;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: 'PT Sans', -apple-system, system-ui, 'Segoe UI', Roboto,
+               'Helvetica Neue', sans-serif;
+  --font-heading: var(--font-sans);
 
   --topbar-h: 56px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --accent:        #a68b6a;
-    --accent-strong: #c0a583;
-    --accent-soft:   rgba(166, 139, 106, 0.14);
+    --accent:        #55a8e0;
+    --accent-strong: #7cc0ec;
+    --accent-soft:   rgba(85, 168, 224, 0.14);
+    --heading:       #d7e5ef;
 
-    --bg:        #0d0d0f;
-    --surface:   #17171b;
-    --surface-2: #202026;
-    --text:      #e8e6e3;
-    --text-muted:#a09a93;
-    --text-faint:#7d766e;
-    --border:    #2a2a30;
-    --border-strong: #3d3d45;
+    --bg:        #121a20;
+    --surface:   #1a242c;
+    --surface-2: #222f38;
+    --text:      #e6edf2;
+    --text-muted:#a2b0ba;
+    --text-faint:#7b8b96;
+    --border:    #2b3942;
+    --border-strong: #3d4d58;
 
-    --ok:      #6fb98f;
-    --ok-bg:   rgba(111, 185, 143, 0.12);
-    --warn:    #d3a06a;
-    --warn-bg: rgba(211, 160, 106, 0.14);
-    --danger:  #e08585;
-    --danger-bg: rgba(224, 133, 133, 0.12);
-    --info-bg: rgba(166, 139, 106, 0.12);
+    --ok:      #6fbf73;
+    --ok-bg:   rgba(111, 191, 115, 0.12);
+    --warn:    #dda15e;
+    --warn-bg: rgba(221, 161, 94, 0.14);
+    --danger:  #e57373;
+    --danger-bg: rgba(229, 115, 115, 0.12);
+    --info-bg: rgba(85, 168, 224, 0.12);
 
     --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 12px rgba(0,0,0,.3);
     --shadow-lg: 0 8px 32px rgba(0,0,0,.55);
@@ -90,11 +100,14 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4 { font-family: var(--font-serif); font-weight: 600; line-height: 1.2; }
-h1 { font-size: 1.9rem; letter-spacing: -0.01em; }
-h2 { font-size: 1.4rem; }
-h3 { font-size: 1.12rem; }
-h4 { font-size: 1rem; font-family: var(--font-sans); font-weight: 600; }
+h1, h2, h3, h4 {
+  font-family: var(--font-heading); font-weight: 700;
+  line-height: 1.25; color: var(--heading);
+}
+h1 { font-size: 1.85rem; letter-spacing: -0.01em; }
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.1rem; }
+h4 { font-size: 1rem; }
 
 a { color: var(--accent); text-decoration: none; }
 a:hover { color: var(--accent-strong); text-decoration: underline; }
@@ -120,7 +133,7 @@ a:hover { color: var(--accent-strong); text-decoration: underline; }
 .topbar .wrap { display: flex; align-items: center; gap: 1.5rem; width: 100%; }
 
 .brand {
-  font-family: var(--font-serif); font-size: 1.15rem; font-weight: 600;
+  font-family: var(--font-heading); font-size: 1.15rem; font-weight: 700;
   color: var(--text); white-space: nowrap;
 }
 .brand:hover { color: var(--accent); text-decoration: none; }
@@ -128,7 +141,7 @@ a:hover { color: var(--accent-strong); text-decoration: underline; }
 .mainnav { display: flex; gap: .25rem; flex: 1; flex-wrap: wrap; }
 .mainnav a {
   padding: .4rem .7rem; border-radius: var(--radius-sm);
-  font-size: .82rem; font-weight: 500; letter-spacing: .04em;
+  font-size: .82rem; letter-spacing: .04em;
   text-transform: uppercase; color: var(--text-muted);
 }
 .mainnav a:hover { color: var(--text); background: var(--surface-2); text-decoration: none; }
@@ -177,7 +190,7 @@ a:hover { color: var(--accent-strong); text-decoration: underline; }
   border-radius: var(--radius); padding: .9rem 1rem;
 }
 .stat .n {
-  font-family: var(--font-serif); font-size: 1.85rem; font-weight: 600;
+  font-family: var(--font-heading); font-size: 1.8rem; font-weight: 700;
   line-height: 1.1; display: block;
 }
 .stat .l {
@@ -190,7 +203,7 @@ a:hover { color: var(--accent-strong); text-decoration: underline; }
 /* --- Buttons --------------------------------------------------------------- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
-  font-family: inherit; font-size: .88rem; font-weight: 500; line-height: 1;
+  font-family: inherit; font-size: .88rem; font-weight: 700; line-height: 1;
   padding: .58rem 1rem; border-radius: var(--radius-sm);
   border: 1px solid var(--border-strong); background: var(--surface);
   color: var(--text); cursor: pointer; white-space: nowrap;
@@ -203,7 +216,7 @@ a:hover { color: var(--accent-strong); text-decoration: underline; }
   background: var(--accent); border-color: var(--accent); color: #fff;
 }
 .btn-primary:hover:not(:disabled) { background: var(--accent-strong); border-color: var(--accent-strong); }
-@media (prefers-color-scheme: dark) { .btn-primary { color: #1a1712; } }
+@media (prefers-color-scheme: dark) { .btn-primary { color: #0e1519; } }
 
 .btn-danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 40%, transparent); }
 .btn-danger:hover:not(:disabled) { background: var(--danger-bg); }
@@ -218,7 +231,7 @@ a:hover { color: var(--accent-strong); text-decoration: underline; }
 /* --- Forms ----------------------------------------------------------------- */
 .field { margin-bottom: .9rem; }
 .field label, .lbl {
-  display: block; font-size: .8rem; font-weight: 500;
+  display: block; font-size: .8rem;
   color: var(--text-muted); margin-bottom: .3rem;
 }
 .field .hint { font-size: .78rem; color: var(--text-faint); margin-top: .25rem; }
@@ -245,7 +258,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 /* --- Badges ---------------------------------------------------------------- */
 .badge {
   display: inline-flex; align-items: center; gap: .3rem;
-  font-size: .72rem; font-weight: 600; letter-spacing: .04em;
+  font-size: .72rem; font-weight: 700; letter-spacing: .04em;
   text-transform: uppercase; padding: .2rem .5rem; border-radius: 100px;
   background: var(--surface-2); color: var(--text-muted); white-space: nowrap;
 }
@@ -258,7 +271,7 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 th {
-  text-align: left; font-size: .74rem; font-weight: 600;
+  text-align: left; font-size: .74rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: .05em; color: var(--text-faint);
   padding: .5rem .6rem; border-bottom: 1px solid var(--border);
   white-space: nowrap;
@@ -355,7 +368,7 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
 }
 .class-row:hover { border-color: var(--border-strong); text-decoration: none; color: inherit; }
 .class-row .cr-main { flex: 1; min-width: 0; }
-.class-row .cr-name { font-weight: 600; }
+.class-row .cr-name { font-weight: 700; }
 .class-row .cr-meta { font-size: .82rem; color: var(--text-muted); }
 .class-row .cr-seats { text-align: right; font-size: .84rem; white-space: nowrap; }
 .class-row.archived { opacity: .55; }
@@ -393,8 +406,8 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
 }
 .childtab[aria-selected="true"] .age { color: rgba(255,255,255,.8); }
 @media (prefers-color-scheme: dark) {
-  .childtab[aria-selected="true"] { color: #1a1712; }
-  .childtab[aria-selected="true"] .age { color: rgba(26,23,18,.7); }
+  .childtab[aria-selected="true"] { color: #0e1519; }
+  .childtab[aria-selected="true"] .age { color: rgba(14,21,25,.72); }
 }
 .childtab .dot {
   display: inline-block; width: 6px; height: 6px; border-radius: 50%;
@@ -425,11 +438,11 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
 }
 .pill span:hover { border-color: var(--accent); }
 .pill input:checked + span {
-  background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 500;
+  background: var(--accent); border-color: var(--accent); color: #fff;
 }
 .pill input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pill input:disabled + span { opacity: .55; cursor: not-allowed; }
-@media (prefers-color-scheme: dark) { .pill input:checked + span { color: #1a1712; } }
+@media (prefers-color-scheme: dark) { .pill input:checked + span { color: #0e1519; } }
 
 /* A child sitting out reads as set aside, not as an error. */
 .childtab.is-out { opacity: .6; border-style: dashed; }
@@ -475,7 +488,7 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
 /* Each of these is its own line — a class with a description and an
    ineligibility reason has three things to say, and they must not run together. */
 .opt .name, .opt .meta, .opt .why { display: block; }
-.opt .name { font-weight: 600; }
+.opt .name { font-weight: 700; }
 .opt .meta { font-size: .82rem; color: var(--text-muted); margin-top: .1rem; }
 .opt .why  { font-size: .82rem; color: var(--warn); margin-top: .25rem; }
 
@@ -525,7 +538,6 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
 .chip span:hover { border-color: var(--accent); }
 .chip input:checked + span {
   background: var(--accent-soft); border-color: var(--accent); color: var(--accent);
-  font-weight: 500;
 }
 .chip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
 .chip input:disabled + span { opacity: .45; cursor: not-allowed; }
@@ -535,7 +547,7 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
 /* Schedule summary */
 .reg-summary .card { position: relative; }
 .sum-child + .sum-child { margin-top: .9rem; padding-top: .9rem; border-top: 1px solid var(--border); }
-.sum-child .who { font-weight: 600; margin-bottom: .25rem; }
+.sum-child .who { font-weight: 700; margin-bottom: .25rem; }
 .sum-row { display: flex; gap: .5rem; font-size: .88rem; padding: .12rem 0; }
 .sum-row .p { color: var(--text-faint); flex: none; width: 1.2rem; }
 .sum-row .c { flex: 1; }
@@ -543,7 +555,7 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
 .sum-row .wl { color: var(--warn); font-size: .8rem; }
 
 .review-child { margin-bottom: 1.1rem; }
-.review-child .who { font-weight: 600; margin-bottom: .3rem; }
+.review-child .who { font-weight: 700; margin-bottom: .3rem; }
 .review-row {
   display: flex; gap: .75rem; padding: .35rem .6rem;
   background: var(--surface-2); border-radius: var(--radius-sm); margin-bottom: .25rem;
@@ -588,9 +600,9 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
   display: flex; flex-wrap: wrap; gap: 1.1rem;
   font-size: .86rem; color: var(--text-muted); margin-top: .15rem;
 }
-.sheet-meta strong { color: var(--text-faint); font-weight: 600; margin-right: .2rem; }
+.sheet-meta strong { color: var(--text-faint); font-weight: 700; margin-right: .2rem; }
 .sheet-count { text-align: right; flex: none; }
-.sheet-count .n { font-family: var(--font-serif); font-size: 2.1rem; font-weight: 600; display: block; line-height: 1; }
+.sheet-count .n { font-family: var(--font-heading); font-size: 2.1rem; font-weight: 700; display: block; line-height: 1; }
 .sheet-count .l { font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); }
 
 .alerts {
@@ -636,8 +648,12 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
   font-size: .72rem; color: var(--text-faint);
 }
 
+/* Each roster after the first starts on its own sheet of paper. */
+.sheet.page-break { border-top: 1px dashed var(--border-strong); margin-top: 3rem; padding-top: 2rem; }
+
 @media print {
   .topbar, .btn, .no-print, #toasts, .print-toolbar { display: none !important; }
+  .sheet.page-break { break-before: page; border-top: 0; margin-top: 0; padding-top: 0; }
 
   /* Force plain black-on-white regardless of the viewer's OS theme — a roster
      printed from a dark-mode laptop must not come out as a black rectangle. */

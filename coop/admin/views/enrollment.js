@@ -7,7 +7,57 @@
 // =============================================================================
 
 import { api } from "../../assets/api.js";
-import { esc, $, render, toastErr, plural, debounce, downloadCSV } from "../../assets/ui.js";
+import {
+  esc, $, render, toastOk, toastErr, plural, debounce, downloadCSV, confirmDialog,
+} from "../../assets/ui.js";
+
+/**
+ * Flip a child's participation for this semester.
+ *
+ * Marking someone out releases their classes, so it asks first and says what it
+ * will cost. Marking someone back in is harmless and does not.
+ */
+async function toggleSittingOut(btn, semester, rows, sittingOut, redraw) {
+  const childId = btn.dataset.sitout;
+  const row = rows.find((r) => r.childId === childId);
+  const turningOff = btn.dataset.on !== "1";   // currently participating
+
+  if (turningOff) {
+    const live = row.registrations.filter((x) => x.status === "registered").length;
+    const ok = await confirmDialog(
+      `Mark ${row.child} as sitting out?`,
+      live
+        ? `${row.child} will be released from ${plural(live, "class", "classes")} for ${semester.name}, and the seats given back. Their family can change this themselves from their registration link.`
+        : `${row.child} will be skipped for ${semester.name} and will stop appearing as not yet registered. Their family can change this themselves from their registration link.`,
+      "Mark as sitting out", true);
+    if (!ok) return;
+  }
+
+  btn.disabled = true;
+  try {
+    await api.setParticipation(childId, semester.id, !turningOff);
+
+    // Releasing the seats is a separate step: setParticipation only records the
+    // decision, and a sitting-out child holding a seat would quietly overbook
+    // the class against everyone else.
+    if (turningOff) {
+      for (const reg of row.registrations) {
+        await api.setRegistrationStatus(reg.id, "withdrawn");
+      }
+      row.registrations = [];
+    }
+
+    if (turningOff) sittingOut.add(childId); else sittingOut.delete(childId);
+    row.sittingOut = turningOff;
+    toastOk(turningOff
+      ? `${row.child} is sitting out ${semester.name}.`
+      : `${row.child} is taking classes again.`);
+    redraw();
+  } catch (e) {
+    toastErr(e.message);
+    btn.disabled = false;
+  }
+}
 
 export async function show(app) {
   const semesters = await api.semesters();
@@ -123,7 +173,7 @@ export async function show(app) {
     }
 
     render("#results", `<div class="table-scroll"><table>
-      <thead><tr><th>Student</th><th>Family</th><th>Classes</th></tr></thead>
+      <thead><tr><th>Student</th><th>Family</th><th>Classes</th><th></th></tr></thead>
       <tbody>${out.map((r) => `<tr>
         <td><strong>${esc(r.child)}</strong></td>
         <td class="small"><a href="#/families/${esc(r.familyId)}">${esc(r.family)}</a></td>
@@ -136,8 +186,16 @@ export async function show(app) {
           : r.sittingOut
             ? `<span class="badge">Sitting out</span>`
             : `<span class="faint">Not registered</span>`}</td>
+        <td class="right nowrap">
+          <button class="btn btn-sm btn-ghost" data-sitout="${esc(r.childId)}"
+                  data-on="${r.sittingOut ? "1" : "0"}">
+            ${r.sittingOut ? "Mark as taking classes" : "Mark as sitting out"}</button>
+        </td>
       </tr>`).join("")}</tbody></table></div>
       <p class="tiny faint mt">${plural(out.length, "student")} shown.</p>`);
+
+    document.querySelectorAll("[data-sitout]").forEach((b) =>
+      b.addEventListener("click", () => toggleSittingOut(b, semester, rows, sittingOut, draw)));
   };
 
   draw();
