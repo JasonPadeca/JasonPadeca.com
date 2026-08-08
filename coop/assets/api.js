@@ -172,7 +172,25 @@ export const auth = {
     }
   },
 
-  /** Finish sign-in with the six-digit code from the email. */
+  /**
+   * Finish sign-in from a tapped link.
+   *
+   * The link carries a token hash rather than going through Supabase's own
+   * /verify redirect, so the page redeems it here. That keeps the whole exchange
+   * in query parameters, which survive redirects and in-app browsers; the
+   * fragment the standard flow uses does not.
+   */
+  async verifyTokenHash(tokenHash, type = "email") {
+    const db = await client();
+    const { data, error } = await db.auth.verifyOtp({
+      token_hash: tokenHash,
+      type,
+    });
+    if (error) throw new Error(friendlySignInError(error));
+    return data.session;
+  },
+
+  /** Finish sign-in with the code from the email. */
   async verifyCode(email, code) {
     const db = await client();
     const { data, error } = await db.auth.verifyOtp({

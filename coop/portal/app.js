@@ -40,21 +40,44 @@ async function start() {
       This site is not configured yet. See coop/SETUP.md.</div></div>`);
   }
 
+  // --- A tapped sign-in link -------------------------------------------------
+  //
+  // The link carries ?token_hash=…, which this page redeems itself, rather than
+  // relying on Supabase's own /verify redirect. Two reasons, both learned the
+  // hard way:
+  //
+  //   * That redirect returns the session in the URL *fragment*, and a fragment
+  //     does not reliably survive a redirect chain through an in-app browser.
+  //     The page loaded, the tokens did not, and the parent was looking at a
+  //     sign-in form having just tapped "Sign in".
+  //   * This client uses PKCE for Google sign-in, and a server-generated magic
+  //     link has no code verifier to pair with. Redeeming the token hash
+  //     directly sidesteps the mismatch entirely.
+  //
+  // A query parameter survives everything a fragment does not.
+  const params = new URLSearchParams(location.search);
+  const tokenHash = params.get("token_hash");
+
+  if (tokenHash) {
+    try {
+      await auth.verifyTokenHash(tokenHash, params.get("type") || "email");
+    } catch (e) {
+      history.replaceState({}, "", location.pathname);
+      return signedOut(e.message);
+    }
+  }
+
   try {
-    // A magic link arrives as ?code=… and supabase-js exchanges it during
-    // client construction, so simply asking for the session resolves it.
     state.session = await auth.session();
   } catch (e) {
     return signedOut(e.message);
   }
 
-  if (!state.session) return signedOut();
+  // Clear the used token out of the address bar either way — reloading with a
+  // spent one would look like a failure rather than a completed sign-in.
+  if (location.search) history.replaceState({}, "", location.pathname);
 
-  // Clean the auth code out of the address bar so a reload does not try to
-  // redeem a consumed one.
-  if (location.search.includes("code=") || location.search.includes("error=")) {
-    history.replaceState({}, "", location.pathname);
-  }
+  if (!state.session) return signedOut();
 
   try {
     state.me = await auth.establishSession();
@@ -132,17 +155,26 @@ function signedOut(errorMessage) {
 }
 
 // -----------------------------------------------------------------------------
-// Signed out — step 2: the link is sent, offer the code as well
+// Signed out — step 2: the email is sent
+//
+// The CODE leads here, not the link, and that ordering is deliberate.
+//
+// Tapping a link inside the Gmail or Mail app opens it in that app's own
+// built-in browser. Even when it works perfectly, the parent is now signed in
+// *there* — and the next time they open Chrome or Safari they are signed out
+// again, with no idea why. Typing the code puts the session in the browser they
+// actually use.
+//
+// The link still works, and is still in the email, for anyone reading mail on a
+// computer where it does the obvious thing.
 // -----------------------------------------------------------------------------
 function awaitingCode(email) {
   render(app, `<div class="signin-page">
     <div class="signin-card">
       <img src="../assets/koinonia-logo.jpg" alt="" class="signin-mark" width="72" height="72">
       <h1>Check your email</h1>
-      <p class="signin-sub">We have sent a sign-in link to <strong>${esc(email)}</strong>.
-        Open it on this device and you are in.</p>
-
-      <div class="or-rule"><span>or enter the code from that email</span></div>
+      <p class="signin-sub">We have sent a code to <strong>${esc(email)}</strong>.
+        Type it in below.</p>
 
       <form id="codeform" novalidate>
         <div class="field">
@@ -150,11 +182,19 @@ function awaitingCode(email) {
           <input type="text" id="code" name="code" inputmode="numeric" pattern="[0-9]*"
                  autocomplete="one-time-code" maxlength="10" class="code-input"
                  aria-describedby="codehelp">
-          <div class="hint" id="codehelp">Use this if the link opens somewhere
-            unexpected — on an iPhone, mail often opens links in its own browser.</div>
+          <div class="hint" id="codehelp">Keep this page open and switch to your
+            email to fetch it.</div>
         </div>
         <button class="btn btn-primary btn-block" type="submit" id="verify">Sign in</button>
       </form>
+
+      <div class="or-rule"><span>or</span></div>
+
+      <p class="signin-sub" style="margin-bottom:0">
+        Tap <strong>Sign in</strong> in the email. On a phone that often opens
+        inside the mail app's own browser, which signs you in there rather than
+        in Chrome or Safari — so the code above is usually the better bet.
+      </p>
 
       <p class="signin-foot">
         Nothing arrived? Check your spam folder, or
