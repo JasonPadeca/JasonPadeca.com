@@ -134,10 +134,10 @@ function awaitingCode(email) {
 
       <form id="codeform" novalidate>
         <div class="field">
-          <label for="code">Six-digit code</label>
+          <label for="code">Code from the email</label>
           <input type="text" id="code" name="code" inputmode="numeric" pattern="[0-9]*"
-                 autocomplete="one-time-code" maxlength="6" class="code-input"
-                 placeholder="000000" aria-describedby="codehelp">
+                 autocomplete="one-time-code" maxlength="10" class="code-input"
+                 aria-describedby="codehelp">
           <div class="hint" id="codehelp">Use this if the link opens somewhere
             unexpected — on an iPhone, mail often opens links in its own browser.</div>
         </div>
@@ -154,17 +154,27 @@ function awaitingCode(email) {
   const input = $("#code");
   input.focus();
 
-  // Six digits is the whole form; making them press a button as well is a step
-  // for the sake of it.
+  // The code length is a Supabase project setting, not a constant — this one
+  // sends eight digits, and an earlier version of this page hard-coded six,
+  // silently truncating the code and failing every time. So: accept whatever
+  // arrives, and never guess when it is complete from a length.
   input.addEventListener("input", () => {
-    input.value = input.value.replace(/\D/g, "").slice(0, 6);
-    if (input.value.length === 6) $("#codeform").requestSubmit();
+    input.value = input.value.replace(/\D/g, "").slice(0, 10);
+  });
+
+  // Pasting the whole code is the common path — it is sitting in an email two
+  // taps away. That IS a complete code, so submit it.
+  input.addEventListener("paste", () => {
+    setTimeout(() => {
+      input.value = input.value.replace(/\D/g, "").slice(0, 10);
+      if (input.value.length >= 6) $("#codeform").requestSubmit();
+    }, 0);
   });
 
   $("#codeform").addEventListener("submit", async (e) => {
     e.preventDefault();
     const code = input.value.trim();
-    if (code.length !== 6) return toastErr("The code is six digits.");
+    if (code.length < 6) return toastErr("Enter the whole code from the email.");
 
     const btn = $("#verify");
     btn.disabled = true;

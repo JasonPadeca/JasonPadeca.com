@@ -792,11 +792,14 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
 
 /* Six digits, spaced so they can be read back off a phone screen without
    losing your place. */
+/* Sized for a code of unknown length — Supabase projects issue anywhere from
+   six to ten digits, and this one sends eight. Roomy enough to read back off a
+   phone, narrow enough that ten still fit inside the card. */
 .code-input {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 1.6rem !important;
-  letter-spacing: .4em;
+  font-size: 1.35rem !important;
+  letter-spacing: .28em;
   text-align: center;
-  text-indent: .4em;      /* re-centres against the trailing letter-space */
-  padding: .6rem .5rem !important;
+  text-indent: .28em;     /* re-centres against the trailing letter-space */
+  padding: .6rem .4rem !important;
 }
