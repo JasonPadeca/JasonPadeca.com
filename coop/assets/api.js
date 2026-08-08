@@ -205,8 +205,12 @@ export const api = {
     const rows = unwrap(await q);
     if (!rows.length) return rows;
 
-    const seats = unwrap(await db.from("class_seats").select("*")
-      .in("class_id", rows.map((c) => c.id)));
+    // Counts come from a gated function, not the class_seats view: the view is
+    // security_invoker, so reading it directly would count only the rows the
+    // caller can see. See the note in 0012_family_accounts.sql.
+    const wanted = new Set(rows.map((c) => c.id));
+    const seats = (unwrap(await db.rpc("class_seat_counts")) ?? [])
+      .filter((s) => wanted.has(s.class_id));
     const byId = new Map(seats.map((s) => [s.class_id, s]));
     return rows.map((c) => ({ ...c, seats: byId.get(c.id) ?? {} }));
   },
@@ -216,8 +220,8 @@ export const api = {
     // periods and semesters embed fine — those are real foreign keys.
     const row = unwrap(await db.from("classes")
       .select("*, periods(*), semesters(*)").eq("id", id).single());
-    const seats = unwrap(await db.from("class_seats").select("*")
-      .eq("class_id", id).maybeSingle());
+    const seats = (unwrap(await db.rpc("class_seat_counts")) ?? [])
+      .find((s) => s.class_id === id);
     return { ...row, seats: seats ?? {} };
   },
 

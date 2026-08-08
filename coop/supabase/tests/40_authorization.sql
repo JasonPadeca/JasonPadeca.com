@@ -73,8 +73,10 @@ select pg_temp.rowcount('signed-in stranger sees no registrations',
   'select count(*) from public.registrations', 0);
 select pg_temp.rowcount('signed-in stranger sees no classes',
   'select count(*) from public.classes', 0);
-select pg_temp.rowcount('signed-in stranger sees no seat counts',
-  'select count(*) from public.class_seats', 0);
+select pg_temp.denied('signed-in stranger cannot read the class_seats view',
+  'select * from public.class_seats');
+select pg_temp.rowcount('signed-in stranger gets no counts from the gated function',
+  'select count(*) from public.class_seat_counts()', 0);
 select pg_temp.rowcount('signed-in stranger sees no admins',
   'select count(*) from public.admins', 0);
 select pg_temp.rowcount('signed-in stranger sees no audit log',
@@ -98,8 +100,12 @@ select pg_temp.rowcount('admin sees all families',
   'select count(*) from public.families', 4);
 select pg_temp.rowcount('admin sees all children',
   'select count(*) from public.children', 6);
-select pg_temp.rowcount('admin sees seat counts',
-  'select count(*) from public.class_seats', 7);
+-- Even an administrator goes through the function now. The view is
+-- security_invoker and reachable by anon, so nobody reads it directly.
+select pg_temp.denied('admin cannot read the class_seats view directly',
+  'select * from public.class_seats');
+select pg_temp.rowcount('admin gets seat counts from the gated function',
+  'select count(*) from public.class_seat_counts()', 7);
 select pg_temp.rowcount('admin sees the audit log',
   'select count(*) from public.audit_log', (select count(*) from public.audit_log));
 
