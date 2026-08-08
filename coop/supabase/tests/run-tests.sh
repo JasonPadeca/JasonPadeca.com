@@ -100,6 +100,14 @@ for f in 00_supabase_stub.sql "$MIGRATIONS"/0*.sql 10_seed.sql; do
 done
 P -d coop -f 97_absences.sql 2>&1 | strip
 
+echo "\n=== Teachers: their own room and no further ==="
+P -d postgres -tAc "drop database coop;" >/dev/null
+P -d postgres -tAc "create database coop;" >/dev/null
+for f in 00_supabase_stub.sql "$MIGRATIONS"/0*.sql 10_seed.sql; do
+  P -d coop -f "$f" >/dev/null
+done
+P -d coop -f 98_teachers.sql 2>&1 | strip
+
 echo "\n=== Family payload: shape, privacy, preflight ==="
 P -d postgres -tAc "drop database coop;" >/dev/null
 P -d postgres -tAc "create database coop;" >/dev/null

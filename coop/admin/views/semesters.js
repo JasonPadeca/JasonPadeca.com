@@ -521,6 +521,15 @@ export async function classDetail(app, { id }) {
     </div>
 
     <div class="card">
+      <div class="card-head"><h3>Teachers</h3>
+        <button class="btn btn-sm" id="addteacher">+ Add Teacher</button></div>
+      <div id="teacherlist"><div class="loading"><span class="spinner"></span></div></div>
+      <p class="tiny faint mt">Who can sign in and see this class. The
+        <strong>Teacher</strong> field above is only the name printed on rosters —
+        this is what grants access.</p>
+    </div>
+
+    <div class="card">
       <div class="card-head"><h3>Volunteers</h3>
         <button class="btn btn-sm" id="addvolunteer">+ Add Volunteer</button></div>
       ${volunteers.length ? `<div class="table-scroll"><table>
@@ -588,6 +597,8 @@ export async function classDetail(app, { id }) {
   $("#editclass").addEventListener("click", () => classDialog(period, cls));
   $("#addstudent").addEventListener("click", () => addStudent(cls));
   $("#addvolunteer").addEventListener("click", () => addVolunteer(cls, semester));
+
+  drawClassTeachers(cls);
 
   app.querySelectorAll("[data-rmvol]").forEach((b) =>
     b.addEventListener("click", async () => {
@@ -958,6 +969,90 @@ async function drawCalendar(semester) {
         });
         toastOk("Saved.");
         drawCalendar(semester);
+      } catch (e) { toastErr(e.message); }
+    }));
+}
+
+
+// =============================================================================
+// Who may sign in and see this class.
+//
+// Separate from classes.teacher_name, which is free text and stays that way:
+// "Jane Smith & Bob Jones" reads properly on a printed roster and cannot be
+// authorised against. This is the list that actually grants access.
+// =============================================================================
+async function drawClassTeachers(cls) {
+  let assigned = [];
+  try {
+    assigned = await api.classTeachers(cls.id);
+  } catch (e) {
+    return render("#teacherlist", `<div class="note note-danger">${esc(e.message)}</div>`);
+  }
+
+  render("#teacherlist", assigned.length
+    ? `<div class="table-scroll"><table><tbody>${assigned.map((a) => `<tr>
+        <td><strong>${esc(a.teachers?.display_name || a.teachers?.email || "")}</strong>
+          ${a.teachers?.display_name
+            ? `<div class="tiny faint">${esc(a.teachers.email)}</div>` : ""}
+          ${a.teachers && !a.teachers.active
+            ? `<div class="tiny" style="color:var(--warn)">This teacher is inactive and cannot sign in.</div>` : ""}</td>
+        <td class="right nowrap">
+          <button class="btn btn-sm btn-ghost" data-unassign="${esc(a.id)}">Remove</button></td>
+      </tr>`).join("")}</tbody></table></div>`
+    : `<p class="muted">Nobody can sign in to see this class yet.</p>`);
+
+  $("#addteacher").addEventListener("click", async () => {
+    const existing = await api.teachers().catch(() => []);
+    const already = new Set(assigned.map((a) => a.teacher_id));
+    const free = existing.filter((t) => !already.has(t.id));
+
+    const v = await formDialog({
+      title: `Who teaches ${cls.name}?`,
+      submitLabel: "Add",
+      fields: [
+        { name: "teacher_id", label: "Teacher", type: "select",
+          options: [...free.map((t) => ({
+            value: t.id, label: `${t.display_name || t.email}` })),
+            { value: "__new", label: "— Somebody new —" }],
+          hint: free.length ? "" : "No teachers on file yet — add somebody new." },
+        { name: "display_name", label: "Name (if new)", placeholder: "Walter Otis" },
+        { name: "email", label: "Email (if new)", type: "email",
+          hint: "They sign in with this address. It does not have to be a family address — a grandparent or hired instructor can teach without a child in the co-op." },
+      ],
+    });
+    if (!v) return;
+
+    try {
+      let teacherId = v.teacher_id;
+      if (!teacherId || teacherId === "__new") {
+        if (!v.email) return toastErr("A new teacher needs an email address to sign in with.");
+        const t = await api.createTeacher({
+          email: v.email.trim().toLowerCase(),
+          display_name: v.display_name?.trim() || null,
+        });
+        teacherId = t.id;
+      }
+      await api.assignTeacher(cls.id, teacherId);
+      toastOk("Added.");
+      drawClassTeachers(cls);
+    } catch (e) {
+      toastErr(e.message.includes("duplicate") || e.message.includes("unique")
+        ? "There is already a teacher with that email address — pick them from the list instead."
+        : e.message);
+    }
+  });
+
+  document.querySelectorAll("[data-unassign]").forEach((b) =>
+    b.addEventListener("click", async () => {
+      const a = assigned.find((x) => x.id === b.dataset.unassign);
+      const ok = await confirmDialog("Remove this teacher?",
+        `${a.teachers?.display_name || a.teachers?.email} will no longer be able to sign in and see ${cls.name}. Their record is kept.`,
+        "Remove", true);
+      if (!ok) return;
+      try {
+        await api.unassignTeacher(a.id);
+        toastOk("Removed.");
+        drawClassTeachers(cls);
       } catch (e) { toastErr(e.message); }
     }));
 }

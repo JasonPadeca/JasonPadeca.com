@@ -513,6 +513,80 @@ export const api = {
     return unwrap(await db.from("meeting_dates").delete().eq("id", id));
   },
 
+  // --- Teaching ---
+
+  /** One class as its teacher may see it. A different shape from the admin view. */
+  async teacherClass(classId, meetingId = null) {
+    const db = await client();
+    return unwrap(await db.rpc("teacher_class_view", {
+      p_class_id: classId, p_meeting_id: meetingId,
+    }));
+  },
+
+  /**
+   * Who is away on one meeting, among students the caller may see.
+   *
+   * RLS does the scoping — a teacher gets their own students, a parent gets
+   * their own children — so this needs no audience argument and cannot be
+   * pointed at somebody else's class by changing a parameter.
+   */
+  async absencesForMeeting(meetingId) {
+    const db = await client();
+    const rows = unwrap(await db.from("absences")
+      .select(`id, whole_day, reason,
+               children(id, first_name, last_name),
+               absence_periods(period_id)`)
+      .eq("meeting_id", meetingId));
+
+    const periods = unwrap(await db.from("periods").select("id, period_number"));
+    const byId = new Map(periods.map((p) => [p.id, p.period_number]));
+
+    return rows.map((a) => ({
+      id: a.id,
+      child_name: `${a.children?.first_name ?? ""} ${a.children?.last_name ?? ""}`.trim(),
+      reason: a.reason,
+      whole_day: a.whole_day,
+      // Empty means the whole day, which is every period.
+      periods: (a.absence_periods ?? []).map((ap) => byId.get(ap.period_id)).filter(Boolean),
+    }));
+  },
+
+  // --- Teacher administration ---
+  async teachers() {
+    const db = await client();
+    return unwrap(await db.from("teachers")
+      .select("*, class_teachers(class_id, classes(id, name, semester_id))")
+      .order("display_name", { nullsFirst: false }));
+  },
+
+  async createTeacher(fields) {
+    const db = await client();
+    return unwrap(await db.from("teachers").insert(fields).select().single());
+  },
+
+  async updateTeacher(id, fields) {
+    const db = await client();
+    return unwrap(await db.from("teachers").update(fields).eq("id", id).select().single());
+  },
+
+  async assignTeacher(classId, teacherId) {
+    const db = await client();
+    return unwrap(await db.from("class_teachers")
+      .insert({ class_id: classId, teacher_id: teacherId }).select().single());
+  },
+
+  async unassignTeacher(id) {
+    const db = await client();
+    return unwrap(await db.from("class_teachers").delete().eq("id", id));
+  },
+
+  async classTeachers(classId) {
+    const db = await client();
+    return unwrap(await db.from("class_teachers")
+      .select("id, teacher_id, teachers(id, display_name, email, active)")
+      .eq("class_id", classId));
+  },
+
   /** The class days of a semester — the calendar the portal is built around. */
   async meetings(semesterId) {
     const db = await client();

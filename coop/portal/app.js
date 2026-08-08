@@ -18,7 +18,7 @@
 // =============================================================================
 
 import { auth, api, IS_CONFIGURED } from "../assets/api.js";
-import { esc, $, render, toastErr, ageAt } from "../assets/ui.js";
+import { esc, $, render, toastErr, ageAt, plural } from "../assets/ui.js";
 import * as Absences from "./absences.js";
 
 const app = document.getElementById("app");
@@ -64,6 +64,26 @@ async function start() {
   localStorage.removeItem(PENDING_EMAIL);
 
   if (!state.me?.recognised) return notRecognised();
+
+  // Where does this person belong?
+  //
+  // Somebody who only teaches — the grandfather taking the automotive class —
+  // has no family page to look at, and showing him an empty one would be
+  // baffling. He goes straight to teaching and need never learn family pages
+  // exist. A parent who also teaches lands on their family page with a
+  // Teaching button, because that is the page they came for.
+  const hasFamily = (state.me.families ?? []).length > 0;
+  const teaches = (state.me.teaches ?? []).length > 0;
+
+  if (!hasFamily && teaches) {
+    location.replace("../teacher/");
+    return;
+  }
+  if (!hasFamily && !teaches && state.me.is_admin) {
+    location.replace("../admin/");
+    return;
+  }
+
   return home();
 }
 
@@ -292,6 +312,8 @@ async function home() {
           <span><strong>Koinonia</strong></span>
         </a>
         <div class="spacer"></div>
+        ${(state.me.teaches ?? []).length
+          ? `<a class="btn btn-sm" href="../teacher/">Teaching</a>` : ""}
         ${state.me.is_admin
           ? `<a class="btn btn-sm" href="../admin/">Administration</a>` : ""}
         <button class="btn btn-sm btn-ghost" id="out">Sign out</button>
@@ -304,7 +326,10 @@ async function home() {
           <h1>${esc(families[0]?.display_name ?? "Your family")}</h1>
           <div class="sub">Signed in as ${esc(state.me.email)}${
             state.me.is_admin
-              ? ` · <span class="badge badge-ok">Administrator</span>` : ""}</div>
+              ? ` · <span class="badge badge-ok">Administrator</span>` : ""}${
+            (state.me.teaches ?? []).length
+              ? ` · <span class="badge">Teaches ${
+                  plural(state.me.teaches.length, "class", "classes")}</span>` : ""}</div>
         </div>
       </div>
 
