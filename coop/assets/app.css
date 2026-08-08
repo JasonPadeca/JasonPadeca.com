@@ -491,6 +491,47 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
 
 .opt .clear { margin-top: .5rem; }
 
+/* --- Second choice ---------------------------------------------------------
+   One line under the period's options, and only once a first choice exists —
+   a parent who wants one class never sees it. */
+.second { margin-top: .6rem; padding-left: .1rem; }
+.second label {
+  display: block; font-size: .82rem; color: var(--text-muted); margin-bottom: .25rem;
+}
+.second select { font-size: .86rem; padding: .4rem .55rem; }
+
+/* --- Volunteering ---------------------------------------------------------- */
+.volunteer {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: .85rem 1rem; margin-top: 1.5rem; background: var(--surface);
+}
+.volunteer legend { padding: 0 0 .5rem; margin: 0; }
+.volunteer.is-on { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.volunteer-detail { margin-top: .9rem; padding-top: .8rem; border-top: 1px solid var(--border); }
+
+.vol-period { margin-top: .7rem; }
+.vol-period > .check { margin-bottom: .35rem; }
+.vol-classes { display: flex; flex-wrap: wrap; gap: .35rem; padding-left: 1.6rem; }
+
+/* Compact multi-select: a wrapped row of tick-able chips rather than a column
+   of checkboxes, so eight classes take two lines instead of eight. */
+.chip { display: inline-flex; }
+.chip input { position: absolute; opacity: 0; pointer-events: none; }
+.chip span {
+  display: inline-block; padding: .25rem .6rem; font-size: .8rem;
+  border: 1px solid var(--border-strong); border-radius: 100px;
+  background: var(--surface); cursor: pointer;
+}
+.chip span:hover { border-color: var(--accent); }
+.chip input:checked + span {
+  background: var(--accent-soft); border-color: var(--accent); color: var(--accent);
+  font-weight: 500;
+}
+.chip input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chip input:disabled + span { opacity: .45; cursor: not-allowed; }
+
+.sum-row .alt { color: var(--text-faint); font-size: .8rem; }
+
 /* Schedule summary */
 .reg-summary .card { position: relative; }
 .sum-child + .sum-child { margin-top: .9rem; padding-top: .9rem; border-top: 1px solid var(--border); }

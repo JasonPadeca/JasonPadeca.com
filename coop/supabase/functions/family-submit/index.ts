@@ -12,6 +12,8 @@ interface Selection {
   child_id: string;
   class_id: string;
   intent?: "register" | "waitlist";
+  /** 1 = first choice, 2 = the fallback if the first is full. */
+  rank?: number;
 }
 
 Deno.serve(async (req) => {
@@ -23,11 +25,14 @@ Deno.serve(async (req) => {
   }
 
   let token = "", selections: Selection[] = [], notParticipating: string[] = [];
+  let volunteer: Record<string, unknown> = {};
   try {
     const body = await req.json();
     token = body?.token ?? "";
     selections = Array.isArray(body?.selections) ? body.selections : [];
     notParticipating = Array.isArray(body?.not_participating) ? body.not_participating : [];
+    volunteer = (body?.volunteer && typeof body.volunteer === "object" &&
+                 !Array.isArray(body.volunteer)) ? body.volunteer : {};
   } catch {
     return json(req, { ok: false, error: "bad_request" }, 400);
   }
@@ -49,6 +54,7 @@ Deno.serve(async (req) => {
       child_id: s.child_id,
       class_id: s.class_id,
       intent: s.intent === "waitlist" ? "waitlist" : "register",
+      rank: s.rank === 2 ? 2 : 1,
     }));
 
   const db = serviceClient();
@@ -74,6 +80,26 @@ Deno.serve(async (req) => {
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const sittingOut = notParticipating.filter((id) => typeof id === "string" && UUID.test(id));
 
+  // Normalise the volunteer payload to the exact shape the function expects.
+  // The database restricts it to this family's children regardless.
+  const cleanVolunteer: Record<string, unknown> = {};
+  for (const [childId, raw] of Object.entries(volunteer)) {
+    if (!UUID.test(childId) || !raw || typeof raw !== "object") continue;
+    const v = raw as { wants?: unknown; note?: unknown; slots?: unknown };
+    const slots = Array.isArray(v.slots) ? v.slots : [];
+    cleanVolunteer[childId] = {
+      wants: v.wants === true,
+      note: typeof v.note === "string" ? v.note.slice(0, 500) : null,
+      slots: slots
+        .filter((s: any) => s && UUID.test(String(s.period_id ?? "")))
+        .slice(0, 60)
+        .map((s: any) => ({
+          period_id: s.period_id,
+          class_id: UUID.test(String(s.class_id ?? "")) ? s.class_id : null,
+        })),
+    };
+  }
+
   const { data: result, error: sErr } = await db.rpc("submit_family_registration", {
     p_family_id: resolved.family_id,
     p_semester_id: resolved.semester_id,
@@ -81,6 +107,7 @@ Deno.serve(async (req) => {
     p_actor: "family",
     p_allow_closed: false,
     p_not_participating: sittingOut,
+    p_volunteer: cleanVolunteer,
   });
 
   if (sErr) {

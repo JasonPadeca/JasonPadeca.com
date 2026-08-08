@@ -435,7 +435,10 @@ async function classDialog(period, existing, siblings = []) {
 // Class detail — roster, waitlist, manual changes (§14, §22)
 // =============================================================================
 export async function classDetail(app, { id }) {
-  const [cls, roster] = await Promise.all([api.klass(id), api.classRoster(id)]);
+  const [cls, roster, prefs] = await Promise.all([
+    api.klass(id), api.classRoster(id),
+    api.classPreferences(id).catch(() => []),
+  ]);
   const period = cls.periods, semester = cls.semesters;
   const s = cls.seats ?? {};
 
@@ -444,6 +447,13 @@ export async function classDetail(app, { id }) {
     .sort((a, b) => (a.waitlisted_at ?? "").localeCompare(b.waitlisted_at ?? ""));
   const past = roster.filter((r) => r.status === "cancelled" || r.status === "withdrawn");
   const over = s.capacity != null && s.registered_count > s.capacity;
+
+  // Children who named this class as their first choice and are not in it —
+  // the people to look at first when a seat frees up (§22).
+  const here = new Set(roster
+    .filter((r) => r.status === "registered" || r.status === "waitlisted")
+    .map((r) => r.child_id));
+  const missedOut = prefs.filter((p) => p.rank === 1 && !here.has(p.child_id));
 
   render(app, `<div class="wrap page">
     <div class="crumbs">
@@ -488,6 +498,22 @@ export async function classDetail(app, { id }) {
     ${waitlisted.length ? `<div class="card">
       <div class="card-head"><h3>Waitlist</h3></div>
       ${studentTable(waitlisted, true)}
+    </div>` : ""}
+
+    ${missedOut.length ? `<div class="card">
+      <div class="card-head"><h3>Wanted this class</h3>
+        <span class="small faint">First choice, placed elsewhere</span></div>
+      <p class="small muted mb">These students asked for ${esc(cls.name)} first and
+        ended up somewhere else because it was full. Worth checking here before you
+        fill a freed seat from the waitlist.</p>
+      <div class="table-scroll"><table><tbody>
+        ${missedOut.map((p) => `<tr>
+          <td><strong>${esc(p.children?.first_name ?? "")} ${esc(p.children?.last_name ?? "")}</strong></td>
+          <td class="small"><a href="#/families/${esc(p.children?.family_id ?? "")}">${
+            esc(p.children?.families?.display_name ?? "")}</a></td>
+          <td class="right"><button class="btn btn-sm" data-place="${esc(p.child_id)}">Add</button></td>
+        </tr>`).join("")}
+      </tbody></table></div>
     </div>` : ""}
 
     ${past.length ? `<div class="card">
@@ -538,6 +564,25 @@ export async function classDetail(app, { id }) {
         catch (e) { return toastErr(e.message); }
       }
       toastOk(`${r.children.first_name} promoted into the class.`);
+      refresh();
+    }));
+
+  app.querySelectorAll("[data-place]").forEach((b) =>
+    b.addEventListener("click", async () => {
+      const p = missedOut.find((x) => x.child_id === b.dataset.place);
+      const name = `${p.children?.first_name ?? ""} ${p.children?.last_name ?? ""}`.trim();
+      let res;
+      try { res = await api.placeChild(p.child_id, cls.id, "registered", false); }
+      catch (e) { return toastErr(e.message); }
+
+      if (res?.needs_override) {
+        const reason = await overrideDialog(
+          `Add ${name} to ${cls.name}?`, res.warnings, null, true);
+        if (reason === null) return;
+        try { await api.placeChild(p.child_id, cls.id, "registered", true, reason); }
+        catch (e) { return toastErr(e.message); }
+      }
+      toastOk(`${name} moved into ${cls.name}.`);
       refresh();
     }));
 

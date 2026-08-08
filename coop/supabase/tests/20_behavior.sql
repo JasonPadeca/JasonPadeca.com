@@ -76,13 +76,16 @@ select pg_temp.check('Cross-family registration rejected',
     '[{"child_id":"51111111-1111-1111-1111-111111111111","class_id":"32222222-2222-2222-2222-222222222222"}]'::jsonb
   ) -> 'results' -> 0 ->> 'outcome'), 'rejected');
 
--- Two confirmed classes in one period: the second is refused.
-select pg_temp.check('Two classes in one period rejected',
-  (public.submit_family_registration(
-    '43333333-3333-3333-3333-333333333333','11111111-1111-1111-1111-111111111111',
-    '[{"child_id":"54444444-4444-4444-4444-444444444444","class_id":"32222222-2222-2222-2222-222222222222"},
-      {"child_id":"54444444-4444-4444-4444-444444444444","class_id":"33333333-3333-3333-3333-333333333333"}]'::jsonb
-  ) -> 'results' -> 1 ->> 'outcome'), 'rejected');
+-- Two classes named for one period are alternatives, not a conflict: the first
+-- that is available wins and the rest are simply not needed (§0006).
+select pg_temp.check('Two classes in one period: the first available wins',
+  (select r ->> 'class_id' from
+     jsonb_array_elements(public.submit_family_registration(
+       '43333333-3333-3333-3333-333333333333','11111111-1111-1111-1111-111111111111',
+       '[{"child_id":"54444444-4444-4444-4444-444444444444","class_id":"32222222-2222-2222-2222-222222222222","rank":1},
+         {"child_id":"54444444-4444-4444-4444-444444444444","class_id":"33333333-3333-3333-3333-333333333333","rank":2}]'::jsonb
+     ) -> 'results') r
+    where r ->> 'outcome' = 'registered'), '32222222-2222-2222-2222-222222222222');
 
 select pg_temp.check('Carol kept exactly one period-1 seat',
   (select count(*)::text from public.registrations
@@ -138,19 +141,26 @@ select pg_temp.check('Robotics now reads as full',
   (select is_full::text from public.class_seats
     where class_id='33333333-3333-3333-3333-333333333333'), 'true');
 
+-- Results are looked up by class rather than by position: confirmed seats and
+-- waitlist entries are resolved in separate passes, so their order in the array
+-- is an implementation detail.
 select pg_temp.check('Billy waitlists for full Robotics',
-  (public.submit_family_registration(
-    '42222222-2222-2222-2222-222222222222','11111111-1111-1111-1111-111111111111',
-    '[{"child_id":"53333333-3333-3333-3333-333333333333","class_id":"33333333-3333-3333-3333-333333333333","intent":"waitlist"},
-      {"child_id":"53333333-3333-3333-3333-333333333333","class_id":"37777777-7777-7777-7777-777777777777"}]'::jsonb
-  ) -> 'results' -> 0 ->> 'outcome'), 'waitlisted');
+  (select r ->> 'outcome' from
+     jsonb_array_elements(public.submit_family_registration(
+       '42222222-2222-2222-2222-222222222222','11111111-1111-1111-1111-111111111111',
+       '[{"child_id":"53333333-3333-3333-3333-333333333333","class_id":"33333333-3333-3333-3333-333333333333","intent":"waitlist"},
+         {"child_id":"53333333-3333-3333-3333-333333333333","class_id":"37777777-7777-7777-7777-777777777777"}]'::jsonb
+     ) -> 'results') r
+    where r ->> 'class_id' = '33333333-3333-3333-3333-333333333333'), 'waitlisted');
 
 select pg_temp.check('Billy is reported at waitlist position 1',
-  (public.submit_family_registration(
-    '42222222-2222-2222-2222-222222222222','11111111-1111-1111-1111-111111111111',
-    '[{"child_id":"53333333-3333-3333-3333-333333333333","class_id":"33333333-3333-3333-3333-333333333333","intent":"waitlist"},
-      {"child_id":"53333333-3333-3333-3333-333333333333","class_id":"37777777-7777-7777-7777-777777777777"}]'::jsonb
-  ) -> 'results' -> 0 ->> 'waitlist_position'), '1');
+  (select r ->> 'waitlist_position' from
+     jsonb_array_elements(public.submit_family_registration(
+       '42222222-2222-2222-2222-222222222222','11111111-1111-1111-1111-111111111111',
+       '[{"child_id":"53333333-3333-3333-3333-333333333333","class_id":"33333333-3333-3333-3333-333333333333","intent":"waitlist"},
+         {"child_id":"53333333-3333-3333-3333-333333333333","class_id":"37777777-7777-7777-7777-777777777777"}]'::jsonb
+     ) -> 'results') r
+    where r ->> 'class_id' = '33333333-3333-3333-3333-333333333333'), '1');
 
 select pg_temp.check('Requesting a seat in a full class reports "full"',
   (public.submit_family_registration(

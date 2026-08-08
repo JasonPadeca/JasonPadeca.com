@@ -1,0 +1,9 @@
+# Real co-op roster data must never be committed.
+#
+# This repository is public, and the roster contains children's names and birth
+# dates. The live data belongs in Supabase and in a private local copy
+# (~/Documents/coop-private/), never here. Only fictional test data goes in the
+# repo — see coop/supabase/seed/.
+coop-roster-import.sql
+*Registration.xlsx
+coop/supabase/seed/*-real.sql

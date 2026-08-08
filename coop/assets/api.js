@@ -289,6 +289,27 @@ export const api = {
     return unwrap(await db.rpc("registration_preflight", { p_semester_id: semesterId }));
   },
 
+  async volunteers(semesterId) {
+    const db = await client();
+    return unwrap(await db.rpc("volunteer_report", { p_semester_id: semesterId })) ?? [];
+  },
+
+  /** Who named this class as a choice, whether or not they got in. */
+  async classPreferences(classId) {
+    const db = await client();
+    return unwrap(await db.from("class_preferences")
+      .select("rank, child_id, period_id, children(id, first_name, last_name, family_id, families(display_name))")
+      .eq("class_id", classId));
+  },
+
+  /** What each child asked for, including choices that were not used. */
+  async preferences(semesterId) {
+    const db = await client();
+    return unwrap(await db.from("class_preferences")
+      .select("child_id, period_id, rank, class_id")
+      .eq("semester_id", semesterId));
+  },
+
   // --- Invitations (status only; the token hash is not readable here) ---
   async invites(semesterId) {
     const db = await client();
@@ -376,9 +397,16 @@ export const familyApi = {
 
   session(token) { return this.post("family-session", { token }); },
 
-  /** notParticipating is the child ids sitting this semester out. */
-  submit(token, selections, notParticipating = []) {
-    return this.post("family-submit",
-      { token, selections, not_participating: notParticipating });
+  /**
+   * selections carry `rank` (1 = first choice, 2 = fallback).
+   * notParticipating is the child ids sitting this semester out.
+   * volunteer is keyed by child id: { wants, note, slots:[{period_id, class_id}] }.
+   */
+  submit(token, selections, notParticipating = [], volunteer = {}) {
+    return this.post("family-submit", {
+      token, selections,
+      not_participating: notParticipating,
+      volunteer,
+    });
   },
 };

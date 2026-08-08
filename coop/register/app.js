@@ -21,8 +21,12 @@ let DATA = null;          // the payload from family-session
 let activeChildId = null;
 /** { [childId]: { [classId]: "register" | "waitlist" } } */
 let picks = {};
+/** Second choices: { [childId]: { [periodId]: classId } } */
+let seconds = {};
 /** Child ids the parent has marked as sitting this semester out. */
 let sittingOut = new Set();
+/** { [childId]: { wants: bool, note: string, slots: Set("periodId|classId") } } */
+let volunteer = {};
 let submitting = false;
 
 // =============================================================================
@@ -98,6 +102,23 @@ async function load() {
   sittingOut = new Set(
     (DATA.children ?? []).filter((c) => c.participating === false).map((c) => c.id));
 
+  // Second choices survive in class_preferences even when they were not used,
+  // so restore them rather than making the parent re-enter them.
+  seconds = {};
+  for (const p of DATA.preferences ?? []) {
+    if (p.rank === 2) (seconds[p.child_id] ??= {})[p.period_id] = p.class_id;
+  }
+
+  volunteer = {};
+  for (const c of DATA.children ?? []) {
+    const v = c.volunteer ?? {};
+    volunteer[c.id] = {
+      wants: v.wants === true,
+      note: v.note ?? "",
+      slots: new Set((v.slots ?? []).map((s) => `${s.period_id}|${s.class_id ?? ""}`)),
+    };
+  }
+
   activeChildId = DATA.children[0]?.id ?? null;
   renderChooser();
 }
@@ -132,13 +153,21 @@ function reasonsFor(cls, childId) {
  * yet submitted. Without this, a parent registering three children could put all
  * three into the last remaining seat and only find out on submit.
  */
-function seatsLeft(cls) {
+function seatsLeft(cls, forChildId) {
   if (cls.capacity == null) return Infinity;
+
+  // Seats this family already holds are inside registered_count; add them back
+  // so the family is not counted against itself.
   const alreadyMine = (DATA.registrations ?? [])
     .filter((r) => r.class_id === cls.id && r.status === "registered").length;
-  const nowMine = Object.values(picks)
-    .filter((byClass) => byClass[cls.id] === "register").length;
-  return cls.capacity - cls.registered_count + alreadyMine - nowMine;
+
+  // Picks by this family's OTHER children. The child being looked at is
+  // excluded on purpose: their own pick must not make the class read as full
+  // to them, which would turn the class they just chose into a waitlist box.
+  const nowSiblings = Object.entries(picks)
+    .filter(([cid, byClass]) => cid !== forChildId && byClass[cls.id] === "register").length;
+
+  return cls.capacity - cls.registered_count + alreadyMine - nowSiblings;
 }
 
 function choose(childId, period, cls, intent) {
@@ -213,6 +242,7 @@ function renderChooser() {
           ${renderChildTabs()}
           ${renderParticipation(child, editable)}
           <div id="periods">${renderPeriods(child, editable)}</div>
+          ${renderVolunteer(child, editable)}
         </div>
         <div class="reg-summary">
           ${renderSummary(editable)}
@@ -312,6 +342,7 @@ function renderPeriods(child, editable) {
           </h3>
         </legend>
         ${options || `<div class="empty small">No classes in this period.</div>`}
+        ${renderSecondChoice(child, period, chosen, editable)}
         ${chosen && editable ? `<div class="clear">
           <button type="button" class="btn btn-sm btn-ghost" data-clear="${esc(period.id)}">
             Clear ${esc(child.first_name)}'s ${esc(period.display_name)} choice
@@ -319,6 +350,38 @@ function renderPeriods(child, editable) {
       </fieldset>
     </section>`;
   }).join("");
+}
+
+/**
+ * The optional fallback for a period.
+ *
+ * A <select> rather than a second list of cards: it is one line instead of
+ * eight, and only appears once a first choice exists, so the common case —
+ * a parent who just wants one class — never sees it at all.
+ *
+ * Only classes the child is actually eligible for are offered. A fallback that
+ * cannot be taken is worse than none, because the parent believes they are
+ * covered.
+ */
+function renderSecondChoice(child, period, chosen, editable) {
+  if (!chosen) return "";
+
+  const candidates = period.classes.filter((c) =>
+    c.id !== chosen.id && isEligible(c, child.id));
+  if (!candidates.length) return "";
+
+  const current = seconds[child.id]?.[period.id] ?? "";
+
+  return `<div class="second">
+    <label for="sec_${esc(period.id)}">
+      If ${esc(chosen.name)} fills up, try instead <span class="faint">(optional)</span>
+    </label>
+    <select id="sec_${esc(period.id)}" data-second="${esc(period.id)}" ${editable ? "" : "disabled"}>
+      <option value="">No second choice — ${esc(child.first_name)} will go without this period</option>
+      ${candidates.map((c) => `<option value="${esc(c.id)}"${c.id === current ? " selected" : ""}>
+        ${esc(c.name)}${c.is_full ? " (also full)" : ""}</option>`).join("")}
+    </select>
+  </div>`;
 }
 
 function renderOption(cls, child, period, editable) {
@@ -329,7 +392,7 @@ function renderOption(cls, child, period, editable) {
   if (!eligible && DATA.show_ineligible === false) return "";
 
   const state = childPicks(child.id)[cls.id];
-  const left = seatsLeft(cls);
+  const left = seatsLeft(cls, child.id);
   const full = left <= 0;
   const checked = state === "register" || state === "waitlist";
 
@@ -383,6 +446,74 @@ function renderOption(cls, child, period, editable) {
   </label>`;
 }
 
+/**
+ * "Would this child like to help?"
+ *
+ * Collapsed to a single question until the answer is yes, so a family who is
+ * not volunteering sees one extra line and nothing more. The detail — which
+ * period, which classes — only appears once it is relevant.
+ *
+ * This records willingness. It assigns nobody to anything; an administrator
+ * still does the actual asking.
+ */
+function renderVolunteer(child, editable) {
+  if (sittingOut.has(child.id)) return "";
+
+  const v = volunteer[child.id] ?? { wants: false, note: "", slots: new Set() };
+
+  return `<fieldset class="volunteer ${v.wants ? "is-on" : ""}">
+    <legend class="lbl">Would ${esc(child.first_name)} like to volunteer this semester?</legend>
+    <div class="participation-choices">
+      <label class="pill">
+        <input type="radio" name="volunteer" value="no"
+               ${v.wants ? "" : "checked"} ${editable ? "" : "disabled"}>
+        <span>Not this time</span>
+      </label>
+      <label class="pill">
+        <input type="radio" name="volunteer" value="yes"
+               ${v.wants ? "checked" : ""} ${editable ? "" : "disabled"}>
+        <span>Yes, ${esc(child.first_name)} would like to help</span>
+      </label>
+    </div>
+
+    ${v.wants ? `<div class="volunteer-detail">
+      <p class="tiny muted">Tick a period to offer any class in it, or pick out
+        particular classes. Anything you leave blank just means “no preference”.</p>
+
+      ${DATA.periods.map((p) => {
+        const anyKey = `${p.id}|`;
+        const wholePeriod = v.slots.has(anyKey);
+        return `<div class="vol-period">
+          <label class="check">
+            <input type="checkbox" data-vol-period="${esc(p.id)}"
+                   ${wholePeriod ? "checked" : ""} ${editable ? "" : "disabled"}>
+            <strong>${esc(p.display_name)}</strong>
+            <span class="faint tiny">${esc(fmtTimeRange(p.start_time, p.end_time))}</span>
+          </label>
+          <div class="vol-classes">
+            ${p.classes.map((c) => {
+              const key = `${p.id}|${c.id}`;
+              return `<label class="chip">
+                <input type="checkbox" data-vol-class="${esc(c.id)}" data-vol-in="${esc(p.id)}"
+                       ${v.slots.has(key) ? "checked" : ""}
+                       ${editable && !wholePeriod ? "" : "disabled"}>
+                <span>${esc(c.name)}</span>
+              </label>`;
+            }).join("") || `<span class="tiny faint">No classes in this period yet.</span>`}
+          </div>
+        </div>`;
+      }).join("")}
+
+      <div class="field mt">
+        <label for="volnote">Anything we should know? <span class="faint">(optional)</span></label>
+        <input type="text" id="volnote" maxlength="500" value="${esc(v.note ?? "")}"
+               placeholder="Good with younger children, can only do mornings…"
+               ${editable ? "" : "disabled"}>
+      </div>
+    </div>` : ""}
+  </fieldset>`;
+}
+
 function renderSummary(editable) {
   const rows = DATA.children.map((child) => {
     if (sittingOut.has(child.id)) {
@@ -398,8 +529,12 @@ function renderSummary(editable) {
         return `<div class="sum-row none"><span class="p">${period.period_number}</span>
           <span class="c">—</span></div>`;
       }
+      const second = seconds[child.id]?.[period.id];
+      const secondName = second
+        ? period.classes.find((c) => c.id === second)?.name : null;
       return `<div class="sum-row"><span class="p">${period.period_number}</span>
         <span class="c">${chosen ? esc(chosen.name) : `<span class="faint">—</span>`}
+        ${chosen && secondName ? `<div class="alt">then ${esc(secondName)}</div>` : ""}
         ${waits.map((w) => `<div class="wl">Waitlist: ${esc(w.name)}</div>`).join("")}
         </span></div>`;
     }).join("");
@@ -476,6 +611,49 @@ function wireChooser(editable) {
       choose(child.id, period, cls, intent);
     }));
 
+  app.querySelectorAll("[data-second]").forEach((sel) =>
+    sel.addEventListener("change", () => {
+      const byPeriod = (seconds[activeChildId] ??= {});
+      if (sel.value) byPeriod[sel.dataset.second] = sel.value;
+      else delete byPeriod[sel.dataset.second];
+      renderChooser();
+    }));
+
+  // --- volunteering ---
+  const vol = () => (volunteer[activeChildId] ??= { wants: false, note: "", slots: new Set() });
+
+  app.querySelectorAll('.volunteer input[name="volunteer"]').forEach((input) =>
+    input.addEventListener("change", () => {
+      const v = vol();
+      v.wants = input.value === "yes";
+      if (!v.wants) v.slots.clear();
+      renderChooser();
+    }));
+
+  app.querySelectorAll("[data-vol-period]").forEach((box) =>
+    box.addEventListener("change", () => {
+      const v = vol();
+      const pid = box.dataset.volPeriod;
+      const period = DATA.periods.find((p) => p.id === pid);
+      if (box.checked) {
+        // Offering the whole period supersedes any individual classes in it.
+        for (const c of period.classes) v.slots.delete(`${pid}|${c.id}`);
+        v.slots.add(`${pid}|`);
+      } else {
+        v.slots.delete(`${pid}|`);
+      }
+      renderChooser();
+    }));
+
+  app.querySelectorAll("[data-vol-class]").forEach((box) =>
+    box.addEventListener("change", () => {
+      const v = vol();
+      const key = `${box.dataset.volIn}|${box.dataset.volClass}`;
+      if (box.checked) v.slots.add(key); else v.slots.delete(key);
+    }));
+
+  $("#volnote")?.addEventListener("input", (e) => { vol().note = e.target.value; });
+
   app.querySelectorAll("[data-clear]").forEach((btn) =>
     btn.addEventListener("click", () => {
       const period = DATA.periods.find((p) => p.id === btn.dataset.clear);
@@ -502,9 +680,15 @@ function renderReview() {
     const lines = DATA.periods.map((period) => {
       const chosen = pickedInPeriod(child.id, period);
       const waits = waitlistedInPeriod(child.id, period);
+      const second = seconds[child.id]?.[period.id];
+      const secondName = second
+        ? period.classes.find((c) => c.id === second)?.name : null;
       const bits = [];
       if (chosen) bits.push(`<div class="review-row">
-        <strong>${esc(period.display_name)}</strong><span>${esc(chosen.name)}</span></div>`);
+        <strong>${esc(period.display_name)}</strong><span>${esc(chosen.name)}
+        ${secondName
+          ? `<div class="tiny muted">If it fills up: ${esc(secondName)}</div>`
+          : ""}</span></div>`);
       for (const w of waits) bits.push(`<div class="review-row">
         <strong>${esc(period.display_name)}</strong>
         <span>${esc(w.name)} <span class="badge badge-warn">Waitlist</span></span></div>`);
@@ -546,11 +730,38 @@ async function submit(e) {
   for (const [childId, byClass] of Object.entries(picks)) {
     if (sittingOut.has(childId)) continue;
     for (const [classId, intent] of Object.entries(byClass)) {
-      selections.push({ child_id: childId, class_id: classId, intent });
+      selections.push({ child_id: childId, class_id: classId, intent, rank: 1 });
     }
   }
 
-  const res = await familyApi.submit(TOKEN, selections, [...sittingOut]);
+  // Second choices ride along as rank 2; the backend only reaches for them if
+  // the rank 1 class in that period turns out to be full.
+  for (const [childId, byPeriod] of Object.entries(seconds)) {
+    if (sittingOut.has(childId)) continue;
+    for (const [periodId, classId] of Object.entries(byPeriod)) {
+      const period = DATA.periods.find((p) => p.id === periodId);
+      // Meaningless without a first choice in the same period.
+      if (!period || !pickedInPeriod(childId, period)) continue;
+      selections.push({ child_id: childId, class_id: classId, intent: "register", rank: 2 });
+    }
+  }
+
+  const volunteerPayload = {};
+  for (const [childId, v] of Object.entries(volunteer)) {
+    if (sittingOut.has(childId)) continue;
+    volunteerPayload[childId] = {
+      wants: v.wants,
+      note: v.note || null,
+      slots: v.wants
+        ? [...v.slots].map((k) => {
+            const [period_id, class_id] = k.split("|");
+            return { period_id, class_id: class_id || null };
+          })
+        : [],
+    };
+  }
+
+  const res = await familyApi.submit(TOKEN, selections, [...sittingOut], volunteerPayload);
   submitting = false;
 
   if (!res?.ok) {
@@ -580,8 +791,17 @@ function renderConfirmation(res) {
     for (const c of p.classes) { classById.set(c.id, c); periodOf.set(c.id, p); }
   }
 
+  // A first choice that filled up is only a problem if nothing else caught it.
+  // Where the second choice worked, the parent needs to know what happened, not
+  // to be told something went wrong.
+  const covered = new Set(
+    res.results
+      .filter((r) => r.outcome === "registered")
+      .map((r) => `${r.child_id}|${periodOf.get(r.class_id)?.id ?? ""}`));
+
   const problems = res.results.filter((r) =>
-    r.outcome === "full" || r.outcome === "rejected" || r.outcome === "ineligible");
+    (r.outcome === "full" || r.outcome === "rejected" || r.outcome === "ineligible") &&
+    !covered.has(`${r.child_id}|${periodOf.get(r.class_id)?.id ?? ""}`));
 
   const blocks = DATA.children.map((child) => {
     if (sittingOut.has(child.id)) {
@@ -606,6 +826,10 @@ function renderConfirmation(res) {
           <span>${esc(classById.get(r.class_id)?.name ?? "")}
           ${r.outcome === "waitlisted"
             ? `<span class="badge badge-warn">Waitlist${r.waitlist_position ? ` #${r.waitlist_position}` : ""}</span>`
+            : ""}
+          ${r.used_second_choice
+            ? `<span class="badge badge-accent">Second choice</span>
+               <div class="tiny muted">Your first choice filled up.</div>`
             : ""}</span></div>`).join("")
       : `<div class="review-row faint"><span>No classes</span></div>`;
 

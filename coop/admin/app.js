@@ -13,6 +13,7 @@ import * as Dashboard  from "./views/dashboard.js";
 import * as Families   from "./views/families.js";
 import * as Semesters  from "./views/semesters.js";
 import * as Enrollment from "./views/enrollment.js";
+import * as Volunteers from "./views/volunteers.js";
 import * as Exports    from "./views/exports.js";
 import * as Settings   from "./views/settings.js";
 
@@ -33,6 +34,7 @@ const ROUTES = [
   ["#/periods/:id",            Semesters.periodDetail],
   ["#/classes/:id",            Semesters.classDetail],
   ["#/enrollment",             Enrollment.show],
+  ["#/volunteers",             Volunteers.show],
   ["#/exports",                Exports.show],
   ["#/settings",               Settings.show],
   ["#/audit",                  Settings.audit],
@@ -43,6 +45,7 @@ const NAV = [
   ["#/families",   "Families"],
   ["#/semesters",  "Semesters"],
   ["#/enrollment", "Enrollment"],
+  ["#/volunteers", "Volunteers"],
   ["#/exports",    "Exports"],
   ["#/settings",   "Settings"],
 ];
