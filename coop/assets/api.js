@@ -234,6 +234,16 @@ export const api = {
       .order("status").order("waitlisted_at", { nullsFirst: true }).order("created_at"));
   },
 
+  /** Child ids sitting this semester out, as a Set. */
+  async sittingOut(semesterId) {
+    const db = await client();
+    const rows = unwrap(await db.from("semester_participation")
+      .select("child_id, participating")
+      .eq("semester_id", semesterId)
+      .eq("participating", false));
+    return new Set(rows.map((r) => r.child_id));
+  },
+
   async semesterRegistrations(semesterId) {
     const db = await client();
     return unwrap(await db.from("registrations")
@@ -364,6 +374,11 @@ export const familyApi = {
     }
   },
 
-  session(token)              { return this.post("family-session", { token }); },
-  submit(token, selections)   { return this.post("family-submit", { token, selections }); },
+  session(token) { return this.post("family-session", { token }); },
+
+  /** notParticipating is the child ids sitting this semester out. */
+  submit(token, selections, notParticipating = []) {
+    return this.post("family-submit",
+      { token, selections, not_participating: notParticipating });
+  },
 };

@@ -42,7 +42,10 @@ export async function show(app) {
     api.families(),
   ]);
 
-  const notRegistered = summary.active_children - summary.children_registered;
+  // Children sitting the semester out have answered; they are not outstanding.
+  const sittingOut = summary.sitting_out ?? 0;
+  const notRegistered =
+    summary.active_children - summary.children_registered - sittingOut;
 
   render(app, `<div class="wrap page">
     <div class="page-head">
@@ -63,6 +66,7 @@ export async function show(app) {
       ${stat(summary.active_children, "Active children")}
       ${stat(summary.children_registered, "Registered")}
       ${stat(notRegistered, "Not yet registered", notRegistered > 0 ? "attn" : "")}
+      ${sittingOut ? stat(sittingOut, "Sitting out") : ""}
       ${stat(summary.confirmed_seats, "Confirmed seats")}
       ${stat(summary.waitlisted, "Waitlisted", summary.waitlisted > 0 ? "attn" : "")}
       ${stat(summary.classes_full, "Classes full")}

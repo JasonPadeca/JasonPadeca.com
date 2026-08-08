@@ -21,6 +21,8 @@ let DATA = null;          // the payload from family-session
 let activeChildId = null;
 /** { [childId]: { [classId]: "register" | "waitlist" } } */
 let picks = {};
+/** Child ids the parent has marked as sitting this semester out. */
+let sittingOut = new Set();
 let submitting = false;
 
 // =============================================================================
@@ -92,6 +94,9 @@ async function load() {
     (picks[r.child_id] ??= {})[r.class_id] =
       r.status === "waitlisted" ? "waitlist" : "register";
   }
+
+  sittingOut = new Set(
+    (DATA.children ?? []).filter((c) => c.participating === false).map((c) => c.id));
 
   activeChildId = DATA.children[0]?.id ?? null;
   renderChooser();
@@ -206,6 +211,7 @@ function renderChooser() {
       <div class="reg-layout">
         <div>
           ${renderChildTabs()}
+          ${renderParticipation(child, editable)}
           <div id="periods">${renderPeriods(child, editable)}</div>
         </div>
         <div class="reg-summary">
@@ -221,17 +227,64 @@ function renderChildTabs() {
   if (DATA.children.length === 1) return "";
   return `<div class="childtabs" role="tablist" aria-label="Children">
     ${DATA.children.map((c) => {
+      const out = sittingOut.has(c.id);
       const n = Object.keys(childPicks(c.id)).length;
-      return `<button class="childtab" role="tab" data-child="${esc(c.id)}"
-                aria-selected="${c.id === activeChildId}">
-        ${esc(c.first_name)}${n ? `<span class="dot" title="${n} selected"></span>` : ""}
-        <span class="age">${c.age != null ? `Age ${c.age}` : "Age unknown"}</span>
+      return `<button class="childtab ${out ? "is-out" : ""}" role="tab"
+                data-child="${esc(c.id)}" aria-selected="${c.id === activeChildId}">
+        ${esc(c.first_name)}${!out && n ? `<span class="dot" title="${n} selected"></span>` : ""}
+        <span class="age">${out
+          ? "Sitting out"
+          : (c.age != null ? `Age ${c.age}` : "Age unknown")}</span>
       </button>`;
     }).join("")}
   </div>`;
 }
 
+/**
+ * The per-child "is this one taking classes?" question.
+ *
+ * A radio pair rather than a checkbox, because the two states are a genuine
+ * either/or the parent should answer deliberately — and because "not
+ * participating" needs to read as a real choice, not as something forgotten.
+ */
+function renderParticipation(child, editable) {
+  const out = sittingOut.has(child.id);
+  return `<fieldset class="participation ${out ? "is-out" : ""}">
+    <legend class="lbl">Is ${esc(child.first_name)} taking classes this semester?</legend>
+    <div class="participation-choices">
+      <label class="pill">
+        <input type="radio" name="participating" value="yes"
+               ${out ? "" : "checked"} ${editable ? "" : "disabled"}>
+        <span>Yes, registering for classes</span>
+      </label>
+      <label class="pill">
+        <input type="radio" name="participating" value="no"
+               ${out ? "checked" : ""} ${editable ? "" : "disabled"}>
+        <span>Not participating this semester</span>
+      </label>
+    </div>
+    ${out ? `<p class="tiny muted mt">
+      ${esc(child.first_name)} will be skipped this semester. Anything previously
+      chosen for ${esc(child.first_name)} will be released when you submit.
+      You can change this at any time before registration closes.
+    </p>` : ""}
+  </fieldset>`;
+}
+
 function renderPeriods(child, editable) {
+  // A child sitting out has no schedule to build, so the class lists are
+  // replaced rather than merely disabled — there is nothing to read there.
+  if (sittingOut.has(child.id)) {
+    return `<div class="empty">
+      <h3>${esc(child.first_name)} is sitting this semester out</h3>
+      <p>Switch the choice above back to “Yes” to pick classes for
+         ${esc(child.first_name)}.</p>
+      ${DATA.children.length > 1
+        ? `<p class="tiny faint mt">Your other children are unaffected — carry on with them above.</p>`
+        : ""}
+    </div>`;
+  }
+
   if (!DATA.periods.length) {
     return `<div class="empty"><h3>No classes yet</h3>
       <p>This semester's schedule has not been published.</p></div>`;
@@ -332,6 +385,12 @@ function renderOption(cls, child, period, editable) {
 
 function renderSummary(editable) {
   const rows = DATA.children.map((child) => {
+    if (sittingOut.has(child.id)) {
+      return `<div class="sum-child">
+        <div class="who">${esc(child.first_name)}</div>
+        <div class="sum-row none"><span class="c">Not participating this semester</span></div>
+      </div>`;
+    }
     const lines = DATA.periods.map((period) => {
       const chosen = pickedInPeriod(child.id, period);
       const waits = waitlistedInPeriod(child.id, period);
@@ -359,12 +418,23 @@ function renderSummary(editable) {
       That is fine if it is what you want.
     </div>` : ""}
     ${editable ? `<button class="btn btn-primary btn-block mt" id="review"
-      ${totalPicked() === 0 ? "disabled" : ""}>Review &amp; Submit</button>` : ""}
+      ${canSubmit() ? "" : "disabled"}>Review &amp; Submit</button>` : ""}
   </div>`;
+}
+
+/**
+ * A submission is worth making once the parent has said something — either
+ * picked a class, or declared somebody out. A family where everyone is sitting
+ * out has nothing selected and must still be able to submit, which is why this
+ * is not simply "has selections".
+ */
+function canSubmit() {
+  return totalPicked() > 0 || sittingOut.size > 0;
 }
 
 function countMissing() {
   return DATA.children.filter((child) =>
+    !sittingOut.has(child.id) &&
     DATA.periods.some((p) => p.classes.length && !pickedInPeriod(child.id, p))
   ).length;
 }
@@ -377,6 +447,19 @@ function wireChooser(editable) {
     }));
 
   if (!editable) return;
+
+  app.querySelectorAll('.participation input[name="participating"]').forEach((input) =>
+    input.addEventListener("change", () => {
+      if (input.value === "no") {
+        sittingOut.add(activeChildId);
+        // Drop their selections now rather than at submit, so the summary and
+        // the confirmation both tell the truth about what is being sent.
+        delete picks[activeChildId];
+      } else {
+        sittingOut.delete(activeChildId);
+      }
+      renderChooser();
+    }));
 
   app.querySelectorAll("#periods input").forEach((input) =>
     input.addEventListener("change", () => {
@@ -410,6 +493,12 @@ function wireChooser(editable) {
 
 function renderReview() {
   const blocks = DATA.children.map((child) => {
+    if (sittingOut.has(child.id)) {
+      return `<div class="review-child">
+        <div class="who">${esc(child.first_name)} ${esc(child.last_name ?? "")}</div>
+        <div class="review-row faint"><span>Not participating this semester</span></div>
+      </div>`;
+    }
     const lines = DATA.periods.map((period) => {
       const chosen = pickedInPeriod(child.id, period);
       const waits = waitlistedInPeriod(child.id, period);
@@ -455,12 +544,13 @@ async function submit(e) {
 
   const selections = [];
   for (const [childId, byClass] of Object.entries(picks)) {
+    if (sittingOut.has(childId)) continue;
     for (const [classId, intent] of Object.entries(byClass)) {
       selections.push({ child_id: childId, class_id: classId, intent });
     }
   }
 
-  const res = await familyApi.submit(TOKEN, selections);
+  const res = await familyApi.submit(TOKEN, selections, [...sittingOut]);
   submitting = false;
 
   if (!res?.ok) {
@@ -494,6 +584,12 @@ function renderConfirmation(res) {
     r.outcome === "full" || r.outcome === "rejected" || r.outcome === "ineligible");
 
   const blocks = DATA.children.map((child) => {
+    if (sittingOut.has(child.id)) {
+      return `<div class="review-child">
+        <div class="who">${esc(child.first_name)} ${esc(child.last_name ?? "")}</div>
+        <div class="review-row faint"><span>Not participating this semester</span></div>
+      </div>`;
+    }
     const got = res.results
       .filter((r) => r.child_id === child.id &&
                      (r.outcome === "registered" || r.outcome === "waitlisted"))

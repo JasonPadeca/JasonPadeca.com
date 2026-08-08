@@ -22,11 +22,12 @@ Deno.serve(async (req) => {
     return json(req, { ok: false, error: "method_not_allowed" }, 405);
   }
 
-  let token = "", selections: Selection[] = [];
+  let token = "", selections: Selection[] = [], notParticipating: string[] = [];
   try {
     const body = await req.json();
     token = body?.token ?? "";
     selections = Array.isArray(body?.selections) ? body.selections : [];
+    notParticipating = Array.isArray(body?.not_participating) ? body.not_participating : [];
   } catch {
     return json(req, { ok: false, error: "bad_request" }, 400);
   }
@@ -68,12 +69,18 @@ Deno.serve(async (req) => {
   // period, and the registration window are all re-checked in here — the token
   // establishes which family is asking, and nothing else is taken on trust.
   // ---------------------------------------------------------------------------
+  // Only well-formed uuids reach the database; the function itself then
+  // restricts them to this family's children.
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const sittingOut = notParticipating.filter((id) => typeof id === "string" && UUID.test(id));
+
   const { data: result, error: sErr } = await db.rpc("submit_family_registration", {
     p_family_id: resolved.family_id,
     p_semester_id: resolved.semester_id,
     p_selections: clean,
     p_actor: "family",
     p_allow_closed: false,
+    p_not_participating: sittingOut,
   });
 
   if (sErr) {

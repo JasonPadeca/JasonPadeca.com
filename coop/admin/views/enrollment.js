@@ -21,10 +21,11 @@ export async function show(app) {
   const semesterId = params.get("s") ?? semesters[0].id;
   const semester = semesters.find((s) => s.id === semesterId) ?? semesters[0];
 
-  const [regs, families, classes] = await Promise.all([
+  const [regs, families, classes, sittingOut] = await Promise.all([
     api.semesterRegistrations(semester.id),
     api.families(),
     api.classes({ semester_id: semester.id }),
+    api.sittingOut(semester.id).catch(() => new Set()),
   ]);
 
   // Every active child, with whatever they are registered for attached — so
@@ -39,6 +40,7 @@ export async function show(app) {
         child: `${c.first_name} ${c.last_name ?? ""}`.trim(),
         familyId: f.id,
         family: f.display_name,
+        sittingOut: sittingOut.has(c.id),
         registrations: mine.sort((a, b) =>
           (a.classes?.periods?.period_number ?? 0) - (b.classes?.periods?.period_number ?? 0)),
       });
@@ -68,6 +70,7 @@ export async function show(app) {
           <option value="unregistered">Not yet registered</option>
           <option value="partial">Missing a period</option>
           <option value="waitlisted">On a waitlist</option>
+          <option value="sittingout">Sitting this semester out</option>
         </select>
       </div>
       <div class="field" style="margin:0">
@@ -100,13 +103,18 @@ export async function show(app) {
 
     if (classId) out = out.filter((r) => r.registrations.some((x) => x.class_id === classId));
 
+    // "Not yet registered" and "missing a period" are both about chasing people.
+    // Somebody who has said they are sitting out is not being chased.
     if (filter === "unregistered") {
-      out = out.filter((r) => !r.registrations.some((x) => x.status === "registered"));
+      out = out.filter((r) => !r.sittingOut &&
+        !r.registrations.some((x) => x.status === "registered"));
     } else if (filter === "partial") {
-      out = out.filter((r) =>
+      out = out.filter((r) => !r.sittingOut &&
         r.registrations.filter((x) => x.status === "registered").length < periodCount);
     } else if (filter === "waitlisted") {
       out = out.filter((r) => r.registrations.some((x) => x.status === "waitlisted"));
+    } else if (filter === "sittingout") {
+      out = out.filter((r) => r.sittingOut);
     }
 
     if (!out.length) {
@@ -125,7 +133,9 @@ export async function show(app) {
               <a href="#/classes/${esc(x.class_id)}">${esc(x.classes?.name ?? "")}</a>
               ${x.status === "waitlisted" ? `<span class="badge badge-warn">Waitlist</span>` : ""}
             </div>`).join("")
-          : `<span class="faint">Not registered</span>`}</td>
+          : r.sittingOut
+            ? `<span class="badge">Sitting out</span>`
+            : `<span class="faint">Not registered</span>`}</td>
       </tr>`).join("")}</tbody></table></div>
       <p class="tiny faint mt">${plural(out.length, "student")} shown.</p>`);
   };
@@ -139,7 +149,10 @@ export async function show(app) {
   $("#csv").addEventListener("click", () => {
     const data = [["Student", "Family", "Period", "Class", "Status"]];
     for (const r of rows) {
-      if (!r.registrations.length) data.push([r.child, r.family, "", "", "Not registered"]);
+      if (!r.registrations.length) {
+        data.push([r.child, r.family, "", "",
+                   r.sittingOut ? "Sitting out" : "Not registered"]);
+      }
       for (const x of r.registrations) {
         data.push([r.child, r.family,
           x.classes?.periods?.display_name ?? x.classes?.periods?.period_number ?? "",

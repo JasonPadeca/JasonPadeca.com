@@ -52,6 +52,14 @@ echo "\n=== Behavior: eligibility, registration, waitlists, overrides ==="
 P -d coop -f 10_seed.sql >/dev/null
 P -d coop -f 20_behavior.sql 2>&1 | strip
 
+echo "\n=== Participation: sitting a semester out ==="
+P -d postgres -tAc "drop database coop;" >/dev/null
+P -d postgres -tAc "create database coop;" >/dev/null
+for f in 00_supabase_stub.sql "$MIGRATIONS"/0*.sql 10_seed.sql; do
+  P -d coop -f "$f" >/dev/null
+done
+P -d coop -f 60_participation.sql 2>&1 | strip
+
 echo "\n=== Family payload: shape, privacy, preflight ==="
 P -d postgres -tAc "drop database coop;" >/dev/null
 P -d postgres -tAc "create database coop;" >/dev/null
