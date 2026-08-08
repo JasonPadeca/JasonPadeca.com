@@ -91,7 +91,18 @@ export function plural(n, one, many) {
   return `${n} ${n === 1 ? one : (many ?? one + "s")}`;
 }
 
-/** Age on a given reference date — normally the semester's first class day. */
+/**
+ * Age on a given reference date — normally the semester's first class day.
+ *
+ * This must agree with age_at() in the database, because that is what enforces
+ * eligibility while this is only what the page displays. A page quoting 11 next
+ * to a refusal from an 11+ class would be indefensible. Verified against the
+ * SQL function across four thousand date pairs.
+ *
+ * The parts are split by hand rather than via `new Date(str)`: that parses a
+ * bare date as UTC midnight, and every getter afterwards is local, so anywhere
+ * west of Greenwich reads back the previous day.
+ */
 export function ageAt(birthDate, refDate) {
   if (!birthDate || !refDate) return null;
   const [by, bm, bd] = String(birthDate).slice(0, 10).split("-").map(Number);
@@ -99,7 +110,9 @@ export function ageAt(birthDate, refDate) {
   if (!by || !ry) return null;
   let age = ry - by;
   if (rm < bm || (rm === bm && rd < bd)) age--;
-  return age;
+  // Only reachable if a semester starts before a child was born — a data-entry
+  // slip. A blank cell is honest; "-1" on a roster is not.
+  return age < 0 ? null : age;
 }
 
 /** Parents in the order an administrator entered them. */

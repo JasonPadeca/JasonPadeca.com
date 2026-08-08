@@ -7,7 +7,9 @@
 // =============================================================================
 
 import { api } from "../../assets/api.js";
-import { esc, $, render, fmtDate, toastOk, toastErr, downloadCSV, plural } from "../../assets/ui.js";
+import {
+  esc, $, render, fmtDate, ageAt, toastOk, toastErr, downloadCSV, plural,
+} from "../../assets/ui.js";
 
 const EXPORTS = [
   ["families",     "Active families",     "One row per family, with parents and contact email."],
@@ -62,15 +64,6 @@ export async function show(app) {
     }));
 }
 
-function ageAt(birthDate, refDate) {
-  if (!birthDate || !refDate) return "";
-  const b = new Date(birthDate), r = new Date(refDate);
-  let age = r.getFullYear() - b.getFullYear();
-  const m = r.getMonth() - b.getMonth();
-  if (m < 0 || (m === 0 && r.getDate() < b.getDate())) age--;
-  return age;
-}
-
 function slug(s) {
   return String(s ?? "export").replace(/\s+/g, "-").toLowerCase();
 }
@@ -102,7 +95,7 @@ async function run(kind, semesterId, semester) {
         if (!c.active || c.archived_at) continue;
         rows.push([
           `${c.first_name} ${c.last_name ?? ""}`.trim(), f.display_name,
-          c.birth_date ?? "", ageAt(c.birth_date, ref), c.sex ?? "", "Active",
+          c.birth_date ?? "", ageAt(c.birth_date, ref) ?? "", c.sex ?? "", "Active",
         ]);
       }
     }
