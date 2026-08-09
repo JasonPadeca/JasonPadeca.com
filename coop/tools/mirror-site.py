@@ -128,6 +128,29 @@ DROP_SCRIPT = re.compile(
 # takes the wrong half of the page with it.
 DROP_TAGS = []
 
+def remove_menu_item(html, slug):
+    """Remove the <li> whose link is `slug`, along with any submenu inside it.
+
+    Walks from the opening <li> counting nesting to its matching </li>, so a menu
+    item that is itself a dropdown parent comes out whole."""
+    pat = re.compile(r'<li\b[^>]*>\s*<a\s+href="(?:\.\./)*' + re.escape(slug) + r'/"', re.I)
+    while True:
+        m = pat.search(html)
+        if not m:
+            return html
+        i, depth = m.end(), 1
+        while depth and i < len(html):
+            nxt_open = html.find("<li", i)
+            nxt_close = html.find("</li>", i)
+            if nxt_close == -1:
+                return html                      # malformed; leave it alone
+            if nxt_open != -1 and nxt_open < nxt_close:
+                depth += 1; i = nxt_open + 3
+            else:
+                depth -= 1; i = nxt_close + 5
+        html = html[:m.start()] + html[i:]
+
+
 def rewrite(html, page_url, depth):
     up = "../" * depth
     site = up + "site/"
@@ -195,14 +218,18 @@ def rewrite(html, page_url, depth):
     # --- The Join dropdown -----------------------------------------------------
     #
     # Everything under Join except the application is either already in this app
-    # (registration, class sign-up) or on its way there. Each <li> is removed
-    # whole so the menu keeps its structure.
-    for slug in ("registration", "returning-family-registration",
-                 "newfamilyregistration", "classes-signup", "class-descriptions"):
-        html = re.sub(
-            r'<li[^>]*class="[^"]*menu-item[^"]*"[^>]*>\s*<a href="(?:\.\./)*' + slug +
-            r'/"[^>]*>.*?</a>\s*</li>',
-            "", html, flags=re.S | re.I)
+    # or on its way there.
+    #
+    # Removed by BALANCED matching, not by regex. Step 2 and Step 3 each have
+    # their own nested submenu, and a pattern ending in `.*?</a>\\s*</li>` skips
+    # past the nesting to a later `</a></li>` — it takes the opening tags and
+    # leaves the closes behind. That put three `</ul></li>` where one belonged,
+    # which threw Participate, About and Member Sign In out of the horizontal
+    # menu and onto the page as a bare bulleted list.
+    for slug in ("registration", "classes-signup",
+                 "returning-family-registration", "newfamilyregistration",
+                 "class-descriptions"):
+        html = remove_menu_item(html, slug)
 
     html = DROP_SCRIPT.sub("", html)
     for pat in DROP_TAGS:
