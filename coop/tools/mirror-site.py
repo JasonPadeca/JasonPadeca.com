@@ -128,6 +128,46 @@ DROP_SCRIPT = re.compile(
 # takes the wrong half of the page with it.
 DROP_TAGS = []
 
+def _matching_close(html, start, tag):
+    """Index just past the close tag matching the element opening at `start`."""
+    i, depth = start, 1
+    open_t, close_t = "<" + tag, "</" + tag + ">"
+    while depth and i < len(html):
+        o, c = html.find(open_t, i), html.find(close_t, i)
+        if c == -1:
+            return None
+        if o != -1 and o < c:
+            depth += 1; i = o + len(open_t)
+        else:
+            depth -= 1; i = c + len(close_t)
+    return i if not depth else None
+
+
+def remove_element(html, open_pattern, tag, must_contain=None):
+    """Remove whole elements, nesting and all.
+
+    `must_contain` makes it conditional: the element is only removed if that
+    string appears inside it. Used for wrappers that are generic — a
+    wp-block-group carries the dark background for the subscription bar, but the
+    same class is used elsewhere for content worth keeping.
+    """
+    pat = re.compile(open_pattern, re.I)
+    pos = 0
+    while True:
+        m = pat.search(html, pos)
+        if not m:
+            return html
+        end = _matching_close(html, m.end(), tag)
+        if end is None:
+            return html
+        inner = html[m.end():end]
+        if must_contain and must_contain not in inner:
+            pos = m.end()
+            continue
+        html = html[:m.start()] + html[end:]
+        pos = m.start()
+
+
 def remove_menu_item(html, slug):
     """Remove the <li> whose link is `slug`, along with any submenu inside it.
 
@@ -230,6 +270,41 @@ def rewrite(html, page_url, depth):
                  "returning-family-registration", "newfamilyregistration",
                  "class-descriptions"):
         html = remove_menu_item(html, slug)
+
+    # --- WordPress.com widgets that do not belong on a copy --------------------
+    #
+    # The "Get new content delivered directly to your inbox" bar posts to
+    # WordPress.com and would sign families up to a blog this project does not
+    # publish. Its black background sits on the wrapping group, not the form, so
+    # removing only the form leaves an empty black band across the page.
+    html = remove_element(
+        html,
+        r'<div[^>]*class="[^"]*wp-block-group[^"]*has-background[^"]*"[^>]*>',
+        "div", must_contain="wp-block-jetpack-subscriptions")
+
+    # The Like / share footer. Its iframe comes from widgets.wp.com, and with
+    # that blocked it sits there showing a spinner and the word "Loading..."
+    # forever — which is what a visitor actually sees.
+    html = remove_element(html, r'<div[^>]*id="jp-post-flair"[^>]*>', "div")
+    html = remove_element(html, r'<div[^>]*class="[^"]*sharedaddy[^"]*"[^>]*>', "div")
+    html = remove_element(html, r'<iframe[^>]*widgets\.wp\.com[^>]*>', "iframe")
+
+    # WordPress.com's floating action bar — the Follow / Report this content
+    # widget that hovers over a corner of every page on a wp.com-hosted site.
+    # It ships hidden and is revealed by a script we do not load, so on a copy it
+    # is either invisible or a spinner that never resolves.
+    html = remove_element(html, r'<div[^>]*id="actionbar"[^>]*>', "div")
+
+    # Remaining head fingerprints: prefetch hints, the wp.me shortlink, and
+    # WordPress's own OpenSearch document. All invisible, all pointing at
+    # somewhere this copy has nothing to do with.
+    for pat in (
+        r"<link[^>]+rel=['\"]dns-prefetch['\"][^>]*>",
+        r"<link[^>]+rel=['\"]shortlink['\"][^>]*>",
+        r"<link[^>]+opensearch[^>]*>",
+        r"<link[^>]+rel=['\"]profile['\"][^>]*gmpg\.org[^>]*>",
+    ):
+        html = re.sub(pat, "", html, flags=re.I)
 
     html = DROP_SCRIPT.sub("", html)
     for pat in DROP_TAGS:
