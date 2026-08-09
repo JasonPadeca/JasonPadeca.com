@@ -167,6 +167,43 @@ def rewrite(html, page_url, depth):
     # site mid-journey.
     html = html.replace(f'href="{BASE}/category/uncategorized/"', 'href="#"')
 
+    # --- WordPress fingerprints ------------------------------------------------
+    #
+    # Visible branding first: the footer reads "Koinonia, Website Built with
+    # WordPress.com". The co-op's own name stays; the credit and its link go.
+    html = re.sub(
+        r'<span class="comma">,</span>\s*<a[^>]*wordpress\.com[^>]*>[^<]*</a>\.?',
+        "", html, flags=re.I)
+    html = re.sub(r'<a[^>]*(?:wordpress\.com|wp\.com)[^>]*>[^<]*(?:WordPress|Blog at|Design a site)[^<]*</a>\.?',
+                  "", html, flags=re.I)
+
+    # Then the machine-readable ones. These are invisible, but they announce the
+    # platform to anything that reads the page — and the feeds, RSD and oEmbed
+    # links all point back at the original site, which on a copy is worse than
+    # useless.
+    for pat in (
+        r'<meta name="generator"[^>]*>',
+        r'<link[^>]+rel="EditURI"[^>]*>',
+        r'<link[^>]+wlwmanifest[^>]*>',
+        r'<link[^>]+rel="alternate"[^>]+(?:rss\+xml|atom\+xml)[^>]*>',
+        r'<link[^>]+api\.w\.org[^>]*>',
+        r'<link[^>]+rel="[^"]*shortlink[^"]*"[^>]*>',
+        r'<link[^>]+oembed[^>]*>',
+    ):
+        html = re.sub(pat, "", html, flags=re.I)
+
+    # --- The Join dropdown -----------------------------------------------------
+    #
+    # Everything under Join except the application is either already in this app
+    # (registration, class sign-up) or on its way there. Each <li> is removed
+    # whole so the menu keeps its structure.
+    for slug in ("registration", "returning-family-registration",
+                 "newfamilyregistration", "classes-signup", "class-descriptions"):
+        html = re.sub(
+            r'<li[^>]*class="[^"]*menu-item[^"]*"[^>]*>\s*<a href="(?:\.\./)*' + slug +
+            r'/"[^>]*>.*?</a>\s*</li>',
+            "", html, flags=re.S | re.I)
+
     html = DROP_SCRIPT.sub("", html)
     for pat in DROP_TAGS:
         html = pat.sub("", html)
@@ -191,24 +228,25 @@ def apply_changes(html, depth):
     signin = ('<li class="menu-item menu-item-type-post_type menu-item-object-page">'
               f'<a href="{up}portal/">Member Sign In</a></li>')
 
-    # The theme's own menu: <ul class="main-menu">. The new item is inserted as
-    # a plain <li class="menu-item">, so it inherits the theme's styling exactly
-    # and reads as though it was always there — which is the point.
-    m = re.search(r'<ul[^>]*class="[^"]*main-menu[^"]*"[^>]*>', html, re.I)
-    if m:
-        start = m.end()
-        depth_ul, i = 1, start
-        while i < len(html) and depth_ul:
-            nxt_open, nxt_close = html.find("<ul", i), html.find("</ul>", i)
-            if nxt_close == -1:
-                break
-            if nxt_open != -1 and nxt_open < nxt_close:
-                depth_ul += 1; i = nxt_open + 3
-            else:
-                depth_ul -= 1; i = nxt_close + 5
-        if not depth_ul:
-            html = html[:i - 5] + signin + html[i - 5:]
-            changes.append("sign-in item")
+    # The theme's own menu. The new item goes at the END of the top-level list,
+    # as a plain <li class="menu-item"> so the theme styles it.
+    #
+    # Anchored to the close of the menu container rather than found by counting
+    # <ul> nesting. The counting version worked until the Join items were
+    # stripped, then mis-landed the item INSIDE the Join submenu — which
+    # swallowed Participate and About, because everything after the insertion
+    # point ended up nested one level too deep. Searching backwards from a fixed
+    # landmark cannot drift like that.
+    for m in re.finditer(r'<div class="main-menu-container">', html):
+        tail = html.find("</nav>", m.end())
+        if tail == -1:
+            continue
+        close = html.rfind("</ul>", m.end(), tail)
+        if close == -1:
+            continue
+        html = html[:close] + signin + html[close:]
+        changes.append("sign-in item")
+        break
 
     return html, changes
 
