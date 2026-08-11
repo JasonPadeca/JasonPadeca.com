@@ -17,6 +17,7 @@ import * as Volunteers from "./views/volunteers.js";
 import * as PrintRoster from "./views/print-roster.js";
 import * as Absences from "./views/absences.js";
 import * as Applications from "./views/applications.js";
+import * as Website    from "./views/website.js";
 import * as Exports    from "./views/exports.js";
 import * as Settings   from "./views/settings.js";
 
@@ -42,6 +43,8 @@ const ROUTES = [
   ["#/semesters/:id/rosters",  PrintRoster.all],
   ["#/enrollment",             Enrollment.show],
   ["#/volunteers",             Volunteers.show],
+  ["#/website",                Website.show],
+  ["#/website/:page",          Website.page],
   ["#/exports",                Exports.show],
   ["#/settings",               Settings.show],
   ["#/audit",                  Settings.audit],
@@ -55,6 +58,7 @@ const NAV = [
   ["#/enrollment", "Enrollment"],
   ["#/absences",   "Absences"],
   ["#/volunteers", "Volunteers"],
+  ["#/website",    "Website"],
   ["#/exports",    "Exports"],
   ["#/settings",   "Settings"],
 ];

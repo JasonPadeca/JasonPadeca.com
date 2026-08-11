@@ -600,6 +600,29 @@ export const api = {
     return unwrap(await db.rpc("my_application"));
   },
 
+  // --- Website text ---
+  /** Every editable block on one page, in the order it appears. */
+  async siteBlocks(page) {
+    const db = await client();
+    return unwrap(await db.from("site_content").select("*")
+      .eq("page", page).order("sort_order", { ascending: true }));
+  },
+
+  /** Which pages have unpublished-looking changes, for the page list. */
+  async siteEditedPages() {
+    const db = await client();
+    return unwrap(await db.from("site_content").select("page")
+      .not("text", "is", null));
+  },
+
+  /** Blank text reverts the block to its original wording. */
+  async setSiteText(page, blockKey, text) {
+    const db = await client();
+    return unwrap(await db.rpc("set_site_text", {
+      p_page: page, p_block_key: blockKey, p_text: text,
+    }));
+  },
+
   // --- Announcements ---
   async announcements({ classId = null, semesterId = null } = {}) {
     const db = await client();
