@@ -138,9 +138,16 @@ supabase login
 supabase link --project-ref YOUR-PROJECT-REF
 ```
 
+Run this from the **`coop` directory**, which is the one holding `supabase/`:
+
 ```bash
-supabase functions deploy --project-ref YOUR-PROJECT-REF --workdir coop/supabase
+cd coop && supabase functions deploy --project-ref YOUR-PROJECT-REF
 ```
+
+`--workdir coop/supabase` does not work and looks like it should: the CLI then
+searches for `supabase/functions/...` *inside* that path and reports
+"Entrypoint path does not exist" for every function, having already printed
+"Deploying Function" for each one.
 
 If you would rather not install the CLI, you can paste each function's code
 into **Edge Functions** › **Deploy a new function** in the dashboard instead —
