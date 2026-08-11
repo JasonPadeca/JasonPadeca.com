@@ -25,6 +25,7 @@ import {
   formDialog, confirmDialog, modal,
 } from "../../assets/ui.js";
 import { REGISTRATION_STATUS } from "../../assets/proposal-fields.js";
+import { recordBody } from "./print-record.js";
 import { refresh } from "../app.js";
 
 const ORDER = ["not_started", "registered", "not_attending"];
@@ -322,38 +323,52 @@ async function act(what, r, semester) {
   }
 }
 
-/** What the family actually wrote, question by question. */
-function readForm(r, semester) {
-  const d = r.form_data ?? {};
-  const row = (q, a) => `<div class="qa">
-    <div class="q">${esc(q)}</div>
-    <div class="a">${a ? esc(a) : `<span class="faint">Left blank</span>`}</div>
-  </div>`;
+/**
+ * The whole record, in a dialog.
+ *
+ * Fetched rather than rendered from the row the list already holds: the list
+ * deliberately carries the thin answers and not the snapshot, so reading from
+ * it produced a summary with a phone number and a comment and no children —
+ * which is not a form summary, it is the leftovers of one.
+ */
+async function readForm(r, semester) {
+  let rec;
+  try {
+    rec = await api.registrationRecord(r.family_id, semester.id);
+  } catch (e) {
+    return modal({
+      title: `${r.display_name} — ${semester.name}`,
+      wide: true,
+      body: `<div class="note note-danger">${esc(e.message)}</div>
+        <p class="muted mt">If this says the function could not be found, the
+        database update that adds it has not been run yet. The form itself is
+        safe — this is only the reader for it.</p>`,
+      buttons: [{ value: null, label: "Close" }],
+    });
+  }
 
-  const grades = [...(d.grades ?? []), ...(d.new_children ?? [])]
-    .map((g) => g.grade).filter(Boolean).join(", ");
+  if (!rec?.ok) {
+    return modal({
+      title: r.display_name,
+      body: `<p class="muted">There is no registration on file for
+        ${esc(semester.name)}.</p>`,
+      buttons: [{ value: null, label: "Close" }],
+    });
+  }
 
-  modal({
+  const choice = await modal({
     title: `${r.display_name} — ${semester.name}`,
     wide: true,
-    body: `
-      <div class="sub mb">Sent ${esc(fmtDate(r.form_submitted_at))}</div>
-      ${row("Code of Conduct agreed", d.agreed_conduct ? "Yes" : "No")}
-      ${row("Phone", d.primary_phone)}
-      ${row("Grades given", grades)}
-      ${(d.new_children ?? []).length ? row("Children added",
-        d.new_children.map((c) =>
-          `${c.first_name} ${c.last_name ?? ""}`.trim() +
-          (c.birth_date ? ` (born ${c.birth_date})` : "")).join("; ")) : ""}
-      ${(d.new_parents ?? []).length ? row("Parents added",
-        d.new_parents.map((p) => `${p.first_name} ${p.last_name ?? ""}`.trim()).join("; ")) : ""}
-      ${row("Additional comments, including known absences", d.comments)}
-
-      ${d.comments ? `<div class="note mt">
-        If they have named dates here, record those absences yourself under
-        <a href="#/absences">Absences</a> — nothing reads this text.</div>` : ""}`,
-    buttons: [{ value: null, label: "Close" }],
+    body: recordBody(rec),
+    buttons: [
+      { value: "print", label: "Print this", class: "btn-primary" },
+      { value: null, label: "Close" },
+    ],
   });
+
+  if (choice === "print") {
+    location.hash = `#/registration/${r.family_id}/${semester.id}/print`;
+  }
 }
 
 async function bulkReview(waiting, semester) {
