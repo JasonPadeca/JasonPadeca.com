@@ -17,18 +17,26 @@
 </head>
 <body>
 
-<header class="topbar" id="topbar" hidden>
-  <div class="wrap">
+<!-- Two rows, not one. Twelve sections plus the links across to the family and
+     teaching sides no longer fit beside the name on a laptop: they wrapped onto
+     a second line inside a bar with a fixed height, and the last of them were
+     cut off by its bottom edge. Identity and account on top, navigation on its
+     own full-width row beneath. -->
+<header class="topbar topbar-stacked" id="topbar" hidden>
+  <div class="wrap topbar-top">
     <a href="#/" class="brand" id="brand">
       <img src="../assets/koinonia-logo.jpg" alt="" class="brand-mark" width="32" height="32">
       <span>Koinonia <span class="brand-sub">Admin</span></span>
     </a>
-    <nav class="mainnav" id="nav"></nav>
+    <div class="spacer"></div>
     <!-- Filled by app.js once we know whether this administrator is also a
          parent or a teacher. Empty for somebody who is only an administrator,
          which is most of them. -->
     <span class="crosslinks" id="crosslinks"></span>
     <button class="btn btn-sm btn-ghost" id="signout">Sign out</button>
+  </div>
+  <div class="wrap topbar-bottom">
+    <nav class="mainnav" id="nav"></nav>
   </div>
 </header>
 

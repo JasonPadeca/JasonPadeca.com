@@ -696,6 +696,21 @@ export const api = {
     }));
   },
 
+  /**
+   * "Registration is open." To everybody, or to one family.
+   *
+   * familyId omitted sends to every active family with an email address; given,
+   * sends to exactly that one — which is the commoner case in practice, because
+   * somebody always says in September that they never got it.
+   */
+  async sendRegistrationNotice(semesterId, familyId = null) {
+    return this.callFunction("admin-invites", {
+      action: "registration_notice",
+      semester_id: semesterId,
+      ...(familyId ? { family_id: familyId } : {}),
+    });
+  },
+
   async registerFamily(familyId, semesterId) {
     const db = await client();
     return unwrap(await db.rpc("register_family", {

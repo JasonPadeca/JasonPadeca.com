@@ -107,6 +107,7 @@ export async function show(app) {
       <div class="spacer"></div>
       <button class="btn btn-sm" id="bulk-review" ${
         waiting.length ? "" : "disabled"}>Mark all read</button>
+      <button class="btn btn-sm" id="notify-all">Email everybody</button>
     </div>
 
     ${shown.length ? `<div class="cards mt">${shown.map(block).join("")}</div>`
@@ -123,6 +124,7 @@ export async function show(app) {
     act(b.dataset.act, rows.find((r) => r.family_id === b.dataset.family), semester)));
 
   $("#bulk-review", app)?.addEventListener("click", () => bulkReview(waiting, semester));
+  $("#notify-all", app)?.addEventListener("click", () => notifyAll(rows, semester));
 }
 
 // -----------------------------------------------------------------------------
@@ -194,6 +196,10 @@ function block(r) {
              Register this family</button>`}
       <button class="btn btn-sm" data-act="status" data-family="${esc(r.family_id)}">
         Set status…</button>
+      ${r.primary_email
+        ? `<button class="btn btn-sm btn-ghost" data-act="notify" data-family="${esc(r.family_id)}">
+             Email them</button>`
+        : `<span class="muted tiny">No email address on file</span>`}
     </div>
   </div>`;
 }
@@ -262,6 +268,19 @@ async function act(what, r, semester) {
       if (!ok) return;
       await api.setFamilyRegistration(r.family_id, semester.id, "not_started", r.note);
       toastOk("Registration undone.");
+    }
+
+    if (what === "notify") {
+      const ok = await confirmDialog(
+        `Email ${r.display_name}?`,
+        `They will be sent a note saying registration for ${semester.name} is ` +
+        "open, with a link to sign in. Safe to send more than once — it carries " +
+        "no personal link, so it is the same message every time.",
+        "Send it");
+      if (!ok) return;
+      const res = await api.sendRegistrationNotice(semester.id, r.family_id);
+      if (!res?.ok) throw new Error(explainNotice(res?.error));
+      toastOk(res.sent ? `Emailed ${r.display_name}.` : "Nothing was sent.");
     }
 
     if (what === "status") {
@@ -338,4 +357,54 @@ async function bulkReview(waiting, semester) {
   }
   toastOk(`${plural(done, "form")} marked read.`);
   await refresh();
+}
+
+
+/**
+ * "Registration is open", to everybody at once.
+ *
+ * Deliberately not automatic when a registration window opens. Somebody decides
+ * when sixty families get an email, and that somebody should be a person who
+ * has just looked at this screen — not a side effect of editing a date field.
+ */
+async function notifyAll(rows, semester) {
+  const withEmail = rows.filter((r) => r.primary_email);
+  const without = rows.length - withEmail.length;
+
+  const ok = await confirmDialog(
+    `Email all ${withEmail.length} families?`,
+    `Everybody gets a note saying registration for ${semester.name} is open, ` +
+    "with a link to sign in. Families who have already registered are included " +
+    "— it is a reminder, not a demand, and leaving them out means chasing a " +
+    "list by hand." +
+    (without ? ` ${plural(without, "family", "families")} will be skipped: no ` +
+      "email address on file." : ""),
+    "Send them");
+  if (!ok) return;
+
+  try {
+    const res = await api.sendRegistrationNotice(semester.id);
+    if (!res?.ok) throw new Error(explainNotice(res?.error));
+
+    // Failures are named rather than counted. "Three could not be delivered"
+    // sends somebody hunting; naming them is the difference between a task and
+    // a mystery.
+    if (res.failed?.length) {
+      toastErr(`Sent to ${res.sent}. Could not reach: ` +
+        res.failed.map((f) => f.family).join(", "));
+    } else {
+      toastOk(`Sent to ${plural(res.sent, "family", "families")}.`);
+    }
+  } catch (e) {
+    toastErr(e.message);
+  }
+}
+
+function explainNotice(code) {
+  return {
+    no_base_url: "The site address has not been set under Settings, so the " +
+                 "email would have no link in it.",
+    nobody_to_email: "No family has an email address on file.",
+    semester_not_found: "That semester no longer exists.",
+  }[code] ?? "The emails could not be sent.";
 }

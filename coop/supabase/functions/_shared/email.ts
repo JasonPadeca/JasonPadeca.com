@@ -195,29 +195,29 @@ export function invitationEmail(opts: {
   closesAt?: string | null;
 }): Email {
   const closing = opts.closesAt
-    ? `<p>Registration closes <strong>${esc(opts.closesAt)}</strong>.</p>` : "";
+    ? `<p>Class sign-up closes <strong>${esc(opts.closesAt)}</strong>.</p>` : "";
 
   const html = layout(opts.programName, `
-    <h1 style="font-size:24px;margin:0 0 16px;font-weight:600;">${esc(opts.semesterName)} Registration Is Open</h1>
-    <p>Registration is now open for the <strong>${esc(opts.familyName)}</strong>.</p>
-    <p>Use the button below to register your children for ${esc(opts.semesterName)}.</p>
-    ${button(opts.registerUrl, "Register Your Family")}
+    <h1 style="font-size:24px;margin:0 0 16px;font-weight:600;">${esc(opts.semesterName)} Class Sign-Up Is Open</h1>
+    <p>Class sign-up is now open for the <strong>${esc(opts.familyName)}</strong>.</p>
+    <p>Use the button below to choose classes for ${esc(opts.semesterName)}.</p>
+    ${button(opts.registerUrl, "Choose Classes")}
     ${closing}
     <p style="font-size:14px;color:#6b625a;background:#efece7;padding:12px 14px;border-radius:4px;">
-      This registration link is specific to your family. Please do not share it.
+      This link is specific to your family. Please do not share it.
     </p>`);
 
   const text = [
-    `${opts.semesterName} Registration Is Open`, "",
-    `Registration is now open for the ${opts.familyName}.`,
-    `Register your children here:`, opts.registerUrl, "",
-    opts.closesAt ? `Registration closes ${opts.closesAt}.\n` : "",
-    `This registration link is specific to your family. Please do not share it.`,
+    `${opts.semesterName} Class Sign-Up Is Open`, "",
+    `Class sign-up is now open for the ${opts.familyName}.`,
+    `Choose classes here:`, opts.registerUrl, "",
+    opts.closesAt ? `Class sign-up closes ${opts.closesAt}.\n` : "",
+    `This link is specific to your family. Please do not share it.`,
   ].join("\n");
 
   return {
     to: "", // filled by the caller
-    subject: `${opts.semesterName} Co-op Registration Is Open`,
+    subject: `${opts.semesterName} Co-op Class Sign-Up Is Open`,
     html, text,
   };
 }
@@ -267,5 +267,63 @@ export function confirmationEmail(opts: {
     to: "",
     subject: `${opts.semesterName} Registration Confirmation — ${opts.familyName}`,
     html, text,
+  };
+}
+
+
+/**
+ * "Registration is open — come and register."
+ *
+ * Not the same message as an invitation, and deliberately not built the same
+ * way. An invitation carries a token that IS the credential, so it is personal
+ * and must not be forwarded. This carries no token at all: it points at the
+ * portal, where a family signs in with the address the co-op already holds.
+ *
+ * That difference matters for a forwarded email. A shared invitation link is
+ * somebody else's registration; a shared link to this is a sign-in page that
+ * will not recognise them.
+ */
+export function registrationNoticeEmail(opts: {
+  programName: string;
+  familyName: string;
+  semesterName: string;
+  portalUrl: string;
+  closesAt?: string | null;
+}): Email {
+  const closing = opts.closesAt
+    ? `<p>Registration closes <strong>${esc(opts.closesAt)}</strong>.</p>` : "";
+
+  const html = layout(opts.programName, `
+    <h1 style="font-size:24px;margin:0 0 16px;font-weight:600;">Registration for ${esc(opts.semesterName)} Is Open</h1>
+    <p>Hello ${esc(opts.familyName)},</p>
+    <p>It is time to register for <strong>${esc(opts.semesterName)}</strong>. Sign in
+       and you will find most of the form already filled in from what we have on
+       file — check it over, add a grade for each child, and send it.</p>
+    ${button(opts.portalUrl, "Register For This Semester")}
+    ${closing}
+    <p>Choosing classes happens separately, once your registration has been
+       received and the fee is settled. We will email you again when that opens.</p>
+    <p style="font-size:14px;color:#6b625a;background:#efece7;padding:12px 14px;border-radius:4px;">
+      Sign in with this email address — the one this message was sent to. There
+      is no password; you will be sent a code.
+    </p>`);
+
+  const text = [
+    `Registration for ${opts.semesterName} Is Open`, "",
+    `Hello ${opts.familyName},`, "",
+    `It is time to register for ${opts.semesterName}. Sign in and most of the`,
+    `form will already be filled in from what we have on file.`, "",
+    opts.portalUrl, "",
+    opts.closesAt ? `Registration closes ${opts.closesAt}.\n` : "",
+    `Choosing classes happens separately, once your registration has been`,
+    `received. We will email you again when that opens.`, "",
+    `Sign in with this email address. There is no password; you will be sent a code.`,
+  ].join("\n");
+
+  return {
+    to: "",
+    subject: `Registration for ${opts.semesterName} Is Open`,
+    html,
+    text,
   };
 }

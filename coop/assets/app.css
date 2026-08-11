@@ -1131,3 +1131,49 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
   .checkrow { flex-wrap: wrap; }
   .kid .field { width: 100%; }
 }
+
+/* =============================================================================
+   The administration top bar, in two rows.
+
+   The single-row bar worked with seven sections. At twelve — plus the links
+   across to the family and teaching sides — the navigation wrapped onto a
+   second line inside a bar with a fixed 56px height, so the last few items were
+   cut off by its own bottom edge.
+
+   Splitting it gives the navigation the full width of the page rather than
+   whatever is left over beside the name and the sign-out button, which is room
+   enough for twelve on a laptop and honest wrapping on anything narrower.
+   ============================================================================= */
+.topbar-stacked {
+  height: auto;               /* was a fixed --topbar-h, which did the cutting */
+  display: block;
+  padding: .5rem 0 0;
+}
+.topbar-stacked .topbar-top {
+  display: flex; align-items: center; gap: 1rem;
+}
+.topbar-stacked .topbar-bottom {
+  margin-top: .4rem;
+  border-top: 1px solid var(--border);
+  padding-top: .35rem;
+  padding-bottom: .1rem;
+}
+.topbar-stacked .mainnav {
+  flex: 1;
+  gap: .1rem;
+  /* Wrapping is right here: an administrator should see every section at once
+     rather than discovering half of them by dragging sideways. */
+  flex-wrap: wrap;
+}
+/* Twelve sections come to 1081px at the inherited spacing, against 1040px of
+   row — forty pixels short, and forty pixels is the difference between one
+   tidy row and two. Trimmed rather than left to wrap. */
+.topbar-stacked .mainnav a {
+  padding: .35rem .45rem;
+  letter-spacing: .02em;
+}
+
+@media (max-width: 700px) {
+  .topbar-stacked { padding-top: .4rem; }
+  .topbar-stacked .mainnav a { padding: .3rem .45rem; font-size: .74rem; }
+}

@@ -86,7 +86,7 @@ const NAV = [
   // Newest things this build calls. If the browser handed us a cached api.js
   // from before they existed, needsFresh reloads once rather than letting a
   // page fail with "api.something is not a function".
-  if (needsFresh(["siteEditedPages", "registrationReport", "proposals"])) return;
+  if (needsFresh(["registrationReport", "sendRegistrationNotice", "registerFamily"])) return;
 
   if (!IS_CONFIGURED) {
     return render(app, `<div class="centered">

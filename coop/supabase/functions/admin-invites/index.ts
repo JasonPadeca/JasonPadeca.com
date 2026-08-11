@@ -20,7 +20,8 @@
 //   Kill the link without issuing a replacement.
 
 import { json, preflight, requireAdmin, serviceClient, type SupabaseClient } from "../_shared/deps.ts";
-import { invitationEmail, openMailer, type Mailer } from "../_shared/email.ts";
+import { invitationEmail, registrationNoticeEmail, openMailer, type Mailer }
+  from "../_shared/email.ts";
 
 interface Settings {
   program_name: string;
@@ -113,13 +114,91 @@ Deno.serve(async (req) => {
 
   const { data: semester } = await db
     .from("semesters")
-    .select("id, name, status, registration_close_at")
+    .select("id, name, status, registration_close_at, registration_form_closes_at")
     .eq("id", body.semester_id)
     .maybeSingle();
   if (!semester) return json(req, { ok: false, error: "semester_not_found" }, 404);
 
   // ---------------------------------------------------------------------------
   switch (body.action) {
+    // -------------------------------------------------------------------------
+    // "Registration is open — come and register."
+    //
+    // Two shapes, one path: every family, or one named family. A one-off
+    // matters because the commonest real case is not a batch at all — it is a
+    // family who says in September that they never got it, and somebody wants
+    // to send that one email without spamming fifty-nine others.
+    //
+    // No tokens. This points at the portal, where a family signs in with the
+    // address the co-op already holds, so a forwarded copy is useless to
+    // anybody else rather than being a way into somebody's registration.
+    // -------------------------------------------------------------------------
+    case "registration_notice": {
+      if (!settings.registration_base_url) {
+        return json(req, { ok: false, error: "no_base_url" }, 400);
+      }
+      // …/coop/register/ is the class sign-up page; the portal is its sibling.
+      const portalUrl = settings.registration_base_url
+        .replace(/#.*$/, "")
+        .replace(/register\/?$/, "portal/");
+
+      let q = db.from("families")
+        .select("id, display_name, primary_email")
+        .eq("active", true)
+        .is("archived_at", null)
+        .order("display_name");
+
+      if (body.family_id) q = q.eq("id", body.family_id);
+
+      const { data: families } = await q;
+      const targets = (families ?? []).filter((f) => f.primary_email);
+      const noEmail = (families ?? []).length - targets.length;
+
+      if (!targets.length) {
+        return json(req, { ok: false, error: "nobody_to_email", no_email: noEmail }, 400);
+      }
+
+      const closing = formatClosing(
+        semester.registration_form_closes_at ?? null, settings.timezone);
+
+      const mailer = await openMailer(db);
+      const sent: string[] = [];
+      const failed: { family: string; error: string }[] = [];
+
+      for (const f of targets) {
+        const email = registrationNoticeEmail({
+          programName: settings.program_name,
+          familyName: f.display_name,
+          semesterName: semester.name,
+          portalUrl,
+          closesAt: closing,
+        });
+        try {
+          await mailer.send({ ...email, to: f.primary_email! });
+          sent.push(f.display_name);
+        } catch (e) {
+          failed.push({ family: f.display_name, error: String(e) });
+        }
+      }
+      await mailer.close();
+
+      await db.rpc("write_audit", {
+        p_action: "registration_notice_sent",
+        p_entity: "semester",
+        p_entity_id: semester.id,
+        p_details: {
+          sent: sent.length,
+          failed: failed.length,
+          no_email: noEmail,
+          one_off: !!body.family_id,
+        },
+      });
+
+      return json(req, {
+        ok: true, sent: sent.length, failed, no_email: noEmail,
+      });
+    }
+
     case "open_registration": {
       const { data: pf } = await db.rpc("registration_preflight", {
         p_semester_id: semester.id,
