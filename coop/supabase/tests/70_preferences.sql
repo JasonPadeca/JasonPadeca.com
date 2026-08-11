@@ -194,3 +194,9 @@ select pg_temp.check('the report carries the family contact',
 
 select pg_temp.check('children who declined are not in the report',
   (select jsonb_array_length(public.volunteer_report(:sem::uuid))::text), '1');
+
+-- The runner checks for this line. ON_ERROR_STOP means a bad assertion halts
+-- the file, and a halted file silently skips every test below it — which is
+-- exactly what a broken cast did here once, hiding two thirds of this suite
+-- while the run still reported green.
+\echo 'SUITE-REACHED-THE-END'

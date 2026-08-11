@@ -224,3 +224,9 @@ select pg_temp.check('...and the admin policy widens what she sees',
      from public.families), 'all families');
 
 select set_config('role', 'postgres', false);
+
+-- The runner checks for this line. ON_ERROR_STOP means a bad assertion halts
+-- the file, and a halted file silently skips every test below it — which is
+-- exactly what a broken cast did here once, hiding two thirds of this suite
+-- while the run still reported green.
+\echo 'SUITE-REACHED-THE-END'

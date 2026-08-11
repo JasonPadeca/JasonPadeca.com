@@ -151,3 +151,9 @@ select pg_temp.check('opting out is written to the audit log',
   (select case when count(*) > 0 then 'yes' else 'no' end from public.audit_log
     where action = 'family_registration_submitted'
       and jsonb_array_length(details -> 'not_participating') > 0), 'yes');
+
+-- The runner checks for this line. ON_ERROR_STOP means a bad assertion halts
+-- the file, and a halted file silently skips every test below it — which is
+-- exactly what a broken cast did here once, hiding two thirds of this suite
+-- while the run still reported green.
+\echo 'SUITE-REACHED-THE-END'

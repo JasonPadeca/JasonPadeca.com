@@ -61,8 +61,8 @@ select pg_temp.check('an unregistered family cannot sign up for classes',
 
 -- The message has to be usable by a parent, not just a code for the console.
 select pg_temp.check('and is told why in words',
-  (public.submit_family_registration(:johnson::uuid, :sem::uuid, '[]'::jsonb) ->> 'message')
-    like '%not registered%',
+  ((public.submit_family_registration(:johnson::uuid, :sem::uuid, '[]'::jsonb) ->> 'message')
+    like '%not registered%')::text,
   'true');
 
 set role authenticated;
@@ -151,6 +151,9 @@ select pg_temp.check('and what they wrote is kept verbatim',
   'Away on the 12th of September');
 
 -- Submitting is not registering. The form lands on a desk; a person acts on it.
+-- Read as superuser: Mary cannot see the Smiths' row, and RLS hiding it would
+-- look exactly like the assertion passing.
+reset role;
 select pg_temp.check('submitting a form does not register anybody',
   (select status from public.semester_registrations
     where family_id = :smith::uuid and semester_id = :sem::uuid),
@@ -168,6 +171,7 @@ select public.submit_registration_form(jsonb_build_object(
   'grades', jsonb_build_array(jsonb_build_object('child_id', :emma, 'grade', 'FORGED'))
 ));
 
+reset role;
 select pg_temp.check('one family cannot set another family''s grades',
   (select grade from public.semester_participation
     where child_id = :emma::uuid and semester_id = :sem::uuid),
@@ -212,11 +216,11 @@ select pg_temp.check('registering with everything in hand records nothing outsta
   public.register_family(:johnson::uuid, :sem::uuid) -> 'outstanding' #>> '{}',
   '[]');
 
+select public.set_registration_payment(:johnson::uuid, :sem::uuid, false, null);
+
 select pg_temp.check('a toggle can be undone',
-  (select (payment_received_at is null)::text from (
-     select public.set_registration_payment(:johnson::uuid, :sem::uuid, false, null)) x,
-   lateral (select payment_received_at from public.semester_registrations
-             where family_id = :johnson::uuid and semester_id = :sem::uuid) y),
+  (select (payment_received_at is null)::text from public.semester_registrations
+    where family_id = :johnson::uuid and semester_id = :sem::uuid),
   'true');
 
 -- The report is the screen's whole source of truth, so it must show families
@@ -228,10 +232,30 @@ select pg_temp.check('the report covers every unarchived family',
 -- --- authorization -----------------------------------------------------------
 select pg_temp.be(:u_mary, 'mary@example.com');
 
+
+-- psql does not substitute :variables inside a $$ ... $$ block, so "does this
+-- raise?" is asked through a function that takes the ids as arguments instead.
+create or replace function pg_temp.refused(p_what text, p_a uuid, p_b uuid)
+returns text language plpgsql as $$
+begin
+  case p_what
+    when 'register_family'     then perform public.register_family(p_a, p_b);
+    when 'registration_record' then perform public.registration_record(p_a, p_b);
+  end case;
+  return 'allowed through';
+exception when others then
+  return 'refused';
+end;
+$$;
+
 select pg_temp.check('a parent cannot register their own family',
-  (select 'refused' from (
-     select public.register_family(:johnson::uuid, :sem::uuid)) t),
-  null);
-\echo '(the line above raising "Not authorized" is the pass)'
+  pg_temp.refused('register_family', :johnson::uuid, :sem::uuid),
+  'refused');
 
 reset role;
+
+-- The runner checks for this line. ON_ERROR_STOP means a bad assertion halts
+-- the file, and a halted file silently skips every test below it — which is
+-- exactly what a broken cast did here once, hiding two thirds of this suite
+-- while the run still reported green.
+\echo 'SUITE-REACHED-THE-END'

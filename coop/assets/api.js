@@ -669,6 +669,25 @@ export const api = {
     }));
   },
 
+  // --- Records: what was held, and when ---
+  async registrationRecord(familyId, semesterId) {
+    const db = await client();
+    return unwrap(await db.rpc("registration_record", {
+      p_family_id: familyId, p_semester_id: semesterId,
+    }));
+  },
+
+  async applicationRecord(id) {
+    const db = await client();
+    return unwrap(await db.rpc("application_record", { p_id: id }));
+  },
+
+  async registrationHistory(familyId) {
+    const db = await client();
+    return unwrap(await db.rpc("family_registration_history",
+      { p_family_id: familyId })) ?? [];
+  },
+
   // --- Family setup: a family's own standing record ---
   async familySetup() {
     const db = await client();

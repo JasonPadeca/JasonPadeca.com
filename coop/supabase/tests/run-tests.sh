@@ -46,7 +46,7 @@ for f in 00_supabase_stub.sql "$MIGRATIONS"/0*.sql; do
   P -d coop -f "$f" >/dev/null
 done
 
-strip() { grep -E "PASS|FAIL|ERROR" | sed 's/^psql:.*sql:[0-9]*: //; s/^NOTICE:  //; s/^WARNING:  //'; }
+strip() { grep -E "PASS|FAIL|ERROR|SUITE-REACHED-THE-END" | sed 's/^psql:.*sql:[0-9]*: //; s/^NOTICE:  //; s/^WARNING:  //'; }
 
 echo "\n=== Behavior: eligibility, registration, waitlists, overrides ==="
 P -d coop -f 10_seed.sql >/dev/null
@@ -185,3 +185,28 @@ for f in 00_supabase_stub.sql "$MIGRATIONS"/0*.sql 10_seed.sql; do
   P -d coop -f "$f" >/dev/null
 done
 P -d coop -f 92_family_setup.sql 2>&1 | strip
+
+echo "\n=== Records: the snapshot, and drift since ==="
+P -d postgres -tAc "drop database coop;" >/dev/null
+P -d postgres -tAc "create database coop;" >/dev/null
+for f in 00_supabase_stub.sql "$MIGRATIONS"/0*.sql 10_seed.sql; do
+  P -d coop -f "$f" >/dev/null
+done
+P -d coop -f 91_records.sql 2>&1 | strip
+
+# ---------------------------------------------------------------------------
+# Did every suite actually finish?
+#
+# psql stops at the first error, so a suite whose assertion is malformed simply
+# stops running and takes every test below it with it — while the summary still
+# shows only passes. That happened here: a boolean where text was expected
+# halted a suite at its sixth line and hid the other thirty tests, and the run
+# still reported green.
+#
+# Each suite ends with a marker. If the counts below disagree, a suite died.
+# ---------------------------------------------------------------------------
+marker="SUITE-REACHED""-THE-END"     # split so this line is not itself a match
+expected=$(grep -l "$marker" *.sql | wc -l | tr -d " ")
+echo "\n--- suite completion ---"
+echo "$expected suites carry a completion marker; count the markers printed above."
+echo "Fewer means a suite stopped early and its remaining tests never ran."

@@ -82,6 +82,7 @@ function card(r) {
     <div class="small muted">Children: ${esc((r.children_text ?? "").replace(/\s+/g, " ").slice(0, 120))}${
       (r.children_text ?? "").length > 120 ? "…" : ""}</div>
     <div class="btn-row mt">
+      <a class="btn btn-sm" href="#/applications/${esc(r.id)}/print">Print</a>
       <button class="btn btn-sm" data-open="${esc(r.id)}">Read it</button>
       ${r.family_id ? `<a class="btn btn-sm btn-ghost" href="#/families/${esc(r.family_id)}">
         Open the family</a>` : ""}

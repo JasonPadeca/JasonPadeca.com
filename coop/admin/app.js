@@ -19,6 +19,7 @@ import * as Absences from "./views/absences.js";
 import * as Applications from "./views/applications.js";
 import * as Registration from "./views/registration.js";
 import * as Proposals  from "./views/proposals.js";
+import * as PrintRecord from "./views/print-record.js";
 import * as Website    from "./views/website.js";
 import * as Exports    from "./views/exports.js";
 import * as Settings   from "./views/settings.js";
@@ -54,6 +55,8 @@ const ROUTES = [
   ["#/applications",           Applications.show],
   ["#/semesters/:id/rosters",  PrintRoster.all],
   ["#/registration",           Registration.show],
+  ["#/registration/:family/:semester/print", PrintRecord.registration],
+  ["#/applications/:id/print",  PrintRecord.application],
   ["#/proposals",              Proposals.show],
   ["#/enrollment",             Enrollment.show],
   ["#/volunteers",             Volunteers.show],

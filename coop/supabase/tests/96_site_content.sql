@@ -177,3 +177,5 @@ select pg_temp.check('a re-import refreshes the original',
 select pg_temp.check('...and keeps the administrator''s wording',
   (select text from public.site_content where block_key = '2'),
   'Ben''s edit');
+
+\echo 'SUITE-REACHED-THE-END'

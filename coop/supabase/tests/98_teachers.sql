@@ -219,3 +219,9 @@ select pg_temp.check('...including a student who is not hers',
     where id = '54444444-4444-4444-4444-444444444444'), '1');
 
 select set_config('role', 'postgres', false);
+
+-- The runner checks for this line. ON_ERROR_STOP means a bad assertion halts
+-- the file, and a halted file silently skips every test below it — which is
+-- exactly what a broken cast did here once, hiding two thirds of this suite
+-- while the run still reported green.
+\echo 'SUITE-REACHED-THE-END'

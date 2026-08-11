@@ -29,6 +29,11 @@ import { refresh } from "../app.js";
 
 const ORDER = ["not_started", "registered", "not_attending"];
 
+// The semester the page is currently showing. block() is called once per
+// family and needs it only to build a link; passing it through every call was
+// noise for one string.
+let SEMESTER_ID = null;
+
 export async function show(app) {
   let semesters = [];
   try {
@@ -59,6 +64,8 @@ export async function show(app) {
       <p class="muted mt">If this says the function does not exist, the database
       update that adds it has not been run yet.</p></div>`);
   }
+
+  SEMESTER_ID = semester.id;
 
   const count = (s) => rows.filter((r) => r.status === s).length;
   const waiting = rows.filter((r) => r.form_submitted_at && r.status !== "registered");
@@ -156,8 +163,9 @@ function block(r) {
           <div class="muted tiny">${r.form_submitted_at
             ? `received ${esc(fmtDate(r.form_submitted_at))}`
             : "not received"}</div></div>
-        ${r.form_submitted_at
-          ? `<button class="btn btn-sm" data-act="read" data-family="${esc(r.family_id)}">Read it</button>`
+        ${r.form_submitted_at ? `
+          <button class="btn btn-sm" data-act="read" data-family="${esc(r.family_id)}">Read it</button>
+          <a class="btn btn-sm" href="#/registration/${esc(r.family_id)}/${esc(SEMESTER_ID)}/print">Print</a>`
           : ""}
       </div>
 
@@ -181,6 +189,14 @@ function block(r) {
           ${r.payment_received_at ? "Undo" : "Mark received"}</button>
       </div>
     </div>
+
+    ${r.drift_count ? `<div class="note note-warn mt">
+      <strong>${plural(r.drift_count, "date of birth has", "dates of birth have")}
+      changed since this form was sent.</strong>
+      A correction is an ordinary reason for that — the printed record shows
+      both values.
+      <a href="#/registration/${esc(r.family_id)}/${esc(SEMESTER_ID)}/print">See it</a>.
+    </div>` : ""}
 
     ${registered && outstanding.length ? `<div class="note note-warn mt">
       Registered with ${esc(outstanding.join(" and "))} still outstanding
