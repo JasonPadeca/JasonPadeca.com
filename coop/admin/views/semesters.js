@@ -74,9 +74,19 @@ async function semesterDialog(existing = null) {
                   { value: "4", label: "Thursday" }, { value: "5", label: "Friday" },
                   { value: "6", label: "Saturday" }],
         hint: "Which day of the week classes meet. The class calendar is built from this." },
+      { name: "registration_form_opens_at", label: "Registration opens", type: "datetime-local",
+        value: existing?.registration_form_opens_at
+          ? existing.registration_form_opens_at.slice(0, 16) : null,
+        hint: "When families can start registering for this semester. Leave "
+            + "empty and nobody sees a registration form." },
+      { name: "registration_form_closes_at", label: "Registration closes", type: "datetime-local",
+        value: existing?.registration_form_closes_at
+          ? existing.registration_form_closes_at.slice(0, 16) : null,
+        hint: "Leave empty to keep it open until you say otherwise." },
       { name: "registration_close_at", label: "Class sign-up closes", type: "datetime-local",
         value: existing?.registration_close_at ? existing.registration_close_at.slice(0, 16) : null,
-        hint: "Family registration links stop working after this." },
+        hint: "Class sign-up links stop working after this. Sign-up itself is "
+            + "opened with the button on the semester page." },
     ],
   });
   if (!v) return;
