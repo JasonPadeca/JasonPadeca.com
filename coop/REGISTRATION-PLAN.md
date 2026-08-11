@@ -76,11 +76,20 @@ No per-family tokens. Families now sign in, and the sign-in gate already refuses
 addresses the co-op does not hold. A token would be a second credential for
 people who already have one.
 
+Who gets asked: **every family except those fully archived at the family level**.
+No filtering on whether they came last semester or have children of the right
+age. Everybody gets asked.
+
 **Order of operations.** Registration opens, families register, then class sign-up
-opens — that is the co-op's actual sequence, and it is the sequence the software
-should make obvious. Class sign-up currently invites every active family
-regardless; that is worth revisiting once registration means something, but it is
-a separate decision and needs its own answer (see §6).
+opens. That is the co-op's actual sequence, and — decided — the software enforces
+it rather than suggesting it: a family cannot sign up for classes until its
+registration is resolved. See §6.
+
+This is a real change to code that already works. Today `open_registration`
+mails every active family and `submit_family_registration` asks nothing about
+standing, so the gate has to go in both places: the invitation list, and the
+submission itself. The second matters more than the first — an old link in an
+inbox must not be a way round it.
 
 ---
 
@@ -183,22 +192,80 @@ columns are the things the software actually acts on.
 
 ---
 
-## 6. Open questions
+## 6. Decisions
 
-These change the build, and are yours or Val's to answer:
+Answered by Ben, 11 August 2026.
 
-1. **Should class sign-up be gated on registration?** Today it emails every
-   active family. Options: only registered families; everyone but warn; or leave
-   it. Depends whether Val would rather chase registrations first or run both at
-   once.
-2. **What happens to a family that never registers?** Nothing, chased by hand, or
-   marked not attending automatically at some point?
-3. **Grade** — is it wanted for anything beyond the roster, e.g. eligibility?
-   Ages already drive class eligibility, so grade may be purely informational.
-4. **Known absences** — feed the absence system, or just text for a person to
-   read? The first is more work and better; the second is a week sooner.
-5. **The old public forms** — retire them, or leave them up for a semester while
-   people get used to signing in?
+### Class sign-up is gated on registration
+
+A family cannot sign up for classes until its registration is **resolved**.
+Registration comes first and the software should enforce it, not merely suggest
+it. This is the change that turns the registration record from a note into a
+gate.
+
+In practice "resolved" means `registered`: a family marked *not attending* has
+resolved its registration and is equally not signing up for classes. So the gate
+is `status = 'registered'`, and both other states stop at the door.
+
+Corner cases are handled by hand — an administrator can always place a child
+directly, which `admin_place_child` already allows. That is the escape hatch, and
+it is deliberately a human one.
+
+**A family that never registers is a phone call, not a rule.** No automatic
+lapsing, no marking anybody as not attending on their behalf. They stop
+appearing as able to sign up, and somebody rings them. Software that quietly
+resolves a family's status on their behalf would be making a decision that
+belongs to the two people who know the family.
+
+### Registration goes out to everybody except archived families
+
+The only exclusion is a family fully archived at the family level. No filtering
+by whether they came last semester, whether they have children of the right age,
+or anything else. Everybody gets asked.
+
+### Grade is stored, and acts on nothing
+
+Worth having on every family in case it earns a use later; nothing keys off it
+now. Ages continue to drive eligibility. It stays on the form for the time being
+and may be dropped later, so it should not become load-bearing anywhere.
+
+### The old public forms retire once this runs
+
+Roughly a semester out. Until then they stay up and this is built alongside them,
+which means no flag day and no rush: the new path can be exercised by a few
+families before it is the only path.
+
+---
+
+## 6a. Still open: what to do with "known absences"
+
+One question left, and it is narrower than it first sounded.
+
+Both existing forms end with:
+
+> Additional comments (Please include any known absences for this semester).
+
+This is not about families who fail to register — they are out of the picture
+entirely, as above. It is about a **registered** family flagging, in August, that
+they already know they will miss the 12th of September and the 3rd of October,
+because of a trip booked months ago.
+
+The co-op already asks for this. The question is only what happens to the answer.
+
+- **As text.** Stored with the rest of the form, read by a person. A teacher
+  planning week six has no idea unless somebody tells them. Cheap.
+- **Into the absence system.** The dates become real absences at registration, so
+  they appear on rosters and in the teacher's week without anybody re-entering
+  them. This is what the absence system is for, and it is the answer that means
+  the information does not die in a text box. Costs more: dates must be parsed or
+  picked, and a family writing "we're away most of October" cannot be parsed at
+  all — so realistically it is a date-picker against the semester's meeting
+  dates, with a free-text box beside it for everything else.
+
+Recommendation: the date picker, but not in the first pass. Ship the form with
+the text box the co-op already uses, see what people actually write in it, and
+let that decide whether the picker is worth building. A guess about what sixty
+families will type is worse evidence than one semester of them typing it.
 
 ---
 
