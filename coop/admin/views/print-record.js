@@ -148,23 +148,26 @@ export async function application(app, params) {
 // =============================================================================
 // The body of a registration record.
 //
-// Exported, because the desk shows the same thing in a dialog and the two used
-// to disagree: the dialog rendered the thin payload the browser had sent —
-// phone, a comment, and a list of grades with no names against them — while the
-// sheet rendered the snapshot. One of those was worth reading.
+// One renderer, used by the printed sheet and by the dialog behind "Read it",
+// because two renderers disagreed once already and the one people actually
+// opened was the poorer of the two.
 //
-// Now there is one renderer. Whatever the paper shows, the dialog shows.
+// It always lists everybody. Where a snapshot exists it shows that — the family
+// as the co-op held it when it agreed to the registration. Where one does not,
+// because the registration predates records being kept, it shows the family as
+// it stands today and says so. "No snapshot" is a reason to label the source,
+// not a reason to show an empty page.
 // =============================================================================
 export function recordBody(rec, { forPrint = false } = {}) {
-  const s = rec.snapshot;
+  const snap = rec.snapshot;
+  const shown = snap ?? rec.current;      // what we can actually show
+  const asAt = !!snap;                    // ...and whether it is historical
   const a = rec.answers ?? {};
   const drift = rec.drift;
 
-  return `
-    ${drift === null ? `<div class="sheet-note">
-      This was submitted before records were kept, so there is no snapshot of
-      what the co-op held at the time.</div>` : ""}
+  const agreed = rec.agreed_conduct_at;
 
+  return `
     ${Array.isArray(drift) && drift.length ? `<div class="sheet-alert">
       <strong>Details have changed since this was submitted.</strong>
       <ul>${drift.map((d) => `<li>${esc(d.child)}: ${esc(d.field)} was
@@ -174,13 +177,65 @@ export function recordBody(rec, { forPrint = false } = {}) {
         so it cannot pass unnoticed.</div>
     </div>` : ""}
 
+    <div class="agreement ${agreed ? "yes" : "no"}">
+      <strong>Code of Conduct:
+        ${agreed ? "agreed" : "NOT AGREED"}</strong>
+      ${agreed
+        ? `<span class="muted">by this family on ${esc(fmtDateTime(agreed))}</span>`
+        : `<span class="muted">no agreement is recorded against this
+           registration</span>`}
+    </div>
+
+    <section>
+      <h2>The family${asAt
+        ? `, as recorded on ${esc(fmtDate(snap.taken_at))}`
+        : " — as it stands today"}</h2>
+
+      ${!asAt ? `<div class="sheet-note">
+        This registration was submitted before records were kept, so there is no
+        snapshot of what the co-op held at the time. Everything below is the
+        family as it is <em>now</em>, which may not be what was agreed to.</div>` : ""}
+
+      <h3>Parents</h3>
+      ${(shown?.parents ?? []).length ? `<table class="sheet-table bordered">
+        <thead><tr><th>Name</th><th>Email</th><th>Phone</th></tr></thead>
+        <tbody>${shown.parents.map((p) => `<tr>
+          <td><strong>${esc(p.first_name)} ${esc(p.last_name ?? "")}</strong></td>
+          <td>${esc(p.email ?? "—")}</td>
+          <td class="mono">${esc(p.phone ?? "—")}</td>
+        </tr>`).join("")}</tbody>
+      </table>` : `<p class="muted">Nobody on file.</p>`}
+
+      <h3 class="mt2">Children</h3>
+      ${(shown?.children ?? []).length ? `<table class="sheet-table bordered">
+        <thead><tr>
+          <th>Name</th><th>Date of birth</th>
+          <th class="num">Age at ${esc(shown?.semester?.name ?? "start")}</th>
+          <th>Grade</th><th>Allergies</th><th>For a teacher to know</th>
+        </tr></thead>
+        <tbody>${shown.children.map((c) => `<tr>
+          <td><strong>${esc(c.first_name)} ${esc(c.last_name ?? "")}</strong></td>
+          <td class="mono">${esc(c.birth_date ?? "—")}</td>
+          <td class="num mono">${c.age_at_start ?? "—"}</td>
+          <td>${esc(c.grade ?? "—")}</td>
+          <td>${esc(c.allergies ?? "—")}</td>
+          <td>${esc(c.medical_notes ?? "—")}</td>
+        </tr>`).join("")}</tbody>
+      </table>` : `<p class="muted">No children on file.</p>`}
+
+      <table class="sheet-table mt2">
+        <tbody>
+          ${line("Family email", shown?.family?.primary_email)}
+          ${line("Family phone", shown?.family?.primary_phone)}
+        </tbody>
+      </table>
+    </section>
+
     <section>
       <h2>Where it stands</h2>
       <table class="sheet-table">
         <tbody>
           ${line("Form received", rec.submitted_at ? fmtDateTime(rec.submitted_at) : "Not received")}
-          ${line("Code of Conduct agreed", rec.agreed_conduct_at
-            ? fmtDateTime(rec.agreed_conduct_at) : "Not agreed")}
           ${line("Read by an administrator", rec.reviewed_at
             ? fmtDateTime(rec.reviewed_at) : "Not yet")}
           ${line("Payment received", rec.payment_received_at
@@ -195,35 +250,6 @@ export function recordBody(rec, { forPrint = false } = {}) {
         </tbody>
       </table>
     </section>
-
-    ${s ? `<section>
-      <h2>Children, as recorded on ${esc(fmtDate(s.taken_at))}</h2>
-      ${(s.children ?? []).length ? `<table class="sheet-table bordered">
-        <thead><tr>
-          <th>Name</th><th>Date of birth</th><th class="num">Age at start</th>
-          <th>Grade</th><th>Allergies</th><th>For a teacher to know</th>
-        </tr></thead>
-        <tbody>${(s.children ?? []).map((c) => `<tr>
-          <td><strong>${esc(c.first_name)} ${esc(c.last_name ?? "")}</strong></td>
-          <td class="mono">${esc(c.birth_date ?? "—")}</td>
-          <td class="num mono">${c.age_at_start ?? "—"}</td>
-          <td>${esc(c.grade ?? "—")}</td>
-          <td>${esc(c.allergies ?? "—")}</td>
-          <td>${esc(c.medical_notes ?? "—")}</td>
-        </tr>`).join("")}</tbody>
-      </table>` : `<p class="muted">No children were on file.</p>`}
-
-      <h2 class="mt2">The family, as recorded</h2>
-      <table class="sheet-table">
-        <tbody>
-          ${line("Email", s.family?.primary_email)}
-          ${line("Phone", s.family?.primary_phone)}
-          ${(s.parents ?? []).map((p) => line("Parent",
-            `${p.first_name} ${p.last_name ?? ""}`.trim() +
-            [p.email, p.phone].filter(Boolean).map((x) => ` · ${x}`).join(""))).join("")}
-        </tbody>
-      </table>
-    </section>` : ""}
 
     <section>
       <h2>What they wrote</h2>

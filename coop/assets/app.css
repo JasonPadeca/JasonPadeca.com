@@ -1215,3 +1215,44 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
 @media (max-width: 560px) {
   .person { grid-template-columns: 1fr; }
 }
+
+/* =============================================================================
+   The agreement line on a registration record.
+
+   Loud, and at the top. "Did this family agree to the Code of Conduct" is the
+   one question on this page with a legal flavour, and it was previously a row
+   in a table of timestamps indistinguishable from "payment received".
+   ============================================================================= */
+.agreement {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem;
+  margin: 0 0 1.25rem;
+  padding: .7rem .9rem;
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--ok, #2e7d32);
+  background: rgba(46, 125, 50, .08);
+}
+.agreement.no {
+  border-left-color: var(--danger);
+  background: rgba(192, 38, 38, .08);
+}
+
+/* Sub-headings inside a record. h2 names the section, h3 names the table. */
+.sheet h3 {
+  margin: 1.1rem 0 .4rem;
+  font-size: .95rem; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.dialog-body h3 {
+  margin: 1.1rem 0 .4rem;
+  font-size: .95rem; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.dialog-body h2 {
+  margin: 1.4rem 0 .5rem; font-size: 1.05rem;
+  padding-bottom: .3rem; border-bottom: 1px solid var(--border);
+}
+.dialog-body .sheet-table { width: 100%; }
+.dialog-body .sheet-table.bordered th,
+.dialog-body .sheet-table.bordered td { padding: .4rem .5rem; }
+
+@media print { .agreement { break-inside: avoid; } }
