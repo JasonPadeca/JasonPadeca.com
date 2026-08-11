@@ -16,7 +16,7 @@
 // missing name rather than another family's medical notes.
 // =============================================================================
 
-import { auth, api, IS_CONFIGURED } from "../assets/api.js";
+import { auth, api, IS_CONFIGURED, needsFresh } from "../assets/api.js";
 import {
   esc, $, render, fmtDate, fmtTimeRange, toastOk, toastErr, plural, eligibilityLabel,
 } from "../assets/ui.js";
@@ -28,6 +28,9 @@ let ME = null;
 // Boot
 // -----------------------------------------------------------------------------
 (async function boot() {
+  // See needsFresh in api.js.
+  if (needsFresh(["teacherClass"])) return;
+
   if (!IS_CONFIGURED) {
     return render(app, `<div class="wrap page"><div class="note note-danger">
       This site is not configured yet.</div></div>`);

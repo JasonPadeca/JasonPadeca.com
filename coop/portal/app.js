@@ -17,7 +17,7 @@
 // is a door, not a turnstile — see persistSession in api.js.
 // =============================================================================
 
-import { auth, api, IS_CONFIGURED } from "../assets/api.js";
+import { auth, api, IS_CONFIGURED, needsFresh } from "../assets/api.js";
 import { esc, $, render, toastErr, ageAt, plural } from "../assets/ui.js";
 import * as Absences from "./absences.js";
 import * as Week from "./week.js";
@@ -34,6 +34,10 @@ let state = { session: null, me: null };
 // Boot
 // -----------------------------------------------------------------------------
 async function start() {
+  // See needsFresh in api.js: reload once if the browser handed us a cached
+  // copy from before these existed, rather than failing with "not a function".
+  if (needsFresh(["familyWeek", "familyClass"])) return;
+
   if (!IS_CONFIGURED) {
     return render(app, `<div class="wrap page"><div class="note note-danger">
       This site is not configured yet. See coop/SETUP.md.</div></div>`);

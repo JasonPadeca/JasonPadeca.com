@@ -13,6 +13,59 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, FUNCTIONS_URL, IS_CONFIGURED } from ".
 
 export { IS_CONFIGURED };
 
+// =============================================================================
+// Stale-module protection.
+//
+// There is no build step here, so every file is fetched by its own plain URL
+// and GitHub Pages serves them with `cache-control: max-age=600`. That means a
+// browser can perfectly well end up holding a NEW page script and a TEN MINUTE
+// OLD copy of this file — new code calling a function that its cached api.js
+// has never heard of. What the user sees is "api.something is not a function",
+// which tells them nothing and looks like the update failed.
+//
+// A developer would hard-refresh. The people using this are a registrar and a
+// handful of homeschool mothers on phones, who will not think of that and
+// should not have to. So each app declares what it needs, and if the cached
+// copy cannot provide it, we reload once — bypassing the cache — and carry on.
+//
+// Guarded by sessionStorage so a genuine missing function fails loudly instead
+// of reloading forever.
+// =============================================================================
+export function needsFresh(names) {
+  // sessionStorage throws in some private-browsing modes, and this runs before
+  // anything else in the app. A guard that crashes the page it is meant to
+  // rescue would be worse than no guard: fall back to doing nothing.
+  const store = {
+    get(k) { try { return sessionStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { sessionStorage.setItem(k, v); } catch { /* nothing */ } },
+    del(k) { try { sessionStorage.removeItem(k); } catch { /* nothing */ } },
+  };
+
+  const missing = names.filter((n) => typeof api[n] !== "function");
+  if (!missing.length) {
+    store.del("coop_reloaded_for");
+    return false;
+  }
+
+  const already = store.get("coop_reloaded_for");
+  const key = missing.join(",");
+  if (already === key) {
+    // Reloading did not help, so this is not a stale cache. Say so plainly
+    // rather than looping.
+    console.error("Missing after reload:", missing);
+    document.body.innerHTML =
+      '<div class="centered"><h1>This page needs updating</h1>' +
+      '<p class="muted mt">Part of the site did not load correctly. ' +
+      "Please close this tab and open it again. If it keeps happening, " +
+      "tell Ben — nothing you have saved is affected.</p></div>";
+    return true;
+  }
+
+  store.set("coop_reloaded_for", key);
+  location.reload();
+  return true;
+}
+
 let _client = null;
 
 /** Lazily load supabase-js. Only the admin app needs it. */

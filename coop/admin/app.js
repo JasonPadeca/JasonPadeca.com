@@ -6,7 +6,7 @@
 // /admin/families/<id> would be a 404.
 // =============================================================================
 
-import { auth, api, IS_CONFIGURED } from "../assets/api.js";
+import { auth, api, IS_CONFIGURED, needsFresh } from "../assets/api.js";
 import { esc, $, render, toast, toastErr, loading } from "../assets/ui.js";
 
 import * as Dashboard  from "./views/dashboard.js";
@@ -67,6 +67,11 @@ const NAV = [
 // Boot
 // =============================================================================
 (async function boot() {
+  // Newest things this build calls. If the browser handed us a cached api.js
+  // from before they existed, needsFresh reloads once rather than letting a
+  // page fail with "api.something is not a function".
+  if (needsFresh(["siteEditedPages", "siteBlocks", "setSiteText"])) return;
+
   if (!IS_CONFIGURED) {
     return render(app, `<div class="centered">
       <h1>Not configured</h1>
