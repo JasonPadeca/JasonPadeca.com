@@ -1053,3 +1053,21 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
   .subnav { gap: .15rem; }
   .subnav a { padding: .45rem .55rem; font-size: .86rem; }
 }
+
+/* =============================================================================
+   Cross-section links in the admin top bar.
+
+   Administration is the only section that had no way back. The portal and the
+   teaching pages have linked to each other and to here from the start, so an
+   administrator who is also a mother could get in but not out without editing
+   the address bar. Empty for somebody who is only an administrator.
+   ============================================================================= */
+.crosslinks { display: inline-flex; gap: .4rem; flex: none; }
+.crosslinks:empty { display: none; }
+
+@media (max-width: 700px) {
+  /* The nav wraps to its own line on a phone; these should sit with the
+     sign-out button rather than being pushed off the end of it. */
+  .crosslinks { gap: .3rem; }
+  .crosslinks .btn { padding: .3rem .5rem; font-size: .76rem; }
+}

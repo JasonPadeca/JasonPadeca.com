@@ -28,6 +28,16 @@ const app = $("#app");
 /** The signed-in admin row. Views read this for role checks. */
 export let ADMIN = null;
 
+/**
+ * The same person's other hats, if they wear any.
+ *
+ * An administrator here is very often also a mother with children in classes,
+ * and sometimes teaches one as well. Both other sections already link across to
+ * each other and to here; this side had no way back, so the only route out of
+ * administration was editing the address bar.
+ */
+let ME = null;
+
 // -----------------------------------------------------------------------------
 // Routes. Each pattern is matched in order; :params are captured.
 // -----------------------------------------------------------------------------
@@ -99,7 +109,14 @@ const NAV = [
     return renderSignIn(null, !!session);
   }
 
+  // Not fatal: an administrator with no family record is perfectly ordinary,
+  // and a failure here should cost them the two links, not the whole section.
+  try {
+    ME = await auth.establishSession();
+  } catch { ME = null; }
+
   $("#topbar").hidden = false;
+  renderCrossLinks();
   $("#signout").addEventListener("click", async () => {
     await auth.signOut();
     location.reload();
@@ -209,6 +226,20 @@ async function route() {
 // Period and class pages are reached by drilling into a semester, so they should
 // keep Semesters lit rather than leaving the nav with nothing highlighted.
 const NAV_ALIASES = { "#/periods": "#/semesters", "#/classes": "#/semesters", "#/audit": "#/settings" };
+
+/** Links to the other sections this person belongs to, if any. */
+function renderCrossLinks() {
+  const el = $("#crosslinks");
+  if (!el) return;
+
+  const hasFamily = (ME?.families ?? []).length > 0;
+  const teaches = (ME?.teaches ?? []).length > 0;
+
+  el.innerHTML = [
+    hasFamily ? `<a class="btn btn-sm" href="../portal/">My Family</a>` : "",
+    teaches ? `<a class="btn btn-sm" href="../teacher/">Teaching</a>` : "",
+  ].join("");
+}
 
 function renderNav(hash) {
   let top = "#/" + (hash.split("/")[1] ?? "");

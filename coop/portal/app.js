@@ -18,7 +18,7 @@
 // =============================================================================
 
 import { auth, api, IS_CONFIGURED, needsFresh } from "../assets/api.js";
-import { esc, $, render, toastErr, ageAt, plural } from "../assets/ui.js";
+import { esc, $, render, toastErr, plural } from "../assets/ui.js";
 import * as Absences from "./absences.js";
 import * as Week from "./week.js";
 import * as Proposals from "./proposals.js";
@@ -414,22 +414,17 @@ async function home() {
     ]);
   }
 
-  const refDate = semester?.class_start_date;
   const active = children.filter((c) => c.active && !c.archived_at);
 
+  // No roll-call of the family's own children here. It used to lead the page,
+  // and it was the same names the week below already lists against their
+  // classes — a parent does not need reminding who lives in their house, and on
+  // a phone it pushed the thing they came for off the screen. The children are
+  // still fetched: the absence form is built from them.
   shell("/", `
-    <div class="card">
-      <div class="card-head"><h3>Your children</h3></div>
-      ${active.length ? `<div class="table-scroll"><table>
-        <thead><tr><th>Name</th><th class="num">Age${
-          refDate ? ` at ${esc(semester.name)}` : ""}</th></tr></thead>
-        <tbody>${active.map((c) => `<tr>
-          <td><strong>${esc(c.first_name)} ${esc(c.last_name ?? "")}</strong></td>
-          <td class="num mono">${ageAt(c.birth_date, refDate) ?? `<span class="faint">—</span>`}</td>
-        </tr>`).join("")}</tbody></table></div>`
-        : `<p class="muted">No children on your family record yet. An administrator
-           can add them.</p>`}
-    </div>
+    ${active.length ? "" : `<div class="note">
+      There are no children on your family record yet. An administrator can add
+      them.</div>`}
 
     <div id="week"></div>
 
