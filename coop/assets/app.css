@@ -1177,3 +1177,41 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
   .topbar-stacked { padding-top: .4rem; }
   .topbar-stacked .mainnav a { padding: .3rem .45rem; font-size: .74rem; }
 }
+
+/* =============================================================================
+   Family setup — a family editing its own record.
+
+   One block per person, rather than a table of inputs. A row of tiny boxes is
+   fine for a registrar working through sixty families; it is miserable for a
+   mother on a phone trying to add an allergy for one child.
+   ============================================================================= */
+.people { display: flex; flex-direction: column; gap: .75rem; }
+
+.person {
+  display: grid; gap: .6rem;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  padding: .8rem .85rem;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.person .field { margin: 0; }
+
+/* Allergies and the note to teachers run the width — they are sentences, not
+   values, and a 10rem box invites a one-word answer. */
+.person .field.wide { grid-column: 1 / -1; }
+
+.person-head {
+  grid-column: 1 / -1;
+  display: flex; align-items: baseline; gap: .6rem;
+  padding-bottom: .1rem;
+}
+
+.famcard h4 {
+  margin-bottom: .5rem;
+  padding-bottom: .35rem;
+  border-bottom: 1px solid var(--border);
+}
+
+@media (max-width: 560px) {
+  .person { grid-template-columns: 1fr; }
+}

@@ -669,6 +669,17 @@ export const api = {
     }));
   },
 
+  // --- Family setup: a family's own standing record ---
+  async familySetup() {
+    const db = await client();
+    return unwrap(await db.rpc("family_setup"));
+  },
+
+  async updateFamilySetup(payload) {
+    const db = await client();
+    return unwrap(await db.rpc("update_family_setup", { p_payload: payload }));
+  },
+
   // --- The registration form ---
   /** What the family already has on file, plus whether a window is open. */
   async registrationForm() {

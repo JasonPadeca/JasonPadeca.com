@@ -23,6 +23,7 @@ import * as Absences from "./absences.js";
 import * as Week from "./week.js";
 import * as Proposals from "./proposals.js";
 import * as RegForm from "./registration-form.js";
+import * as FamilySetup from "./family-setup.js";
 import { REGISTRATION_STATUS } from "../assets/proposal-fields.js";
 
 const app = document.getElementById("app");
@@ -39,7 +40,7 @@ let state = { session: null, me: null };
 async function start() {
   // See needsFresh in api.js: reload once if the browser handed us a cached
   // copy from before these existed, rather than failing with "not a function".
-  if (needsFresh(["familyWeek", "proposalPayload", "registrationForm"])) return;
+  if (needsFresh(["familyWeek", "registrationForm", "familySetup"])) return;
 
   if (!IS_CONFIGURED) {
     return render(app, `<div class="wrap page"><div class="note note-danger">
@@ -302,6 +303,7 @@ function notRecognised() {
 // -----------------------------------------------------------------------------
 const PAGES = [
   ["/",             "This week"],
+  ["/family",       "Your family"],
   ["/registration", "Registration"],
   ["/proposals",    "Propose a class"],
 ];
@@ -325,6 +327,7 @@ async function route() {
   }
   shownPath = path;
 
+  if (path === "/family") return familyPage();
   if (path === "/registration") return registrationPage();
   if (path === "/proposals") return proposalsPage();
   return home();
@@ -492,6 +495,18 @@ async function registrationPage() {
   // The form itself, when a window is open. It renders its own card — or a line
   // saying registration is not open — so the page reads the same either way.
   await RegForm.render_($("#regform"), { onChange: () => registrationPage() });
+}
+
+// -----------------------------------------------------------------------------
+// Your family
+//
+// Editable, because the parents are the only people who know any of it. It used
+// to be a read-only list on the front page, which told a mother what she
+// already knew and gave her nowhere to correct it.
+// -----------------------------------------------------------------------------
+async function familyPage() {
+  shell("/family", `<div id="famsetup"></div>`);
+  await FamilySetup.render_($("#famsetup"));
 }
 
 // -----------------------------------------------------------------------------

@@ -177,3 +177,11 @@ for f in 00_supabase_stub.sql "$MIGRATIONS"/0*.sql 10_seed.sql; do
   P -d coop -f "$f" >/dev/null
 done
 P -d coop -f 93_registration_forms.sql 2>&1 | strip
+
+echo "\n=== Family setup: a family editing its own record ==="
+P -d postgres -tAc "drop database coop;" >/dev/null
+P -d postgres -tAc "create database coop;" >/dev/null
+for f in 00_supabase_stub.sql "$MIGRATIONS"/0*.sql 10_seed.sql; do
+  P -d coop -f "$f" >/dev/null
+done
+P -d coop -f 92_family_setup.sql 2>&1 | strip
