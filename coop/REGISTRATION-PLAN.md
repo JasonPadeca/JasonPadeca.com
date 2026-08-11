@@ -237,9 +237,23 @@ families before it is the only path.
 
 ---
 
-## 6a. Still open: what to do with "known absences"
+## 6a. Known absences: the box stays, Val marks them
 
-One question left, and it is narrower than it first sounded.
+**Decided.** The form keeps the same free-text box the co-op already uses, and
+when somebody does say "we are away on the 12th", an administrator records those
+absences by hand. No parsing, no date picker, no rebuilding anything around a
+field that is rarely filled in — it is uncommon for a family to know months
+ahead, and building for the rare case would cost more than the case is worth.
+
+> **One gap this depends on.** `report_absence` already permits an administrator
+> to file an absence for any child — the authorization check passes for admins.
+> But Admin → Absences currently only offers *Export CSV* and *Remove*: it is a
+> report, not a tool, and there is no button for adding one. The manual process
+> above is possible in the database and not possible on the screen. Adding an
+> "Add absence" action to that view is small, independent of everything else
+> here, and needs doing before this plan's answer is actually usable.
+
+The reasoning that led here, kept because it explains what the field is for:
 
 Both existing forms end with:
 
@@ -254,18 +268,17 @@ The co-op already asks for this. The question is only what happens to the answer
 
 - **As text.** Stored with the rest of the form, read by a person. A teacher
   planning week six has no idea unless somebody tells them. Cheap.
-- **Into the absence system.** The dates become real absences at registration, so
-  they appear on rosters and in the teacher's week without anybody re-entering
-  them. This is what the absence system is for, and it is the answer that means
-  the information does not die in a text box. Costs more: dates must be parsed or
-  picked, and a family writing "we're away most of October" cannot be parsed at
-  all — so realistically it is a date-picker against the semester's meeting
-  dates, with a free-text box beside it for everything else.
+- **Into the absence system.** The dates would become real absences at
+  registration, appearing on rosters and in the teacher's week without anybody
+  re-entering them. Rejected: a family writing "we're away most of October"
+  cannot be parsed at all, so this really means a date-picker against the
+  semester's meeting dates — a good deal of machinery for a field that is
+  seldom filled in, since families rarely know their September absences in
+  August.
 
-Recommendation: the date picker, but not in the first pass. Ship the form with
-the text box the co-op already uses, see what people actually write in it, and
-let that decide whether the picker is worth building. A guess about what sixty
-families will type is worse evidence than one semester of them typing it.
+The manual route wins on the merits here, not merely on cost. The rare family
+who does know gets their absences recorded properly by a person who can read
+"most of October" and act on it, which no parser was ever going to manage.
 
 ---
 
