@@ -307,9 +307,24 @@ def mark_editable(html, page_dest):
     i = html.find('class="entry-content')
     if i == -1:
         return html
-    end = html.find("</article>", i)
-    if end == -1:
+
+    # The end of the content is this div's own matching close, found by
+    # counting nesting.
+    #
+    # This used to stop at the first "</article>", which is wrong wherever the
+    # page embeds articles of its own: the front page's recent-posts block does
+    # exactly that, so the segment ended at the first post and every block below
+    # it — including the bar at the foot of the page — was silently left
+    # uneditable. Nothing looked broken, there were simply fewer boxes in the
+    # admin screen than there are paragraphs on the page.
+    open_div = html.rfind("<", 0, i)
+    open_end = html.find(">", i)
+    if open_div == -1 or open_end == -1:
         return html
+    end = _matching_close(html, open_end + 1, "div")
+    if end is None:
+        return html
+    end -= len("</div>")
 
     head, seg, tail = html[:i], html[i:end], html[end:]
     n = 0
@@ -518,12 +533,9 @@ def rewrite(html, page_url, depth):
     #
     # The "Get new content delivered directly to your inbox" bar posts to
     # WordPress.com and would sign families up to a blog this project does not
-    # publish. Its black background sits on the wrapping group, not the form, so
-    # removing only the form leaves an empty black band across the page.
-    html = remove_element(
-        html,
-        r'<div[^>]*class="[^"]*wp-block-group[^"]*has-background[^"]*"[^>]*>',
-        "div", must_contain="wp-block-jetpack-subscriptions")
+    # publish. But the black band it sits in is a liked part of the design, so
+    # the bar stays and only its contents are replaced — see refill_dark_bar.
+    html = refill_dark_bar(html, depth)
 
     # The Like / share footer. Its iframe comes from widgets.wp.com, and with
     # that blocked it sits there showing a spinner and the word "Loading..."
@@ -537,6 +549,21 @@ def rewrite(html, page_url, depth):
     # It ships hidden and is revealed by a script we do not load, so on a copy it
     # is either invisible or a spinner that never resolves.
     html = remove_element(html, r'<div[^>]*id="actionbar"[^>]*>', "div")
+
+    # ...and the script that fetches the action bar's CSS and JS. Removing the
+    # element left this behind, asking for two files that are not on this server
+    # — two 404s per page, on every page.
+    html = re.sub(
+        r"<script[^>]*>(?:(?!</script>).)*?actionbar\.(?:css|js)"
+        r"(?:(?!</script>).)*?</script>", "", html, flags=re.I | re.S)
+
+    # Jetpack's image-carousel loading overlay: a 40px SVG that spins forever.
+    #
+    # It ships WITHOUT display:none — the carousel's own script is what hides it
+    # once the library has loaded. That script is not part of this copy, so on
+    # every page the spinner simply sits there turning, which is exactly the
+    # "still loading" impression a static site should never give.
+    html = remove_element(html, r'<div[^>]*id="jp-carousel-loading-overlay"[^>]*>', "div")
 
     # Remaining head fingerprints: prefetch hints, the wp.me shortlink, and
     # WordPress's own OpenSearch document. All invisible, all pointing at
@@ -555,6 +582,53 @@ def rewrite(html, page_url, depth):
     return html
 
 # --- The two changes we are actually making -----------------------------------
+def refill_dark_bar(html, depth):
+    """Keep the black band; replace what is inside it.
+
+    Upstream this is the "Get new content delivered directly to your inbox"
+    signup, which posts to WordPress.com and would subscribe families to a blog
+    this project does not publish. Removing the whole group took the black band
+    with it — and the band turned out to be wanted, as a piece of the design
+    rather than for what it said.
+
+    So the outer group is left exactly as it is, keeping the theme's own dark
+    background, full-bleed width and spacing, and only its inner container is
+    swapped. What goes in is the thing this site actually wants a visitor to do:
+    apply. The wording is a normal editable block, so it can be reworded from
+    Admin → Website without anybody touching this file.
+    """
+    up = "../" * depth or "./"
+    pat = re.compile(r'<div[^>]*class="[^"]*wp-block-group[^"]*has-background[^"]*"[^>]*>',
+                     re.I)
+    pos = 0
+    while True:
+        m = pat.search(html, pos)
+        if not m:
+            return html
+        end = _matching_close(html, m.end(), "div")
+        if end is None:
+            return html
+        if "wp-block-jetpack-subscriptions" not in html[m.end():end]:
+            pos = m.end()
+            continue
+
+        # Rebuilt with the theme's own class names so it inherits their styling
+        # rather than carrying any of ours.
+        inner = (
+            '<div class="wp-block-group__inner-container is-layout-flow '
+            'wp-block-group-is-layout-flow">'
+            '<p class="has-text-align-center has-large-font-size wp-block-paragraph">'
+            'Interested in joining Koinonia?</p>'
+            '<p class="has-text-align-center wp-block-paragraph">'
+            f'<a href="{up}apply/">Apply for membership</a></p>'
+            "</div>"
+        )
+        # Everything up to the close of the group's opening tag, our contents,
+        # then the group's own closing tag.
+        html = html[:m.end()] + inner + html[end - len("</div>"):]
+        pos = m.end() + len(inner)
+
+
 def apply_changes(html, depth):
     up = "../" * depth or "./"
     changes = []

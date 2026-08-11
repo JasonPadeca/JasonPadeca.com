@@ -42,6 +42,14 @@ insert into public.site_content (page, block_key, original, sort_order, tag) val
 on conflict (page, block_key) do update set original = excluded.original,
   sort_order = excluded.sort_order, tag = excluded.tag;
 insert into public.site_content (page, block_key, original, sort_order, tag) values
+  ('index.html', '10', 'Interested in joining Koinonia?', 10, 'p')
+on conflict (page, block_key) do update set original = excluded.original,
+  sort_order = excluded.sort_order, tag = excluded.tag;
+insert into public.site_content (page, block_key, original, sort_order, tag) values
+  ('index.html', '11', '[Apply for membership](./apply/)', 11, 'p')
+on conflict (page, block_key) do update set original = excluded.original,
+  sort_order = excluded.sort_order, tag = excluded.tag;
+insert into public.site_content (page, block_key, original, sort_order, tag) values
   ('about-koinonia-faq/index.html', '1', 'Overview', 1, 'h4')
 on conflict (page, block_key) do update set original = excluded.original,
   sort_order = excluded.sort_order, tag = excluded.tag;
