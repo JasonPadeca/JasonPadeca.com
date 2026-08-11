@@ -74,7 +74,7 @@ async function semesterDialog(existing = null) {
                   { value: "4", label: "Thursday" }, { value: "5", label: "Friday" },
                   { value: "6", label: "Saturday" }],
         hint: "Which day of the week classes meet. The class calendar is built from this." },
-      { name: "registration_close_at", label: "Registration closes", type: "datetime-local",
+      { name: "registration_close_at", label: "Class sign-up closes", type: "datetime-local",
         value: existing?.registration_close_at ? existing.registration_close_at.slice(0, 16) : null,
         hint: "Family registration links stop working after this." },
     ],
@@ -127,8 +127,8 @@ export async function detail(app, { id }) {
         <a class="btn" href="#/semesters/${esc(semester.id)}/rosters">Print All Rosters</a>
         <button class="btn" id="editsem">Edit</button>
         ${semester.status === "registration_open"
-          ? `<button class="btn" id="closereg">Close Registration</button>`
-          : `<button class="btn btn-primary" id="openreg">Open Registration</button>`}
+          ? `<button class="btn" id="closereg">Close Class Sign-up</button>`
+          : `<button class="btn btn-primary" id="openreg">Open Class Sign-up</button>`}
       </div>
     </div>
 
@@ -138,7 +138,7 @@ export async function detail(app, { id }) {
     </div>` : ""}
 
     ${semester.status === "registration_open" ? `<div class="card">
-      <div class="card-head"><h3>Registration Invitations</h3>
+      <div class="card-head"><h3>Class Sign-up Invitations</h3>
         <span class="small muted">${invites.filter((i) => i.sent_at).length} sent</span></div>
       <div id="inviteList"></div>
     </div>` : ""}
@@ -193,13 +193,13 @@ export async function detail(app, { id }) {
   $("#openreg")?.addEventListener("click", () => openRegistration(semester));
 
   $("#closereg")?.addEventListener("click", async () => {
-    const ok = await confirmDialog("Close registration?",
-      "Families will no longer be able to register or change their choices. You can reopen it later.",
-      "Close Registration");
+    const ok = await confirmDialog("Close class sign-up?",
+      "Families will no longer be able to sign up or change their choices. You can reopen it later.",
+      "Close Class Sign-up");
     if (!ok) return;
     try {
       await api.updateSemester(semester.id, { status: "registration_closed" });
-      toastOk("Registration closed."); refresh();
+      toastOk("Class sign-up closed."); refresh();
     } catch (e) { toastErr(e.message); }
   });
 
@@ -208,7 +208,7 @@ export async function detail(app, { id }) {
     const ok = await confirmDialog(
       archiving ? "Archive semester?" : "Restore semester?",
       archiving
-        ? "The semester disappears from current screens. Every registration, roster, and waitlist is kept and stays viewable in the archive."
+        ? "The semester disappears from current screens. Every class sign-up, roster, and waitlist is kept and stays viewable in the archive."
         : "The semester will appear in the current list again.",
       archiving ? "Archive" : "Restore", archiving);
     if (!ok) return;
@@ -290,11 +290,11 @@ async function openRegistration(semester) {
         link for every active family and email it to them.</p>`;
 
   const choice = await modal({
-    title: "Open Registration",
+    title: "Open Class Sign-up",
     body,
     buttons: [
       { value: null, label: "Cancel" },
-      { value: "go", label: pf.blocking ? "Continue Anyway" : "Open Registration",
+      { value: "go", label: pf.blocking ? "Continue Anyway" : "Open Class Sign-up",
         class: pf.blocking ? "btn-danger" : "btn-primary" },
     ],
   });
@@ -304,14 +304,14 @@ async function openRegistration(semester) {
 
   if (!res?.ok) {
     return toastErr(res?.error === "preflight_blocked"
-      ? "Registration could not be opened."
-      : (res?.error ?? "Could not open registration."));
+      ? "Class sign-up could not be opened."
+      : (res?.error ?? "Could not open class sign-up."));
   }
 
   const failures = (res.results ?? []).filter((r) => !r.ok);
   if (failures.length) {
     await modal({
-      title: "Registration opened, with problems",
+      title: "Class sign-up opened, with problems",
       body: `<p>${res.invited - failures.length} of ${res.invited} families were emailed
              their registration link.</p>
              <div class="note note-danger mt">These could not be sent:
@@ -320,7 +320,7 @@ async function openRegistration(semester) {
       buttons: [{ value: null, label: "Close", class: "btn-primary" }],
     });
   } else {
-    toastOk(`Registration open. ${plural(res.invited, "family", "families")} invited.`);
+    toastOk(`Class sign-up open. ${plural(res.invited, "family", "families")} invited.`);
   }
   refresh();
 }
@@ -424,7 +424,7 @@ async function classDialog(period, existing, siblings = []) {
       { name: "location", label: "Location", value: existing?.location,
         placeholder: "Fellowship Hall", hint: "Where the class meets. Appears on the printed roster." },
       { name: "description", label: "Description", type: "textarea", value: existing?.description,
-        hint: "Families see this on the registration page." },
+        hint: "Families see this on the class sign-up page." },
       { name: "capacity", label: "Capacity", type: "number", min: 0, value: existing?.capacity,
         hint: "Leave blank for no limit. Enforced by the database, not the browser." },
       { name: "age_min", label: "Minimum age", type: "number", min: 0, value: existing?.age_min,
@@ -807,7 +807,7 @@ export async function addVolunteer(cls, semester) {
           value: c.id,
           label: `${offered.has(c.id) ? "★ " : ""}${c.first_name} ${c.last_name ?? ""} — ${c.familyName}`,
         })),
-        hint: "★ marks students who offered to volunteer during registration." },
+        hint: "★ marks students who offered to volunteer during class sign-up." },
       { name: "note", label: "Note", placeholder: "Good with the little ones",
         hint: "Optional. Shown on the class page and the printed roster." },
     ],
@@ -856,7 +856,7 @@ async function overrideDialog(title, warnings, question, askReason = false) {
     ${askReason ? `<div class="field mt">
       <label for="ovr">Reason for the override</label>
       <input type="text" id="ovr" placeholder="Parent teaches the class">
-      <div class="hint">Recorded against this registration and in the audit log.</div>
+      <div class="hint">Recorded against this class sign-up and in the audit log.</div>
     </div>` : ""}`;
 
   return new Promise((resolve) => {

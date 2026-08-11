@@ -98,7 +98,7 @@ async function addFamily() {
         placeholder: "Johnson Family", hint: "How the family appears throughout the app." },
       { name: "last_name", label: "Surname", placeholder: "Johnson" },
       { name: "primary_email", label: "Primary email", type: "email",
-        hint: "Registration invitations are sent here." },
+        hint: "Class sign-up invitations are sent here." },
       { name: "primary_phone", label: "Primary phone",
         hint: "The number to ring. Printed on class rosters." },
       { name: "notes", label: "Admin notes", type: "textarea",
@@ -135,7 +135,7 @@ export async function detail(app, { id }) {
           ${f.archived_at ? `<span class="badge">Archived</span> ` : ""}
           ${f.primary_email
             ? esc(f.primary_email)
-            : `<span style="color:var(--danger)">No email address — this family cannot be sent a registration link.</span>`}
+            : `<span style="color:var(--danger)">No email address — this family cannot be sent a class sign-up link.</span>`}
         </div>
       </div>
       <div class="btn-row">
@@ -181,7 +181,7 @@ export async function detail(app, { id }) {
             <button class="btn btn-sm btn-ghost" data-togglechild="${esc(c.id)}">
               ${c.active ? "Mark Inactive" : "Reactivate"}</button>
           </td></tr>`).join("")}</tbody></table></div>`
-        : `<p class="muted">No children listed yet. Add them so they can be registered for classes.</p>`}
+        : `<p class="muted">No children listed yet. Add them so they can be signed up for classes.</p>`}
     </div>
   </div>`);
 
@@ -248,7 +248,7 @@ export async function detail(app, { id }) {
           submitLabel: "Mark Inactive",
           fields: [{ name: "inactive_reason", label: "Reason (optional)",
             placeholder: "Aged out of the program",
-            hint: "The child stays on all past class rosters. Only future registration is affected." }],
+            hint: "The child stays on all past class rosters. Only future class sign-up is affected." }],
         });
         if (!v) return;
         try {

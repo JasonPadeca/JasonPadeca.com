@@ -989,3 +989,32 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
   border-radius: 3px;
   background: var(--accent-soft);
 }
+
+/* =============================================================================
+   Class proposals
+   ============================================================================= */
+.cards { display: flex; flex-direction: column; gap: .85rem; }
+
+/* The description, cut to a few lines on the list. Enough to recognise a
+   proposal by; the whole thing is one click away and nobody decides from a
+   summary. */
+.clamp {
+  margin-top: .5rem; color: var(--text-muted); font-size: .92rem; line-height: 1.5;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* One question and its answer, reading down. The question is quiet and the
+   answer is not: the reader already knows what was asked, and is here for what
+   somebody wrote back. */
+.qa { padding: .7rem 0; border-bottom: 1px solid var(--border); }
+.qa:last-child { border-bottom: 0; }
+.qa .q { font-size: .82rem; color: var(--text-muted); margin-bottom: .2rem; }
+.qa .a { line-height: 1.55; white-space: pre-wrap; }
+
+/* "required", beside a label rather than a bare asterisk nobody can read on a
+   phone. */
+.req {
+  font-size: .72rem; font-weight: 400; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: .04em; margin-left: .35rem;
+}

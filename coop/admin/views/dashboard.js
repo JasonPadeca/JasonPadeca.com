@@ -65,7 +65,7 @@ export async function show(app) {
     <div class="stats">
       ${stat(summary.active_children, "Active children")}
       ${stat(summary.children_registered, "Registered")}
-      ${stat(notRegistered, "Not yet registered", notRegistered > 0 ? "attn" : "")}
+      ${stat(notRegistered, "Not signed up yet", notRegistered > 0 ? "attn" : "")}
       ${sittingOut ? stat(sittingOut, "Sitting out") : ""}
       ${stat(summary.confirmed_seats, "Confirmed seats")}
       ${stat(summary.waitlisted, "Waitlisted", summary.waitlisted > 0 ? "attn" : "")}
@@ -94,8 +94,8 @@ function stat(n, label, kind = "") {
 export function statusBadge(s) {
   const map = {
     draft: ["", "Draft"],
-    registration_open: ["badge-ok", "Registration Open"],
-    registration_closed: ["badge-warn", "Registration Closed"],
+    registration_open: ["badge-ok", "Sign-up Open"],
+    registration_closed: ["badge-warn", "Sign-up Closed"],
     active: ["badge-accent", "Active"],
     completed: ["", "Completed"],
     archived: ["", "Archived"],
@@ -128,7 +128,7 @@ function renderAlerts(semester, summary, classes, invites, families) {
     if (missing.length) {
       alerts.push(["warn",
         `${plural(missing.length, "active family", "active families")} ${
-          missing.length === 1 ? "has" : "have"} no registration invitation: ` +
+          missing.length === 1 ? "has" : "have"} no class sign-up invitation: ` +
         missing.slice(0, 5).map((f) => f.display_name).join(", ") +
         (missing.length > 5 ? `, and ${missing.length - 5} more` : "") + "."]);
     }

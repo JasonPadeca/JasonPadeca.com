@@ -21,6 +21,8 @@ import { auth, api, IS_CONFIGURED, needsFresh } from "../assets/api.js";
 import { esc, $, render, toastErr, ageAt, plural } from "../assets/ui.js";
 import * as Absences from "./absences.js";
 import * as Week from "./week.js";
+import * as Proposals from "./proposals.js";
+import { REGISTRATION_STATUS } from "../assets/proposal-fields.js";
 
 const app = document.getElementById("app");
 
@@ -36,7 +38,7 @@ let state = { session: null, me: null };
 async function start() {
   // See needsFresh in api.js: reload once if the browser handed us a cached
   // copy from before these existed, rather than failing with "not a function".
-  if (needsFresh(["familyWeek", "familyClass"])) return;
+  if (needsFresh(["familyWeek", "proposalPayload", "submitProposal"])) return;
 
   if (!IS_CONFIGURED) {
     return render(app, `<div class="wrap page"><div class="note note-danger">
@@ -311,8 +313,11 @@ async function home() {
   };
 
   let children = [], semester = null, periods = [], absences = [], meetings = [];
+  let registration = [];
 
   children = await settle(() => api.myChildren(families.map((f) => f.id)), []);
+  registration = await settle(
+    async () => (await api.proposalPayload())?.registration ?? [], []);
   semester = await settle(() => api.currentSemester(), null);
 
   if (semester) {
@@ -377,12 +382,13 @@ async function home() {
 
       <div id="absences"></div>
 
-      <div class="card">
-        <div class="card-head"><h3>Coming soon</h3></div>
-        <p class="muted">Class proposals will appear here. Registration still
-          happens through the link emailed to you when a semester opens.</p>
-      </div>
+      <div id="registration"></div>
+
+      <div id="proposals"></div>
     </div>`);
+
+  renderRegistration($("#registration"), registration);
+  Proposals.render_($("#proposals"), { onChange: () => {} });
 
   Week.render_($("#week"), { meetings, onNeedsRefresh: () => home() });
 
@@ -395,6 +401,36 @@ async function home() {
     await auth.signOut();
     location.reload();
   });
+}
+
+/**
+ * Where the family stands, semester by semester.
+ *
+ * Read-only, because registering is currently something the registrar records
+ * rather than something a family does here. Shown anyway: the commonest
+ * question a parent has in August is "are we actually signed up", and the
+ * commonest answer before now was to email somebody and wait.
+ */
+function renderRegistration(el, rows) {
+  if (!el) return;
+  if (!rows?.length) return render(el, "");
+
+  render(el, `<div class="card">
+    <div class="card-head"><h3>Registration</h3></div>
+    <p class="muted">Whether your family is taking part, semester by semester.
+      This is kept up to date by the registrar — if something here looks wrong,
+      tell her rather than anybody else.</p>
+    <div class="table-scroll mt"><table>
+      <thead><tr><th>Semester</th><th>Your family</th></tr></thead>
+      <tbody>${rows.map((r) => {
+        const [label, cls] = REGISTRATION_STATUS[r.status] ?? ["Not started", ""];
+        return `<tr>
+          <td><strong>${esc(r.semester)}</strong></td>
+          <td><span class="badge ${cls}">${esc(label)}</span></td>
+        </tr>`;
+      }).join("")}</tbody>
+    </table></div>
+  </div>`);
 }
 
 /** Today, as YYYY-MM-DD in local time — not UTC, which can be yesterday here. */

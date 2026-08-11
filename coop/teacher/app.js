@@ -317,7 +317,7 @@ async function classView(classId) {
           <td class="right nowrap">${s.absent
             ? `<span class="badge badge-warn">Away</span>` : ""}</td>
         </tr>`).join("")}</tbody></table></div>`
-        : `<p class="muted">Nobody is registered for this class yet.</p>`}
+        : `<p class="muted">Nobody has signed up for this class yet.</p>`}
     </div>
 
     ${(view.helpers ?? []).length ? `<div class="card">

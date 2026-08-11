@@ -2,7 +2,7 @@
 // Enrollment view (§35) — one searchable list of who is in what.
 //
 // The question this answers is the one that used to need a spreadsheet:
-// "where is this child on Tuesday", "who has not registered yet", "which
+// "where is this child on Tuesday", "who has not signed up yet", "which
 // classes are full".
 // =============================================================================
 
@@ -117,7 +117,7 @@ export async function show(app) {
         <label for="filter">Show</label>
         <select id="filter">
           <option value="all">Everyone</option>
-          <option value="unregistered">Not yet registered</option>
+          <option value="unregistered">Not signed up yet</option>
           <option value="partial">Missing a period</option>
           <option value="waitlisted">On a waitlist</option>
           <option value="sittingout">Sitting this semester out</option>
@@ -153,7 +153,7 @@ export async function show(app) {
 
     if (classId) out = out.filter((r) => r.registrations.some((x) => x.class_id === classId));
 
-    // "Not yet registered" and "missing a period" are both about chasing people.
+    // "Not signed up yet" and "missing a period" are both about chasing people.
     // Somebody who has said they are sitting out is not being chased.
     if (filter === "unregistered") {
       out = out.filter((r) => !r.sittingOut &&
@@ -185,7 +185,7 @@ export async function show(app) {
             </div>`).join("")
           : r.sittingOut
             ? `<span class="badge">Sitting out</span>`
-            : `<span class="faint">Not registered</span>`}</td>
+            : `<span class="faint">Not signed up</span>`}</td>
         <td class="right nowrap">
           <button class="btn btn-sm btn-ghost" data-sitout="${esc(r.childId)}"
                   data-on="${r.sittingOut ? "1" : "0"}">
@@ -209,7 +209,7 @@ export async function show(app) {
     for (const r of rows) {
       if (!r.registrations.length) {
         data.push([r.child, r.family, "", "",
-                   r.sittingOut ? "Sitting out" : "Not registered"]);
+                   r.sittingOut ? "Sitting out" : "Not signed up"]);
       }
       for (const x of r.registrations) {
         data.push([r.child, r.family,

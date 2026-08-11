@@ -30,7 +30,7 @@ export async function show(app) {
         <button class="btn btn-sm" id="editprogram">Edit</button></div>
       <div class="table-scroll"><table><tbody>
         ${row("Program name", settings.program_name)}
-        ${row("Registration link address", settings.registration_base_url,
+        ${row("Class sign-up link address", settings.registration_base_url,
               "The address families are sent. Must point at this site's /coop/register/ page.")}
         ${row("Sending address", settings.from_email,
               "The From address on invitation and confirmation emails. Must be the mail account you send through, or one of its verified aliases.")}
@@ -42,16 +42,16 @@ export async function show(app) {
     </div>
 
     <div class="card">
-      <div class="card-head"><h3>Registration behaviour</h3>
+      <div class="card-head"><h3>Class sign-up behaviour</h3>
         <button class="btn btn-sm" id="editbehaviour">Edit</button></div>
       <div class="table-scroll"><table><tbody>
         ${row("Ineligible classes",
               settings.show_ineligible_classes
                 ? "Shown, dimmed, with the reason"
                 : "Hidden from families",
-              "How a class a child does not qualify for appears on the registration page.")}
-        ${row("Families may change their registration",
-              settings.allow_family_edits ? "Yes, while registration is open" : "No — administrators only",
+              "How a class a child does not qualify for appears on the class sign-up page.")}
+        ${row("Families may change their class choices",
+              settings.allow_family_edits ? "Yes, while sign-up is open" : "No — administrators only",
               "Whether a family can reopen their link and adjust choices after submitting.")}
         ${row("Normal program ages",
               settings.normal_program_age_min != null || settings.normal_program_age_max != null
@@ -104,7 +104,7 @@ export async function show(app) {
       title: "Program settings",
       fields: [
         { name: "program_name", label: "Program name", value: settings.program_name, required: true },
-        { name: "registration_base_url", label: "Registration link address",
+        { name: "registration_base_url", label: "Class sign-up link address",
           value: settings.registration_base_url ?? `${location.origin}/coop/register/`,
           hint: "Families' links are built from this. It must end at /coop/register/." },
         { name: "from_email", label: "Sending address", type: "email", value: settings.from_email,
@@ -122,14 +122,14 @@ export async function show(app) {
 
   $("#editbehaviour").addEventListener("click", async () => {
     const v = await formDialog({
-      title: "Registration behaviour",
+      title: "Class sign-up behaviour",
       fields: [
         { name: "show_ineligible_classes", type: "checkbox", value: settings.show_ineligible_classes,
           checkLabel: "Show ineligible classes to families, dimmed, with the reason",
           hint: "Unticked, a child simply does not see classes they cannot take." },
         { name: "allow_family_edits", type: "checkbox", value: settings.allow_family_edits,
-          checkLabel: "Families may change their registration while registration is open",
-          hint: "Unticked, a submitted registration is read-only and changes go through an administrator." },
+          checkLabel: "Families may change their class choices while sign-up is open",
+          hint: "Unticked, submitted class choices are read-only and changes go through an administrator." },
         { name: "normal_program_age_min", label: "Youngest normal age", type: "number", min: 0,
           value: settings.normal_program_age_min },
         { name: "normal_program_age_max", label: "Oldest normal age", type: "number", min: 0,
@@ -212,12 +212,12 @@ export async function audit(app) {
 }
 
 const ACTIONS = {
-  family_registration_submitted: "Family submitted a registration",
+  family_registration_submitted: "Family submitted class choices",
   admin_placed_child: "Administrator added a student",
   admin_placed_child_with_override: "Administrator added a student (override)",
-  admin_changed_registration_status: "Administrator changed a registration",
+  admin_changed_registration_status: "Administrator changed a class sign-up",
   waitlist_promoted: "Promoted from a waitlist",
-  registration_opened: "Registration opened",
+  registration_opened: "Class sign-up opened",
   invitation_resent: "Invitation resent",
   invitation_reissued: "Invitation reissued",
   invitation_revoked: "Invitation revoked",

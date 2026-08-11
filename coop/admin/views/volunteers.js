@@ -90,7 +90,7 @@ export async function show(app) {
         <h3>${report.length ? "Nothing matches" : "No offers yet"}</h3>
         <p>${report.length
           ? "Try a different period or search."
-          : "Families are asked when they register. Offers appear here as they come in."}</p>
+          : "Families are asked when they sign up for classes. Offers appear here as they come in."}</p>
       </div>`);
     }
 

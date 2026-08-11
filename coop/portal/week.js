@@ -98,7 +98,7 @@ export async function render_(container, { meetings, onNeedsRefresh }) {
                 c.location ? ` · ${esc(c.location)}` : ""}</div></td>
             <td class="right nowrap faint">›</td>
           </tr>`).join("")}</tbody></table></div>`
-          : `<p class="muted small">Not registered for any classes this semester.</p>`}
+          : `<p class="muted small">Not signed up for any classes this semester.</p>`}
       </div>`).join("")
       : `<div class="card"><p class="muted">No children on your family record yet.</p></div>`}
   `);
@@ -204,7 +204,7 @@ async function openClass(classId, meeting) {
       <div class="mt namelist">${students.length
         ? students.map((s) => `<div${s.absent ? ' class="faint"' : ""}>${esc(s.name)}${
             s.absent ? ` <span class="tiny">— absent this week</span>` : ""}</div>`).join("")
-        : `<span class="muted">Nobody registered yet.</span>`}</div>
+        : `<span class="muted">Nobody signed up yet.</span>`}</div>
     </div>
 
     <div class="modal-actions">

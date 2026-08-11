@@ -104,7 +104,7 @@ export function friendlyError(error) {
   if (msg.includes("semester_dates_ordered"))
     return "The last class date must fall on or after the first class date.";
   if (msg.includes("registration_dates_ordered"))
-    return "Registration must close after it opens.";
+    return "Class sign-up must close after it opens.";
   if (msg.includes("period_times_ordered"))
     return "The end time must be after the start time.";
   if (msg.includes("capacity_check") || msg.includes("capacity >= 0"))
@@ -651,6 +651,52 @@ export const api = {
   async myApplication() {
     const db = await client();
     return unwrap(await db.rpc("my_application"));
+  },
+
+  // --- Registration (family × semester) ---
+  /** Every family's standing for one semester, including those never marked. */
+  async registrationReport(semesterId) {
+    const db = await client();
+    return unwrap(await db.rpc("semester_registration_report",
+      { p_semester_id: semesterId })) ?? [];
+  },
+
+  async setFamilyRegistration(familyId, semesterId, status, note = null) {
+    const db = await client();
+    return unwrap(await db.rpc("set_family_registration", {
+      p_family_id: familyId, p_semester_id: semesterId,
+      p_status: status, p_note: note,
+    }));
+  },
+
+  // --- Class proposals ---
+  /** Everything the proposal page needs: who may propose, terms, what was sent. */
+  async proposalPayload() {
+    const db = await client();
+    return unwrap(await db.rpc("family_proposal_payload"));
+  },
+
+  async submitProposal(payload) {
+    const db = await client();
+    return unwrap(await db.rpc("submit_class_proposal", { p_payload: payload }));
+  },
+
+  async proposals({ archived = false } = {}) {
+    const db = await client();
+    return unwrap(await db.from("class_proposals").select("*")
+      .eq("status", archived ? "archived" : "submitted")
+      .order("submitted_at", { ascending: false })) ?? [];
+  },
+
+  async archiveProposal(id, outcome = null, notes = null) {
+    const db = await client();
+    return unwrap(await db.rpc("archive_proposal",
+      { p_id: id, p_outcome: outcome, p_notes: notes }));
+  },
+
+  async reopenProposal(id) {
+    const db = await client();
+    return unwrap(await db.rpc("reopen_proposal", { p_id: id }));
   },
 
   // --- Website text ---

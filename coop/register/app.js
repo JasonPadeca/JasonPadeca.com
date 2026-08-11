@@ -35,7 +35,7 @@ let submitting = false;
 (async function boot() {
   if (!IS_CONFIGURED) {
     return renderMessage("Not configured yet",
-      "This registration site has not been connected to its database. Please contact your co-op administrator.");
+      "This class sign-up page has not been connected to its database. Please contact your co-op administrator.");
   }
 
   // The token arrives in the fragment because fragments are never sent to the
@@ -57,8 +57,8 @@ let submitting = false;
   }
 
   if (!TOKEN) {
-    return renderMessage("Registration link required",
-      "Open the personalised link from your co-op registration email. If you cannot find it, ask your administrator to resend it.");
+    return renderMessage("Class sign-up link required",
+      "Open the personalised link from your co-op class sign-up email. If you cannot find it, ask your administrator to resend it.");
   }
 
   await load();
@@ -70,7 +70,7 @@ async function load() {
   if (!res?.ok) {
     const messages = {
       expired: ["This link has expired",
-        "Registration for this semester has closed. If you still need to make a change, contact your co-op administrator."],
+        "Class sign-up for this semester has closed. If you still need to make a change, contact your co-op administrator."],
       revoked: ["This link is no longer active",
         "A newer registration link was sent to your family. Please check your email for the most recent message, or ask your administrator to resend it."],
       invalid: ["This link is not valid",
@@ -78,17 +78,17 @@ async function load() {
       family_not_found: ["Family not found",
         "We could not find your family's record. Please contact your co-op administrator."],
       semester_not_found: ["Semester not found",
-        "This registration link points to a semester that no longer exists. Please contact your co-op administrator."],
+        "This class sign-up link points to a semester that no longer exists. Please contact your co-op administrator."],
     };
     const [title, body] = messages[res?.error] ?? ["Something went wrong",
-      "We could not load your registration. Please try again in a moment, or contact your co-op administrator."];
+      "We could not load your class sign-up. Please try again in a moment, or contact your co-op administrator."];
     return renderMessage(title, body);
   }
 
   DATA = res;
-  $("#programName").textContent = DATA.program_name ?? "Co-op Registration";
+  $("#programName").textContent = DATA.program_name ?? "Co-op Class Sign-up";
   $("#semesterName").textContent = DATA.semester.name;
-  document.title = `${DATA.semester.name} Registration — ${DATA.program_name ?? "Co-op"}`;
+  document.title = `${DATA.semester.name} Class Sign-up — ${DATA.program_name ?? "Co-op"}`;
 
   // Seed the working selections from whatever is already saved, so reopening
   // the link shows the family what they chose last time rather than a blank
@@ -230,11 +230,11 @@ function renderChooser() {
       </div>` : ""}
 
       ${open && !editable ? `<div class="note">
-        Your registration has been submitted. Contact your administrator if you need to change it.
+        Your class choices have been submitted. Contact your administrator if you need to change it.
       </div>` : ""}
 
       ${open && DATA.semester.registration_close_at ? `<div class="note">
-        Registration closes <strong>${esc(fmtDate(DATA.semester.registration_close_at))}</strong>.
+        Class sign-up closes <strong>${esc(fmtDate(DATA.semester.registration_close_at))}</strong>.
       </div>` : ""}
 
       <div class="reg-layout">
@@ -285,7 +285,7 @@ function renderParticipation(child, editable) {
       <label class="pill">
         <input type="radio" name="participating" value="yes"
                ${out ? "" : "checked"} ${editable ? "" : "disabled"}>
-        <span>Yes, registering for classes</span>
+        <span>Yes, signing up for classes</span>
       </label>
       <label class="pill">
         <input type="radio" name="participating" value="no"
@@ -793,7 +793,7 @@ function renderReview() {
 
   render(app, `<div class="wrap-narrow page">
     <div class="page-head"><div>
-      <h1>Review ${esc(DATA.semester.name)} Registration</h1>
+      <h1>Review ${esc(DATA.semester.name)} Class Sign-up</h1>
       <div class="sub">${esc(DATA.family.display_name)}</div>
     </div></div>
     ${countStranded() ? `<div class="note note-danger">
@@ -806,7 +806,7 @@ function renderReview() {
     <div class="card">${blocks}</div>
     <div class="btn-row mt2">
       <button class="btn" id="back">Back</button>
-      <button class="btn btn-primary" id="confirm">Confirm Registration</button>
+      <button class="btn btn-primary" id="confirm">Confirm Class Sign-up</button>
     </div>
     <p class="tiny faint mt">A confirmation email will be sent to
       ${esc(DATA.family.primary_email ?? "your family")}.</p>
@@ -865,12 +865,12 @@ async function submit(e) {
 
   if (!res?.ok) {
     btn.disabled = false;
-    btn.textContent = "Confirm Registration";
+    btn.textContent = "Confirm Class Sign-up";
     if (res?.error === "registration_closed") {
-      return renderMessage("Registration has closed",
-        res.message ?? "The registration deadline passed while you were choosing. Please contact your co-op administrator.");
+      return renderMessage("Class sign-up has closed",
+        res.message ?? "The class sign-up deadline passed while you were choosing. Please contact your co-op administrator.");
     }
-    return toastErr(res?.message ?? "We could not save your registration. Please try again.");
+    return toastErr(res?.message ?? "We could not save your class sign-up. Please try again.");
   }
 
   renderConfirmation(res);
@@ -937,7 +937,7 @@ function renderConfirmation(res) {
 
   render(app, `<div class="wrap-narrow page">
     <div class="page-head"><div>
-      <h1>Registration Confirmed</h1>
+      <h1>Class Sign-up Confirmed</h1>
       <div class="sub">${esc(DATA.family.display_name)} · ${esc(DATA.semester.name)}</div>
     </div></div>
 
@@ -960,8 +960,8 @@ function renderConfirmation(res) {
       <div class="btn-row mt2">
         <button class="btn" id="again">Make Another Change</button>
       </div>
-      <p class="tiny faint mt">You can come back to your registration link any time
-        before registration closes.</p>` : ""}
+      <p class="tiny faint mt">You can come back to your class sign-up link any time
+        before sign-up closes.</p>` : ""}
   </div>`);
 
   $("#again")?.addEventListener("click", async () => {
@@ -969,7 +969,7 @@ function renderConfirmation(res) {
     window.scrollTo(0, 0);
   });
 
-  toastOk("Registration saved.");
+  toastOk("Class sign-up saved.");
   window.scrollTo(0, 0);
 }
 

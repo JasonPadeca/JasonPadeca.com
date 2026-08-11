@@ -14,7 +14,7 @@ import {
 const EXPORTS = [
   ["families",     "Active families",     "One row per family, with parents and contact email."],
   ["children",     "Active children",     "One row per child, with birth date and age at the semester start."],
-  ["registrations","Semester registrations", "Every confirmed and waitlisted registration."],
+  ["registrations","Class sign-ups", "Every confirmed and waitlisted class sign-up."],
   ["rosters",      "Class rosters",       "One row per student per class, grouped by period."],
   ["waitlists",    "Waitlists",           "Everyone waiting, in the order they joined."],
   ["schedules",    "Child schedules",     "One row per child with their class in each period."],
@@ -177,7 +177,7 @@ async function run(kind, semesterId, semester) {
       return downloadCSV(name("child-schedules"), rows);
     }
 
-    const rows = [["Student", "Family", "Family email", "Classes registered"]];
+    const rows = [["Student", "Family", "Family email", "Classes signed up for"]];
     for (const f of families) {
       for (const c of (f.children ?? []).filter((x) => x.active && !x.archived_at)) {
         const n = regs.filter((r) => r.children?.id === c.id && r.status === "registered").length;

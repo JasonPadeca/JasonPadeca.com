@@ -17,6 +17,8 @@ import * as Volunteers from "./views/volunteers.js";
 import * as PrintRoster from "./views/print-roster.js";
 import * as Absences from "./views/absences.js";
 import * as Applications from "./views/applications.js";
+import * as Registration from "./views/registration.js";
+import * as Proposals  from "./views/proposals.js";
 import * as Website    from "./views/website.js";
 import * as Exports    from "./views/exports.js";
 import * as Settings   from "./views/settings.js";
@@ -41,6 +43,8 @@ const ROUTES = [
   ["#/absences",               Absences.show],
   ["#/applications",           Applications.show],
   ["#/semesters/:id/rosters",  PrintRoster.all],
+  ["#/registration",           Registration.show],
+  ["#/proposals",              Proposals.show],
   ["#/enrollment",             Enrollment.show],
   ["#/volunteers",             Volunteers.show],
   ["#/website",                Website.show],
@@ -55,7 +59,9 @@ const NAV = [
   ["#/applications", "Applications"],
   ["#/families",   "Families"],
   ["#/semesters",  "Semesters"],
-  ["#/enrollment", "Enrollment"],
+  ["#/registration", "Registration"],
+  ["#/enrollment", "Class Sign-up"],
+  ["#/proposals",  "Proposals"],
   ["#/absences",   "Absences"],
   ["#/volunteers", "Volunteers"],
   ["#/website",    "Website"],
@@ -70,7 +76,7 @@ const NAV = [
   // Newest things this build calls. If the browser handed us a cached api.js
   // from before they existed, needsFresh reloads once rather than letting a
   // page fail with "api.something is not a function".
-  if (needsFresh(["siteEditedPages", "siteBlocks", "setSiteText"])) return;
+  if (needsFresh(["siteEditedPages", "registrationReport", "proposals"])) return;
 
   if (!IS_CONFIGURED) {
     return render(app, `<div class="centered">
