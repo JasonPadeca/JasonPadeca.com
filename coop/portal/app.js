@@ -226,18 +226,7 @@ function awaitingCode(email) {
     btn.textContent = "Signing in…";
     try {
       await auth.verifyCode(email, code);
-      await // The week arrows change #on=…, which must redraw that section and nothing else.
-window.addEventListener("hashchange", () => {
-  const el = $("#week");
-  if (el && state.me?.recognised) {
-    api.currentSemester()
-      .then((sem) => sem ? api.meetings(sem.id) : [])
-      .then((meetings) => Week.render_(el, { meetings, onNeedsRefresh: () => home() }))
-      .catch(() => {});
-  }
-});
-
-start();
+      await start();
     } catch (err) {
       toastErr(err.message);
       btn.disabled = false;
@@ -273,7 +262,7 @@ start();
 }
 
 // -----------------------------------------------------------------------------
-// Signed in, but nobody we know
+// Signed in, but the address is not on any family record
 // -----------------------------------------------------------------------------
 function notRecognised() {
   render(app, `<div class="signin-page">
@@ -298,43 +287,56 @@ function notRecognised() {
 
 // -----------------------------------------------------------------------------
 // Signed in
+//
+// Three pages behind one door: what is happening this week, where the family
+// stands, and proposing a class. They began as one long page, which worked
+// with two sections and stopped working at four — a parent on a phone had to
+// scroll past the calendar and the absence form to find out whether they were
+// registered at all.
+//
+// Routing is by hash, because GitHub Pages serves static files. The week arrows
+// already put "on=…" in the hash with no leading slash, so anything that does
+// not begin with "/" means the home page with a week chosen — exactly what it
+// meant before this router existed.
 // -----------------------------------------------------------------------------
-async function home() {
-  const families = state.me.families ?? [];
+const PAGES = [
+  ["/",             "This week"],
+  ["/registration", "Registration"],
+  ["/proposals",    "Propose a class"],
+];
 
-  // Read straight through RLS rather than any privileged path. If the boundary
-  // is wrong this is where it shows, in the plainest possible way.
-  // Fetched independently, and deliberately not in one try block. Sharing one
-  // meant a failure in any single call skipped the rest — and the page then
-  // reported "no calendar" when the real fault was somewhere else entirely.
-  // Each section now fails on its own or not at all.
-  const settle = async (fn, fallback) => {
-    try { return await fn(); } catch (e) { toastErr(e.message); return fallback; }
-  };
+function currentPath() {
+  const h = (location.hash || "").replace(/^#/, "").split("?")[0];
+  if (!h.startsWith("/")) return "/";
+  return PAGES.some(([p]) => p === h) ? h : "/";
+}
 
-  let children = [], semester = null, periods = [], absences = [], meetings = [];
-  let registration = [];
+let shownPath = null;
 
-  children = await settle(() => api.myChildren(families.map((f) => f.id)), []);
-  registration = await settle(
-    async () => (await api.proposalPayload())?.registration ?? [], []);
-  semester = await settle(() => api.currentSemester(), null);
+async function route() {
+  const path = currentPath();
 
-  if (semester) {
-    [periods, absences, meetings] = await Promise.all([
-      settle(() => api.periods(semester.id), []),
-      settle(() => api.myAbsences({ from: todayISO() }), []),
-      settle(() => api.meetings(semester.id), []),
-    ]);
+  // Same page, different week: the arrows change the hash but not the page, so
+  // redraw that one section rather than refetching the lot.
+  if (path === shownPath) {
+    if (path === "/") await redrawWeek();
+    return;
   }
+  shownPath = path;
 
-  const refDate = semester?.class_start_date;
-  const active = children.filter((c) => c.active && !c.archived_at);
+  if (path === "/registration") return registrationPage();
+  if (path === "/proposals") return proposalsPage();
+  return home();
+}
+
+/** The chrome every signed-in page shares. */
+function shell(path, body) {
+  const families = state.me.families ?? [];
 
   render(app, `
     <nav class="topbar">
       <div class="wrap">
-        <a class="brand" href="./">
+        <a class="brand" href="#/">
           <img src="../assets/koinonia-logo.jpg" alt="" width="26" height="26">
           <span><strong>Koinonia</strong></span>
         </a>
@@ -360,42 +362,19 @@ async function home() {
         </div>
       </div>
 
+      <nav class="subnav">
+        ${PAGES.map(([href, label]) =>
+          `<a href="#${href}" class="${href === path ? "active" : ""}">${esc(label)}</a>`
+        ).join("")}
+      </nav>
+
       ${families.length > 1 ? `<div class="note">
         Your address is on file for more than one family:
         ${families.map((f) => esc(f.display_name)).join(", ")}.
-        Everything below covers all of them.</div>` : ""}
+        Everything here covers all of them.</div>` : ""}
 
-      <div class="card">
-        <div class="card-head"><h3>Your children</h3></div>
-        ${active.length ? `<div class="table-scroll"><table>
-          <thead><tr><th>Name</th><th class="num">Age${
-            refDate ? ` at ${esc(semester.name)}` : ""}</th></tr></thead>
-          <tbody>${active.map((c) => `<tr>
-            <td><strong>${esc(c.first_name)} ${esc(c.last_name ?? "")}</strong></td>
-            <td class="num mono">${ageAt(c.birth_date, refDate) ?? `<span class="faint">—</span>`}</td>
-          </tr>`).join("")}</tbody></table></div>`
-          : `<p class="muted">No children on your family record yet. An administrator
-             can add them.</p>`}
-      </div>
-
-      <div id="week"></div>
-
-      <div id="absences"></div>
-
-      <div id="registration"></div>
-
-      <div id="proposals"></div>
+      ${body}
     </div>`);
-
-  renderRegistration($("#registration"), registration);
-  Proposals.render_($("#proposals"), { onChange: () => {} });
-
-  Week.render_($("#week"), { meetings, onNeedsRefresh: () => home() });
-
-  Absences.render_($("#absences"), {
-    children: active, semester, periods, absences, meetings,
-    onChange: () => home(),
-  });
 
   $("#out").addEventListener("click", async () => {
     await auth.signOut();
@@ -404,33 +383,121 @@ async function home() {
 }
 
 /**
- * Where the family stands, semester by semester.
+ * Fetch, but never let one failing section blank the rest of the page.
  *
- * Read-only, because registering is currently something the registrar records
- * rather than something a family does here. Shown anyway: the commonest
- * question a parent has in August is "are we actually signed up", and the
- * commonest answer before now was to email somebody and wait.
+ * Deliberately not one try block around everything: sharing one meant a failure
+ * in any single call skipped the rest, and the page then reported "no calendar"
+ * when the real fault was somewhere else entirely.
  */
-function renderRegistration(el, rows) {
-  if (!el) return;
-  if (!rows?.length) return render(el, "");
+const settle = async (fn, fallback) => {
+  try { return await fn(); } catch (e) { toastErr(e.message); return fallback; }
+};
 
-  render(el, `<div class="card">
-    <div class="card-head"><h3>Registration</h3></div>
-    <p class="muted">Whether your family is taking part, semester by semester.
-      This is kept up to date by the registrar — if something here looks wrong,
-      tell her rather than anybody else.</p>
-    <div class="table-scroll mt"><table>
-      <thead><tr><th>Semester</th><th>Your family</th></tr></thead>
-      <tbody>${rows.map((r) => {
-        const [label, cls] = REGISTRATION_STATUS[r.status] ?? ["Not started", ""];
-        return `<tr>
-          <td><strong>${esc(r.semester)}</strong></td>
-          <td><span class="badge ${cls}">${esc(label)}</span></td>
-        </tr>`;
-      }).join("")}</tbody>
-    </table></div>
-  </div>`);
+// -----------------------------------------------------------------------------
+// This week
+// -----------------------------------------------------------------------------
+async function home() {
+  const families = state.me.families ?? [];
+
+  // Read straight through RLS rather than any privileged path. If the boundary
+  // is wrong this is where it shows, in the plainest possible way.
+  let children = [], semester = null, periods = [], absences = [], meetings = [];
+
+  children = await settle(() => api.myChildren(families.map((f) => f.id)), []);
+  semester = await settle(() => api.currentSemester(), null);
+
+  if (semester) {
+    [periods, absences, meetings] = await Promise.all([
+      settle(() => api.periods(semester.id), []),
+      settle(() => api.myAbsences({ from: todayISO() }), []),
+      settle(() => api.meetings(semester.id), []),
+    ]);
+  }
+
+  const refDate = semester?.class_start_date;
+  const active = children.filter((c) => c.active && !c.archived_at);
+
+  shell("/", `
+    <div class="card">
+      <div class="card-head"><h3>Your children</h3></div>
+      ${active.length ? `<div class="table-scroll"><table>
+        <thead><tr><th>Name</th><th class="num">Age${
+          refDate ? ` at ${esc(semester.name)}` : ""}</th></tr></thead>
+        <tbody>${active.map((c) => `<tr>
+          <td><strong>${esc(c.first_name)} ${esc(c.last_name ?? "")}</strong></td>
+          <td class="num mono">${ageAt(c.birth_date, refDate) ?? `<span class="faint">—</span>`}</td>
+        </tr>`).join("")}</tbody></table></div>`
+        : `<p class="muted">No children on your family record yet. An administrator
+           can add them.</p>`}
+    </div>
+
+    <div id="week"></div>
+
+    <div id="absences"></div>`);
+
+  Week.render_($("#week"), { meetings, onNeedsRefresh: () => home() });
+
+  Absences.render_($("#absences"), {
+    children: active, semester, periods, absences, meetings,
+    onChange: () => home(),
+  });
+}
+
+/** The week arrows moved; redraw that section and leave the rest alone. */
+async function redrawWeek() {
+  const el = $("#week");
+  if (!el || !state.me?.recognised) return;
+  try {
+    const sem = await api.currentSemester();
+    const meetings = sem ? await api.meetings(sem.id) : [];
+    Week.render_(el, { meetings, onNeedsRefresh: () => home() });
+  } catch { /* keep what the section already had rather than emptying it */ }
+}
+
+// -----------------------------------------------------------------------------
+// Registration
+//
+// Read-only, because registering is currently something the registrar records
+// rather than something a family does here. Worth a page of its own anyway: the
+// commonest question a parent has in August is "are we actually signed up", and
+// the commonest answer until now was to email somebody and wait.
+// -----------------------------------------------------------------------------
+async function registrationPage() {
+  const rows = await settle(
+    async () => (await api.proposalPayload())?.registration ?? [], []);
+
+  shell("/registration", `
+    <div class="card">
+      <div class="card-head"><h3>Registration</h3></div>
+      <p class="muted">Whether your family is taking part, semester by semester.
+        This is not the same as signing your children up for classes, which
+        happens separately.</p>
+
+      ${rows.length ? `<div class="table-scroll mt"><table>
+        <thead><tr><th>Semester</th><th>Your family</th></tr></thead>
+        <tbody>${rows.map((r) => {
+          const [label, cls] = REGISTRATION_STATUS[r.status] ?? ["Not started", ""];
+          return `<tr>
+            <td><strong>${esc(r.semester)}</strong></td>
+            <td><span class="badge ${cls}">${esc(label)}</span></td>
+          </tr>`;
+        }).join("")}</tbody>
+      </table></div>`
+      : `<p class="muted mt">No semesters have been set up yet.</p>`}
+
+      <div class="note mt">
+        The registrar keeps this up to date. If something here looks wrong, tell
+        her — it cannot be changed from this page.
+      </div>
+    </div>`);
+}
+
+// -----------------------------------------------------------------------------
+// Propose a class
+// -----------------------------------------------------------------------------
+async function proposalsPage() {
+  shell("/proposals", `<div id="proposals"></div>`);
+  await Proposals.render_($("#proposals"), { onChange: () => {} });
 }
 
 /** Today, as YYYY-MM-DD in local time — not UTC, which can be yesterday here. */
@@ -439,15 +506,6 @@ function todayISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-// The week arrows change #on=…, which must redraw that section and nothing else.
-window.addEventListener("hashchange", () => {
-  const el = $("#week");
-  if (el && state.me?.recognised) {
-    api.currentSemester()
-      .then((sem) => sem ? api.meetings(sem.id) : [])
-      .then((meetings) => Week.render_(el, { meetings, onNeedsRefresh: () => home() }))
-      .catch(() => {});
-  }
-});
+window.addEventListener("hashchange", route);
 
 start();

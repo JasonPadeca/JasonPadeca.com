@@ -1018,3 +1018,38 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
   font-size: .72rem; font-weight: 400; color: var(--text-faint);
   text-transform: uppercase; letter-spacing: .04em; margin-left: .35rem;
 }
+
+/* =============================================================================
+   Portal sub-navigation.
+
+   The admin's .mainnav lives in the top bar; this sits inside the page, under
+   the family's name, because that is the thing a parent is orienting by. Same
+   visual language deliberately — one system, two placements.
+   ============================================================================= */
+.subnav {
+  display: flex;
+  gap: .25rem;
+  flex-wrap: wrap;
+  margin: 0 0 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: .5rem;
+}
+.subnav a {
+  padding: .4rem .7rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: .92rem;
+  font-weight: 700;
+}
+.subnav a:hover {
+  color: var(--text);
+  background: var(--surface-2);
+  text-decoration: none;
+}
+.subnav a.active { color: var(--accent); background: var(--accent-soft); }
+
+/* Thumb-sized targets, and never a horizontal scroll on a narrow phone. */
+@media (max-width: 560px) {
+  .subnav { gap: .15rem; }
+  .subnav a { padding: .45rem .55rem; font-size: .86rem; }
+}
