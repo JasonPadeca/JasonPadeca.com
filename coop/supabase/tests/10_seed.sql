@@ -74,3 +74,19 @@ values
   ('54444444-4444-4444-4444-444444444444', '43333333-3333-3333-3333-333333333333', 'Carol', 'Brown',   '2013-05-05', 'female', true), -- 14
   ('55555555-5555-5555-5555-555555555555', '44444444-4444-4444-4444-444444444444', 'Dana',  'Green',   '2014-11-11', 'female', true), -- 12
   ('56666666-6666-6666-6666-666666666666', '41111111-1111-1111-1111-111111111111', 'Old',   'Johnson', '2004-01-01', 'male',   false); -- aged out, inactive
+
+-- =============================================================================
+-- Registration (0023).
+--
+-- Class sign-up is gated on a family being registered, so a seed representing a
+-- working co-op has to register its families — otherwise every fixture below is
+-- a family standing outside a locked door, and the suites that exercise
+-- eligibility and waitlists would all be testing the gate instead.
+--
+-- Suites that care about the unregistered state clear this first and say so.
+-- =============================================================================
+insert into public.semester_registrations (family_id, semester_id, status, registered_at)
+select f.id, s.id, 'registered', now()
+  from public.families f cross join public.semesters s
+ where f.archived_at is null
+on conflict (family_id, semester_id) do update set status = 'registered';

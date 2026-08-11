@@ -169,3 +169,11 @@ else
 fi
 rm -f "$OUT"
 echo "\nDone."
+
+echo "\n=== The registration form, the desk, and the gate ==="
+P -d postgres -tAc "drop database coop;" >/dev/null
+P -d postgres -tAc "create database coop;" >/dev/null
+for f in 00_supabase_stub.sql "$MIGRATIONS"/0*.sql 10_seed.sql; do
+  P -d coop -f "$f" >/dev/null
+done
+P -d coop -f 93_registration_forms.sql 2>&1 | strip

@@ -669,6 +669,45 @@ export const api = {
     }));
   },
 
+  // --- The registration form ---
+  /** What the family already has on file, plus whether a window is open. */
+  async registrationForm() {
+    const db = await client();
+    return unwrap(await db.rpc("family_registration_form"));
+  },
+
+  async submitRegistrationForm(payload) {
+    const db = await client();
+    return unwrap(await db.rpc("submit_registration_form", { p_payload: payload }));
+  },
+
+  async setRegistrationReview(familyId, semesterId, reviewed) {
+    const db = await client();
+    return unwrap(await db.rpc("set_registration_review", {
+      p_family_id: familyId, p_semester_id: semesterId, p_reviewed: reviewed,
+    }));
+  },
+
+  async setRegistrationPayment(familyId, semesterId, received, note = null) {
+    const db = await client();
+    return unwrap(await db.rpc("set_registration_payment", {
+      p_family_id: familyId, p_semester_id: semesterId,
+      p_received: received, p_note: note,
+    }));
+  },
+
+  async registerFamily(familyId, semesterId) {
+    const db = await client();
+    return unwrap(await db.rpc("register_family", {
+      p_family_id: familyId, p_semester_id: semesterId,
+    }));
+  },
+
+  // An administrator recording an absence uses the same reportAbsence below as
+  // a parent does. report_absence already lets an admin act for any child —
+  // the authorization check passes for them — so no second function is needed,
+  // only a button, which Admin → Absences never had.
+
   // --- Class proposals ---
   /** Everything the proposal page needs: who may propose, terms, what was sent. */
   async proposalPayload() {

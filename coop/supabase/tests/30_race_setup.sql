@@ -19,3 +19,12 @@ begin
   end loop;
 end;
 $$;
+
+-- These forty families are created after the seed, so they need registering
+-- too: class sign-up is gated on it, and forty families racing for a seat they
+-- are not allowed to take would prove nothing about locking.
+insert into public.semester_registrations (family_id, semester_id, status, registered_at)
+select f.id, '11111111-1111-1111-1111-111111111111'::uuid, 'registered', now()
+  from public.families f
+ where f.display_name like 'Racer %'
+on conflict (family_id, semester_id) do update set status = 'registered';

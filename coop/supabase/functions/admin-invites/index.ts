@@ -131,12 +131,30 @@ Deno.serve(async (req) => {
         return json(req, { ok: false, error: "preflight_blocked", preflight: pf }, 409);
       }
 
-      const { data: families } = await db
+      // Only families registered for this semester (0023).
+      //
+      // The gate that actually matters is in submit_family_registration — a
+      // link in an old email must not be a way round it. But sending a
+      // sign-up email to an unregistered family would have them fill in the
+      // whole form and be refused at the last step, which is a worse way to
+      // learn they are not registered than never being asked.
+      const { data: registered } = await db
+        .from("semester_registrations")
+        .select("family_id")
+        .eq("semester_id", semester.id)
+        .eq("status", "registered");
+
+      const eligible = new Set((registered ?? []).map((r) => r.family_id));
+
+      const { data: allFamilies } = await db
         .from("families")
         .select("id, display_name, primary_email")
         .eq("active", true)
         .is("archived_at", null)
         .order("display_name");
+
+      const families = (allFamilies ?? []).filter((f) => eligible.has(f.id));
+      const skipped = (allFamilies ?? []).length - families.length;
 
       // One SMTP connection for the whole co-op, not one per family.
       const mailer = await openMailer(db);
@@ -162,7 +180,8 @@ Deno.serve(async (req) => {
         action: "registration_opened",
         entity_type: "semester",
         entity_id: semester.id,
-        details: { invited: results.length, failed: failed.length, forced: !!body.force },
+        details: { invited: results.length, failed: failed.length,
+                   not_registered: skipped, forced: !!body.force },
       });
 
       return json(req, {

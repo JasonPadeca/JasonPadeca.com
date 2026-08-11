@@ -54,6 +54,14 @@ select id as becca_parent from public.parents
 set role authenticated;
 select set_config('test.jwt', '{"email":"owner@example.org"}', false);
 
+-- The seed registers every family, because class sign-up is gated on it. This
+-- suite is about the registrar's own view, which starts from nobody having been
+-- marked — so clear it and begin where she begins.
+reset role;
+delete from public.semester_registrations;
+set role authenticated;
+select set_config('test.jwt', '{"email":"owner@example.org"}', false);
+
 -- Nobody has been marked yet, so everybody reads as not started. A family that
 -- has not been heard from must still appear — that is the whole question the
 -- registrar is asking.

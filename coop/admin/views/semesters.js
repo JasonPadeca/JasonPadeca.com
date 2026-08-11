@@ -320,7 +320,13 @@ async function openRegistration(semester) {
       buttons: [{ value: null, label: "Close", class: "btn-primary" }],
     });
   } else {
-    toastOk(`Class sign-up open. ${plural(res.invited, "family", "families")} invited.`);
+    // Say how many were skipped, and why. Opening sign-up and seeing "12
+    // families invited" when there are sixty is alarming unless the reason is
+    // on the same line.
+    toastOk(`Class sign-up open. ${plural(res.invited, "family", "families")} invited.`
+      + (res.not_registered
+          ? ` ${plural(res.not_registered, "family", "families")} skipped — not registered yet.`
+          : ""));
   }
   refresh();
 }

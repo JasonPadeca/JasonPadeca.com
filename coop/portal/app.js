@@ -22,6 +22,7 @@ import { esc, $, render, toastErr, plural } from "../assets/ui.js";
 import * as Absences from "./absences.js";
 import * as Week from "./week.js";
 import * as Proposals from "./proposals.js";
+import * as RegForm from "./registration-form.js";
 import { REGISTRATION_STATUS } from "../assets/proposal-fields.js";
 
 const app = document.getElementById("app");
@@ -38,7 +39,7 @@ let state = { session: null, me: null };
 async function start() {
   // See needsFresh in api.js: reload once if the browser handed us a cached
   // copy from before these existed, rather than failing with "not a function".
-  if (needsFresh(["familyWeek", "proposalPayload", "submitProposal"])) return;
+  if (needsFresh(["familyWeek", "proposalPayload", "registrationForm"])) return;
 
   if (!IS_CONFIGURED) {
     return render(app, `<div class="wrap page"><div class="note note-danger">
@@ -484,7 +485,13 @@ async function registrationPage() {
         The registrar keeps this up to date. If something here looks wrong, tell
         her — it cannot be changed from this page.
       </div>
-    </div>`);
+    </div>
+
+    <div id="regform"></div>`);
+
+  // The form itself, when a window is open. It renders its own card — or a line
+  // saying registration is not open — so the page reads the same either way.
+  await RegForm.render_($("#regform"), { onChange: () => registrationPage() });
 }
 
 // -----------------------------------------------------------------------------

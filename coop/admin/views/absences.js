@@ -13,6 +13,7 @@
 import { api } from "../../assets/api.js";
 import {
   esc, $, render, fmtDate, toastOk, toastErr, plural, downloadCSV, debounce,
+  formDialog,
 } from "../../assets/ui.js";
 
 export async function show(app) {
@@ -35,6 +36,7 @@ export async function show(app) {
       <div class="btn-row">
         <a class="btn" href="#/absences?semester=${esc(semesterId)}${showPast ? "" : "&past=1"}">
           ${showPast ? "Upcoming only" : "Include past"}</a>
+        <button class="btn btn-primary" id="add">Record an absence</button>
         <button class="btn" id="export">Export CSV</button>
       </div>
     </div>
@@ -142,6 +144,8 @@ export async function show(app) {
   draw();
   $("#search").addEventListener("input", debounce((e) => draw(e.target.value)));
 
+  $("#add").addEventListener("click", () => recordOne(semesterId));
+
   $("#export").addEventListener("click", () => {
     const out = [["Date", "Child", "Family", "Phone", "Missing", "Classes affected", "Reason", "Reported by"]];
     for (const r of rows) {
@@ -161,4 +165,75 @@ export async function show(app) {
 function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+
+/**
+ * An administrator recording an absence a family told them about.
+ *
+ * This screen was a report with no way to add anything, which made the agreed
+ * process — a family writes "we are away on the 12th" in their registration
+ * form, and somebody records it — impossible to actually carry out. The
+ * database has always allowed it: report_absence lets an administrator act for
+ * any child. There was simply no button.
+ */
+async function recordOne(semesterId) {
+  let families = [], meetings = [], periods = [];
+  try {
+    [families, meetings, periods] = await Promise.all([
+      api.families(),
+      api.meetings(semesterId),
+      api.periods(semesterId),
+    ]);
+  } catch (e) {
+    return toastErr(e.message);
+  }
+
+  // families() already embeds its children, so this needs no endpoint of its own.
+  const children = families.flatMap((f) =>
+    (f.children ?? [])
+      .filter((c) => c.active && !c.archived_at)
+      .map((c) => ({ ...c, family_name: f.display_name })))
+    .sort((a, b) => (a.family_name + a.first_name).localeCompare(b.family_name + b.first_name));
+
+  if (!children.length) return toastErr("There are no children on file yet.");
+
+  const upcoming = meetings.filter((m) => !m.cancelled);
+  if (!upcoming.length) {
+    return toastErr("This semester has no class dates set up yet.");
+  }
+
+  const answers = await formDialog({
+    title: "Record an absence",
+    submitLabel: "Record it",
+    fields: [
+      { name: "child_id", label: "Child", type: "select", required: true,
+        options: children.map((c) => ({
+          value: c.id,
+          label: `${c.first_name} ${c.last_name ?? ""} — ${c.family_name ?? ""}`.trim(),
+        })) },
+      { name: "meets_on", label: "Date", type: "select", required: true,
+        options: upcoming.map((m) => ({ value: m.meets_on, label: fmtDate(m.meets_on) })) },
+      { name: "scope", label: "How much of the day?", type: "select", value: "whole",
+        options: [
+          { value: "whole", label: "The whole day" },
+          ...periods.map((p) => ({ value: p.id, label: `Only ${p.name}` })),
+        ] },
+      { name: "reason", label: "Reason", type: "textarea",
+        hint: "Optional. Teachers see this." },
+    ],
+  });
+  if (!answers) return;
+
+  try {
+    const whole = answers.scope === "whole";
+    await api.reportAbsence(
+      answers.child_id, answers.meets_on, whole,
+      whole ? [] : [answers.scope], answers.reason);
+    toastOk("Absence recorded.");
+    // Re-enter the view so the new row appears in the report below.
+    await show(document.getElementById("app"));
+  } catch (e) {
+    toastErr(e.message);
+  }
 }
