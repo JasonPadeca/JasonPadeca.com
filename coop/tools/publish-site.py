@@ -33,9 +33,10 @@ ROOT = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else ".")
 
 
 def fetch_overrides():
-    """Only rows an administrator has actually changed."""
+    """Rows an administrator has changed: reworded, hidden, or both."""
     url = (f"{SUPABASE_URL}/rest/v1/site_content"
-           "?select=page,block_key,text,original&text=not.is.null")
+           "?select=page,block_key,text,original,hidden"
+           "&or=(text.not.is.null,hidden.is.true)")
     req = urllib.request.Request(url, headers={
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -100,7 +101,21 @@ def apply_to_page(path, rows):
         if close is None:
             print(f"    ! block {key} has no matching </{tag}> — skipped")
             continue
-        text = text[:m.end()] + render(row["text"]) + text[close:]
+
+        # --- taken off the page, or put back on -------------------------------
+        #
+        # The element is kept either way. A hidden element is given no space by
+        # the browser, so the page closes up as if the paragraph were gone —
+        # and it still carries its data-k, which is the only way it could ever
+        # be brought back.
+        open_tag = m.group(0)
+        without = re.sub(r'\s+hidden(?=[\s>])', "", open_tag)
+        new_open = (without[:-1].rstrip() + " hidden>") if row.get("hidden") else without
+
+        inner = render(row["text"]) if row.get("text") is not None \
+                else text[m.end():close]
+
+        text = text[:m.start()] + new_open + inner + text[close:]
 
     if text != before:
         path.write_text(text, encoding="utf-8")

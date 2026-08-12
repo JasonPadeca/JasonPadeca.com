@@ -157,6 +157,12 @@ export async function page(app, params) {
 
     ${publishNote(0)}
 
+    <div class="note">
+      <strong>To remove a line, use “Take this off the website”.</strong>
+      Emptying a box does something different — it undoes your edit and brings
+      the original wording back.
+    </div>
+
     ${blocks.length
       ? `<div class="blocks mt">${blocks.map(blockCard).join("")}</div>`
       : `<div class="empty"><h3>Nothing editable on this page</h3>
@@ -175,13 +181,17 @@ function blockCard(b) {
   const current = b.text ?? b.original;
   const isChanged = b.text !== null;
 
-  return `<div class="card block" data-block="${esc(b.block_key)}">
+  return `<div class="card block ${b.hidden ? "is-hidden" : ""}"
+               data-block="${esc(b.block_key)}">
     <div class="block-head">
       <span class="muted mono">${esc(b.tag ?? "")}</span>
-      ${isChanged
-        ? `<span class="badge badge-ok">Reworded${
-            b.updated_at ? ` ${esc(relTime(b.updated_at))}` : ""}</span>`
-        : ""}
+      <span>
+        ${b.hidden ? `<span class="badge badge-danger">Not on the website</span>` : ""}
+        ${isChanged
+          ? `<span class="badge badge-ok">Reworded${
+              b.updated_at ? ` ${esc(relTime(b.updated_at))}` : ""}</span>`
+          : ""}
+      </span>
     </div>
 
     <textarea class="block-text" rows="${rowsFor(current)}"
@@ -206,8 +216,15 @@ function blockCard(b) {
       ${isChanged
         ? `<button class="btn btn-sm" data-revert>Put the original back</button>`
         : ""}
+      <button class="btn btn-sm" data-hide>
+        ${b.hidden ? "Show this again" : "Take this off the website"}</button>
       <span class="muted block-state"></span>
     </div>
+
+    ${b.hidden ? `<div class="tiny muted mt">
+      This does not appear on the website. The page closes up around it — there
+      is no blank space where it was — and it is kept here so it can be put
+      back.</div>` : ""}
   </div>`;
 }
 
@@ -247,6 +264,26 @@ function wire(app, pageName, blocks) {
         save.disabled = false;
         toastErr(e.message);
       }
+    });
+
+    $("[data-hide]", card)?.addEventListener("click", async () => {
+      const nowHidden = !byKey[key].hidden;
+      if (nowHidden) {
+        const ok = await confirmDialog(
+          "Take this off the website?",
+          "It will stop appearing on the page, and the page will close up "
+          + "around it rather than leaving a gap. You can put it back here at "
+          + "any time.",
+          "Take it off");
+        if (!ok) return;
+      }
+      try {
+        await api.setSiteVisible(pageName, key, !nowHidden);
+        toastOk(nowHidden
+          ? "Taken off. The website will catch up within about ten minutes."
+          : "Back on the website within about ten minutes.");
+        await refresh();
+      } catch (e) { toastErr(e.message); }
     });
 
     const revert = $("[data-revert]", card);

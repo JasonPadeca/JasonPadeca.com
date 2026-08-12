@@ -839,6 +839,14 @@ export const api = {
       .not("text", "is", null));
   },
 
+  /** Take a paragraph off the page, or put it back. */
+  async setSiteVisible(page, blockKey, visible) {
+    const db = await client();
+    return unwrap(await db.rpc("set_site_visible", {
+      p_page: page, p_block_key: blockKey, p_visible: visible,
+    }));
+  },
+
   /** Blank text reverts the block to its original wording. */
   async setSiteText(page, blockKey, text) {
     const db = await client();
