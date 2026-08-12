@@ -789,6 +789,41 @@ export const api = {
     return unwrap(await db.rpc("reopen_proposal", { p_id: id }));
   },
 
+  // --- Website photographs ---
+  async siteImages() {
+    const db = await client();
+    return unwrap(await db.from("site_images").select("*").order("page")) ?? [];
+  },
+
+  /** Upload the file, then record where it went. */
+  async uploadSiteImage(page, imgKey, file) {
+    const db = await client();
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    // Named by when it was uploaded, so an old one is never silently
+    // overwritten while a page might still be pointing at it.
+    const path = `${page.replace(/\W+/g, "-")}-${imgKey}-${Date.now()}.${ext}`;
+
+    const up = await db.storage.from("site-images")
+      .upload(path, file, { cacheControl: "3600", upsert: false });
+    if (up.error) throw new Error(friendlyError(up.error));
+
+    return unwrap(await db.rpc("set_site_image", {
+      p_page: page, p_img_key: imgKey, p_upload_path: path,
+    }));
+  },
+
+  async revertSiteImage(page, imgKey) {
+    const db = await client();
+    return unwrap(await db.rpc("set_site_image", {
+      p_page: page, p_img_key: imgKey, p_upload_path: null,
+    }));
+  },
+
+  /** Where an uploaded image can be previewed from. */
+  siteImageUrl(uploadPath) {
+    return `${SUPABASE_URL}/storage/v1/object/public/site-images/${uploadPath}`;
+  },
+
   // --- Website text ---
   /** Every editable block on one page, in the order it appears. */
   async siteBlocks(page) {

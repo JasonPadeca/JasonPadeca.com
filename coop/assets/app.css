@@ -1262,3 +1262,35 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
   .page-break { break-before: page; page-break-before: always; }
 }
 .contents-sheet { margin-bottom: 1.5rem; }
+
+/* =============================================================================
+   Website photographs.
+
+   The picture is the control. A row of filenames would be useless to somebody
+   deciding whether this is last year's group photo or this year's.
+   ============================================================================= */
+.imagelist { display: flex; flex-direction: column; gap: 1rem; }
+
+.imagerow {
+  display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap;
+  padding: .85rem;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.imagethumb {
+  width: 190px; height: 128px; object-fit: cover; flex: none;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.imagemeta { flex: 1; min-width: 12rem; }
+
+/* A file input dressed as a button — the native control is ugly and says
+   "No file chosen" in a way that reads like an error. */
+.imagemeta label.btn { cursor: pointer; }
+
+@media (max-width: 560px) {
+  .imagethumb { width: 100%; height: 150px; }
+}

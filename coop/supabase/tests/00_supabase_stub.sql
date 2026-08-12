@@ -51,8 +51,14 @@ create table if not exists storage.buckets (
   id text primary key,
   name text not null,
   public boolean not null default false,
-  file_size_limit bigint
+  file_size_limit bigint,
+  -- Real Supabase carries this too. It was missing here, so a migration that
+  -- set it applied against the live project and failed against the tests —
+  -- the stub being wrong in the direction that hides a working migration.
+  allowed_mime_types text[]
 );
+
+alter table storage.buckets add column if not exists allowed_mime_types text[];
 
 create table if not exists storage.objects (
   id uuid primary key default gen_random_uuid(),

@@ -17,6 +17,7 @@ in the schema, deliberately, because its contents are the words printed on a
 public website — see the note in 0021. That means this job needs no secret.
 """
 
+import hashlib
 import html as html_mod
 import json
 import os
@@ -115,7 +116,9 @@ def main():
         return 1
 
     if not rows:
-        print("No edits to publish.")
+        print("No text edits to publish.")
+        print("\nPhotographs:")
+        publish_images(ROOT)
         return 0
 
     by_page = {}
@@ -133,7 +136,137 @@ def main():
             changed += 1
 
     print(f"\n{changed} file(s) rewritten from {len(rows)} edit(s).")
+
+    print("\nPhotographs:")
+    changed += publish_images(ROOT)
     return 0
+
+
+
+# =============================================================================
+# Photographs
+#
+# An administrator uploads to Supabase Storage; this brings the file down,
+# shrinks it, writes it beside the other site assets and points the page at it.
+#
+# Shrinking is not optional. These are uploaded from phones by people who have
+# no reason to think about file size, and a 12MB portrait-mode photograph on the
+# front page would be slower to load than the entire rest of the site put
+# together. 1600px wide is more than a full-width banner needs.
+#
+# Idempotent by construction: the local filename is derived from the image's own
+# bytes, so a run that changes nothing writes the same file and rewrites the
+# same tag, and git sees no change. That is what lets this repeat every ten
+# minutes without a way to mark an upload as done.
+# =============================================================================
+MAX_WIDTH = 1600
+JPEG_QUALITY = 82
+
+
+def fetch_images():
+    url = (f"{SUPABASE_URL}/rest/v1/site_images"
+           "?select=page,img_key,original_src,upload_path,alt")
+    req = urllib.request.Request(url, headers={
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Accept": "application/json",
+    })
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return json.load(r)
+
+
+def shrink(raw):
+    """Down to something sane for a web page. Returns (bytes, extension)."""
+    try:
+        from PIL import Image
+    except ImportError:
+        # No Pillow: publish it untouched rather than not at all. The size
+        # warning in the admin screen is the other half of this.
+        print("    (Pillow not available — using the file as uploaded)")
+        return raw, ".jpg"
+
+    import io
+    im = Image.open(io.BytesIO(raw))
+
+    # Phone photographs carry their rotation in EXIF rather than in the pixels.
+    try:
+        from PIL import ImageOps
+        im = ImageOps.exif_transpose(im)
+    except Exception:
+        pass
+
+    if im.width > MAX_WIDTH:
+        im = im.resize((MAX_WIDTH, round(im.height * MAX_WIDTH / im.width)),
+                       Image.LANCZOS)
+
+    if im.mode in ("RGBA", "P", "LA"):
+        im = im.convert("RGB")
+
+    out = io.BytesIO()
+    im.save(out, "JPEG", quality=JPEG_QUALITY, optimize=True, progressive=True)
+    return out.getvalue(), ".jpg"
+
+
+def publish_images(root):
+    try:
+        rows = fetch_images()
+    except Exception as e:
+        print("Could not read site_images:", e)
+        return 0
+
+    changed = 0
+    for row in rows:
+        page, key = row["page"], row["img_key"]
+        path = root / page
+        if not path.exists():
+            continue
+
+        html = path.read_text(encoding="utf-8")
+
+        # Which file should this tag point at?
+        if row.get("upload_path"):
+            obj = f"{SUPABASE_URL}/storage/v1/object/public/site-images/{row['upload_path']}"
+            try:
+                with urllib.request.urlopen(obj, timeout=120) as r:
+                    raw = r.read()
+            except Exception as e:
+                print(f"    ! could not fetch {row['upload_path']}: {e}")
+                continue
+
+            data, ext = shrink(raw)
+            name = f"site/{pathlib.Path(page).parent.name or 'index'}-" \
+                   f"{key}-{hashlib.sha1(data).hexdigest()[:8]}{ext}"
+            dest = root / name
+            if not dest.exists() or dest.read_bytes() != data:
+                dest.write_bytes(data)
+                print(f"    wrote {name} ({len(data):,} bytes, was {len(raw):,})")
+        else:
+            name = row["original_src"]        # put the imported one back
+
+        # Point the tag at it. The src is rewritten in place; everything else
+        # about the tag — width, height, classes, the theme's own attributes —
+        # is left exactly as it was.
+        depth = len(pathlib.Path(page).parts) - 1
+        rel = ("../" * depth) + name if depth else name
+
+        m = re.search(r'<img\b[^>]*\bdata-img="' + re.escape(key) + r'"[^>]*>', html)
+        if not m:
+            print(f"    ! image {key} not found in {page}")
+            continue
+
+        tag = m.group(0)
+        new_tag = re.sub(r'src="[^"]*"', f'src="{rel}"', tag)
+        # srcset would otherwise keep serving the old picture on a big screen.
+        new_tag = re.sub(r'\s+(?:srcset|data-orig-file|data-large-file|'
+                         r'data-medium-file|data-small-file)="[^"]*"', "", new_tag)
+
+        if new_tag != tag:
+            html = html[:m.start()] + new_tag + html[m.end():]
+            path.write_text(html, encoding="utf-8")
+            changed += 1
+            print(f"  {page}: image {key} -> {name}")
+
+    return changed
 
 
 if __name__ == "__main__":

@@ -53,9 +53,10 @@ const publicHref = (page) => "../" + page.replace(/index\.html$/, "");
 // The page list
 // =============================================================================
 export async function show(app) {
-  let edited = [];
+  let edited = [], images = [];
   try {
     edited = await api.siteEditedPages();
+    images = await api.siteImages().catch(() => []);
   } catch (e) {
     return render(app, `<div class="wrap page">
       <div class="note note-danger">${esc(e.message)}</div>
@@ -96,14 +97,18 @@ export async function show(app) {
       </table>
     </div>
 
+    ${imagesCard(images)}
+
     <div class="note mt">
       <strong>What this can and cannot change.</strong>
-      You can reword any paragraph, heading or list item on these pages. You
-      cannot add new sections, move things around, or change pictures — those
-      still need Ben. The class descriptions page is not listed because it is
+      You can reword any paragraph, heading or list item on these pages, and
+      replace the photographs listed above. You cannot add new sections or move
+      things around — those still need Ben. The class descriptions page is not listed because it is
       built from the classes you set up under Semesters.
     </div>
   </div>`);
+
+  wireImages(app);
 }
 
 function publishNote(total) {
@@ -264,5 +269,90 @@ function wire(app, pageName, blocks) {
         }
       });
     }
+  });
+}
+
+
+// =============================================================================
+// Photographs
+//
+// One card, because there is one photograph anybody wants to change: the group
+// picture on the front page, which is replaced about once a year. Anything the
+// importer judged to be furniture — the logo, a tracking pixel — is not offered,
+// because "which of these 40 images did you mean" is a worse screen than this.
+// =============================================================================
+function imagesCard(images) {
+  if (!images.length) return "";
+
+  return `<div class="card mt">
+    <div class="card-head"><h3>Photographs</h3></div>
+    <p class="muted">Pick a new picture and it appears on the website within
+      about ten minutes, the same as the wording. Large photographs straight
+      from a phone are fine — they are shrunk for you.</p>
+
+    <div class="imagelist mt">${images.map((im) => {
+      const changed = !!im.upload_path;
+      return `<div class="imagerow" data-page="${esc(im.page)}" data-key="${esc(im.img_key)}">
+        <img class="imagethumb"
+             src="${changed ? esc(api.siteImageUrl(im.upload_path))
+                            : esc("../" + im.original_src)}" alt="">
+        <div class="imagemeta">
+          <strong>${esc(TITLE[im.page] ?? im.page)}</strong>
+          ${changed
+            ? `<div><span class="badge badge-ok">New picture chosen</span></div>`
+            : `<div class="muted tiny">The picture the site was set up with</div>`}
+          <div class="btn-row mt">
+            <label class="btn btn-sm btn-primary">
+              Choose a picture…
+              <input type="file" accept="image/jpeg,image/png,image/webp" hidden>
+            </label>
+            ${changed
+              ? `<button class="btn btn-sm" data-revert-img>Put the old one back</button>`
+              : ""}
+            <span class="muted imagestate"></span>
+          </div>
+        </div>
+      </div>`;
+    }).join("")}</div>
+  </div>`;
+}
+
+function wireImages(app) {
+  $$(".imagerow", app).forEach((row) => {
+    const { page, key } = row.dataset;
+    const state = $(".imagestate", row);
+
+    $('input[type="file"]', row)?.addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      // 15MB is the bucket's own limit; saying so here saves a failed upload.
+      if (file.size > 15 * 1024 * 1024) {
+        return toastErr("That picture is too big — 15MB is the most it can take.");
+      }
+
+      state.textContent = "Uploading…";
+      try {
+        await api.uploadSiteImage(page, key, file);
+        toastOk("Picture chosen. It will be on the website within about ten minutes.");
+        await refresh();
+      } catch (err) {
+        state.textContent = "";
+        toastErr(err.message);
+      }
+    });
+
+    $("[data-revert-img]", row)?.addEventListener("click", async () => {
+      const ok = await confirmDialog(
+        "Put the original picture back?",
+        "The website will go back to the photograph it was set up with.",
+        "Put it back");
+      if (!ok) return;
+      try {
+        await api.revertSiteImage(page, key);
+        toastOk("Original picture restored.");
+        await refresh();
+      } catch (err) { toastErr(err.message); }
+    });
   });
 }
