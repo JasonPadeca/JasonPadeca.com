@@ -204,6 +204,14 @@ for f in 00_supabase_stub.sql "$MIGRATIONS"/0*.sql 10_seed.sql; do
 done
 P -d coop -f 89_family_volunteering.sql 2>&1 | strip
 
+echo "\n=== Archiving a family: out of everything current, still in everything past ==="
+P -d postgres -tAc "drop database coop;" >/dev/null
+P -d postgres -tAc "create database coop;" >/dev/null
+for f in 00_supabase_stub.sql "$MIGRATIONS"/0*.sql 10_seed.sql; do
+  P -d coop -f "$f" >/dev/null
+done
+P -d coop -f 88_archive_family.sql 2>&1 | strip
+
 # ---------------------------------------------------------------------------
 # Did every suite actually finish?
 #

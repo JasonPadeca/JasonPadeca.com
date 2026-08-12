@@ -8,7 +8,7 @@
 
 import { api } from "../../assets/api.js";
 import {
-  esc, $, render, fmtDate, toastOk, toastErr, plural, debounce,
+  esc, $, render, modal, fmtDate, toastOk, toastErr, plural, debounce,
   formDialog, confirmDialog,
 } from "../../assets/ui.js";
 import { refresh, go } from "../app.js";
@@ -204,16 +204,59 @@ export async function detail(app, { id }) {
   });
 
   $("#archive").addEventListener("click", async () => {
-    const archiving = !f.archived_at;
-    const ok = await confirmDialog(
-      archiving ? "Archive family?" : "Restore family?",
-      archiving
-        ? `${f.display_name} will be hidden from active lists and will not receive registration invitations. All past registrations are kept, and you can restore them at any time.`
-        : `${f.display_name} will appear in active lists again.`,
-      archiving ? "Archive" : "Restore", archiving);
-    if (!ok) return;
-    try { await api.archiveFamily(f.id, archiving); toastOk(archiving ? "Archived." : "Restored."); refresh(); }
-    catch (e) { toastErr(e.message); }
+    if (f.archived_at) {
+      const ok = await confirmDialog("Restore this family?",
+        "They will be active again. Their old class places are NOT restored — "
+        + "those seats have probably gone to somebody else, so they sign up "
+        + "again like anybody would.", "Restore them");
+      if (!ok) return;
+      try {
+        const r = await api.archiveFamily(f.id, false);
+        toastOk(`Restored. ${plural(r?.children_restored ?? 0, "child", "children")} back.`);
+        refresh();
+      } catch (e) { toastErr(e.message); }
+      return;
+    }
+
+    const v = await formDialog({
+      title: `Archive ${f.display_name}?`,
+      submitLabel: "Archive them",
+      fields: [{ name: "reason", label: "Why? (optional)", type: "textarea",
+        placeholder: "Moved away in October",
+        hint: "Their children come off every current class roster and their "
+            + "seats are freed. Past semesters are left exactly as they were." }],
+    });
+    if (!v) return;
+
+    try {
+      const r = await api.archiveFamily(f.id, true, v.reason);
+      const bits = [
+        plural(r.children_archived ?? 0, "child", "children") + " archived",
+        r.class_places_freed ? `${plural(r.class_places_freed, "class place")} freed` : "",
+        r.volunteer_assignments_removed
+          ? `${plural(r.volunteer_assignments_removed, "volunteer place")} removed` : "",
+      ].filter(Boolean);
+      toastOk(bits.join(", ") + ".");
+
+      // Somebody is probably waiting for those seats. Say so rather than
+      // leaving it to be noticed.
+      const rooms = (r.classes_with_room ?? []).filter((c) => c.waiting > 0);
+      if (rooms.length) {
+        await modal({
+          title: "There is now room in these classes",
+          body: `<p class="muted">Freed by archiving ${esc(f.display_name)}.
+            Nobody has been promoted — that is an email to a real family, so it
+            is left to you.</p>
+            <table class="table mt"><thead><tr><th>Class</th><th>Semester</th>
+              <th class="num">Waiting</th></tr></thead>
+            <tbody>${rooms.map((c) => `<tr><td><strong>${esc(c.class)}</strong></td>
+              <td>${esc(c.semester)}</td>
+              <td class="num">${c.waiting}</td></tr>`).join("")}</tbody></table>`,
+          buttons: [{ value: null, label: "Right you are" }],
+        });
+      }
+      refresh();
+    } catch (e) { toastErr(e.message); }
   });
 
   $("#addparent").addEventListener("click", () => parentDialog(f.id));

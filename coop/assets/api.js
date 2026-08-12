@@ -306,7 +306,19 @@ export const api = {
 
   async createFamily(fields)      { const db = await client(); return unwrap(await db.from("families").insert(fields).select().single()); },
   async updateFamily(id, fields)  { const db = await client(); return unwrap(await db.from("families").update(fields).eq("id", id).select().single()); },
-  async archiveFamily(id, on)     { return this.updateFamily(id, { archived_at: on ? new Date().toISOString() : null, active: !on }); },
+  /**
+   * Archive a family, and take them out of everything.
+   *
+   * Was a two-column update that left their children holding class seats,
+   * volunteer assignments and a live registration. Now a function, which also
+   * reports what it freed so the registrar can see who is waiting for it.
+   */
+  async archiveFamily(id, on, reason = null) {
+    const db = await client();
+    return unwrap(on
+      ? await db.rpc("archive_family", { p_family_id: id, p_reason: reason })
+      : await db.rpc("restore_family", { p_family_id: id }));
+  },
 
   async createParent(fields)      { const db = await client(); return unwrap(await db.from("parents").insert(fields).select().single()); },
   async updateParent(id, fields)  { const db = await client(); return unwrap(await db.from("parents").update(fields).eq("id", id).select().single()); },
