@@ -16,10 +16,13 @@ import { api } from "../assets/api.js";
 import { esc, $, $$, render, ageAt, toastOk, toastErr } from "../assets/ui.js";
 
 let data = null;
+let volunteering = null;
 
 export async function render_(el) {
   try {
     data = await api.familySetup();
+    // Not fatal: this is a section of the page, not the page.
+    volunteering = await api.familyVolunteering().catch(() => null);
   } catch (e) {
     return render(el, `<div class="card">
       <div class="card-head"><h3>Your family</h3></div>
@@ -38,7 +41,7 @@ function draw(el) {
         administrator can set one up.</p></div>`);
   }
 
-  render(el, data.families.map(familyCard).join(""));
+  render(el, data.families.map(familyCard).join("") + volunteerCard());
 
   $$("[data-add-child]", el).forEach((b) =>
     b.addEventListener("click", () => addChild(el, b.dataset.addChild)));
@@ -215,4 +218,51 @@ async function save(el, familyId) {
 function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+
+/**
+ * Volunteering, as a family sees it.
+ *
+ * Read-only. Offers are made during class sign-up and placements are made by an
+ * administrator — but until now a family could learn neither from the portal,
+ * which is where they actually are. Being told your child is helping in the
+ * preschool class on Thursday should not require an email.
+ */
+function volunteerCard() {
+  const kids = (volunteering?.children ?? []).filter(
+    (c) => c.offered || (c.assigned_to ?? []).length);
+
+  if (!kids.length) return "";
+
+  return `<div class="card">
+    <div class="card-head">
+      <h3>Volunteering${volunteering?.semester
+        ? ` — ${esc(volunteering.semester.name)}` : ""}</h3>
+    </div>
+    <p class="muted">Older students can offer to help in the younger children's
+      classes. Offers are made when you sign up for classes; where they end up
+      is decided by the co-op.</p>
+
+    <div class="people mt">${kids.map((c) => {
+      const placed = c.assigned_to ?? [];
+      return `<div class="person" style="display:block">
+        <div class="person-head"><strong>${esc(c.name)}</strong></div>
+
+        ${placed.length ? `<div class="mt">
+          <span class="badge badge-ok">Helping</span>
+          ${placed.map((p) => `<div class="mt">
+            <strong>${esc(p.class)}</strong>
+            <span class="muted">— ${esc(p.period)}</span></div>`).join("")}
+        </div>` : `<div class="mt">
+          <span class="badge badge-warn">Offered</span>
+          <span class="muted">not placed in a class yet</span>
+        </div>`}
+
+        ${(c.offered_for ?? []).length ? `<div class="tiny muted mt">
+          Offered for: ${c.offered_for.map(esc).join(", ")}</div>` : ""}
+        ${c.note ? `<div class="tiny muted mt">Your note: ${esc(c.note)}</div>` : ""}
+      </div>`;
+    }).join("")}</div>
+  </div>`;
 }

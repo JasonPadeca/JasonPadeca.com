@@ -40,7 +40,7 @@ let state = { session: null, me: null };
 async function start() {
   // See needsFresh in api.js: reload once if the browser handed us a cached
   // copy from before these existed, rather than failing with "not a function".
-  if (needsFresh(["familyWeek", "registrationForm", "familySetup"])) return;
+  if (needsFresh(["familyWeek", "familySetup", "familyVolunteering"])) return;
 
   if (!IS_CONFIGURED) {
     return render(app, `<div class="wrap page"><div class="note note-danger">

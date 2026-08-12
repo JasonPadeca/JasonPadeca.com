@@ -669,6 +669,12 @@ export const api = {
     }));
   },
 
+  /** What this family's children offered, and where they were placed. */
+  async familyVolunteering(semesterId = null) {
+    const db = await client();
+    return unwrap(await db.rpc("family_volunteering", { p_semester_id: semesterId }));
+  },
+
   // --- Records: what was held, and when ---
   async registrationRecord(familyId, semesterId) {
     const db = await client();

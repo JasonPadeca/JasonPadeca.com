@@ -512,13 +512,21 @@ function renderVolunteer(child, editable) {
   const v = volunteer[child.id] ?? { wants: false, note: "", slots: new Set() };
   const limit = DATA.volunteer_max_class_age;
 
-  // Periods with nothing to help with are left out entirely.
+  // Periods with nothing to help with are left out of the list of things to
+  // tick. The question itself is still asked.
   const periods = DATA.periods.filter((p) => volunteerableClasses(p).length > 0);
 
-  if (!periods.length && v.wants !== true) {
-    // Nothing to offer, and they have not already said yes — do not ask.
-    return "";
-  }
+  // This used to return "" when no class matched the age limit, which hid the
+  // entire question — and since a class only qualifies if it has an upper age
+  // of 9 or under, a semester whose classes have no age cap made volunteering
+  // disappear from the site altogether. Nobody had removed it; it simply never
+  // drew.
+  //
+  // The database only restricts which CLASS a child can be slotted into. It has
+  // never restricted saying "yes, she would like to help", and an offer with no
+  // particular class attached is exactly what the registrar wants to know
+  // about. So the question is always asked, and the message below explains when
+  // there is nothing specific to tick.
 
   return `<fieldset class="volunteer ${v.wants ? "is-on" : ""}">
     <legend class="lbl">Would ${esc(child.first_name)} like to volunteer this semester?</legend>
