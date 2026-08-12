@@ -771,11 +771,16 @@ export const api = {
     return unwrap(await db.rpc("submit_class_proposal", { p_payload: payload }));
   },
 
+  /**
+   * Proposals, with the name of whoever made one.
+   *
+   * Through a function rather than a plain select: the table holds parent_id
+   * and child_id, and the screens need names. Reading the table directly is
+   * what left every proposal headed "A student's proposal".
+   */
   async proposals({ archived = false } = {}) {
     const db = await client();
-    return unwrap(await db.from("class_proposals").select("*")
-      .eq("status", archived ? "archived" : "submitted")
-      .order("submitted_at", { ascending: false })) ?? [];
+    return unwrap(await db.rpc("admin_proposals", { p_archived: archived })) ?? [];
   },
 
   async archiveProposal(id, outcome = null, notes = null) {

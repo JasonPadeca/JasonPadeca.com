@@ -15,7 +15,7 @@
 
 import { api } from "../../assets/api.js";
 import { esc, $, render, fmtDate, fmtDateTime } from "../../assets/ui.js";
-import { fieldsFor } from "../../assets/proposal-fields.js";
+import { fieldsFor, proposerLine } from "../../assets/proposal-fields.js";
 
 const PRINTED = () => new Date().toLocaleString(undefined,
   { dateStyle: "long", timeStyle: "short" });
@@ -304,8 +304,7 @@ function proposalHead(p, semesterName) {
     <div>
       <h1>${esc(p.title)}</h1>
       <div class="sheet-sub">
-        ${p.kind === "student" ? "Proposed by a student" : "Proposed by a parent"}
-        ${p.proposer ? ` · ${esc(p.proposer)}` : ""}
+        ${esc(proposerLine(p))}
         · ages ${esc(p.age_range ?? "—")}
         · homework: ${esc((p.homework ?? "—").toLowerCase())}
       </div>
@@ -398,7 +397,7 @@ export async function proposalsBatch(app) {
         <thead><tr><th>Class</th><th>From</th><th>Ages</th><th>Sent</th></tr></thead>
         <tbody>${rows.map((p) => `<tr>
           <td><strong>${esc(p.title)}</strong></td>
-          <td>${esc(p.proposer ?? (p.kind === "student" ? "a student" : "a parent"))}</td>
+          <td>${esc(proposerLine(p))}</td>
           <td>${esc(p.age_range ?? "—")}</td>
           <td class="mono">${esc(fmtDate(p.submitted_at))}</td>
         </tr>`).join("")}</tbody>

@@ -95,3 +95,20 @@ export const REGISTRATION_STATUS = {
   registered:    ["Registered",    "badge-ok"],
   not_attending: ["Not attending", ""],
 };
+
+
+/**
+ * Who made this proposal, in words.
+ *
+ * The screens used to say "A student's proposal" and stop there, which tells
+ * the person deciding nothing they need. Falls back to the vague form only when
+ * the name is genuinely missing — a proposer whose record was later removed.
+ */
+export function proposerLine(p) {
+  const who = p.proposer?.trim();
+  const kind = p.kind === "student" ? "student" : "parent";
+  if (!who) return `From a ${kind} (name no longer on file)`;
+  return p.kind === "student"
+    ? `${who} — a student${p.family_name ? `, ${p.family_name}` : ""}`
+    : `${who}${p.family_name ? `, ${p.family_name}` : ""}`;
+}

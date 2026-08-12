@@ -18,7 +18,7 @@ import { api } from "../../assets/api.js";
 import {
   esc, $, render, fmtDate, relTime, plural, toastOk, toastErr, modal, formDialog,
 } from "../../assets/ui.js";
-import { fieldsFor } from "../../assets/proposal-fields.js";
+import { fieldsFor, proposerLine } from "../../assets/proposal-fields.js";
 import { refresh } from "../app.js";
 
 export async function show(app) {
@@ -66,9 +66,7 @@ export async function show(app) {
 }
 
 function card(p) {
-  const badge = p.kind === "student"
-    ? `<span class="badge">From a student</span>`
-    : `<span class="badge">From a parent</span>`;
+  const badge = `<span class="badge">${esc(proposerLine(p))}</span>`;
 
   const outcome = p.outcome === "accepted" ? `<span class="badge badge-ok">Accepted</span>`
     : p.outcome === "declined" ? `<span class="badge badge-danger">Declined</span>`
@@ -109,9 +107,10 @@ function openOne(p) {
     wide: true,
     body: `
       <div class="sub mb">
-        ${p.kind === "student" ? "A student's proposal" : "A parent's proposal"}
+        <strong>${esc(proposerLine(p))}</strong>
         · sent ${esc(fmtDate(p.submitted_at))}
         ${p.archived_at ? ` · filed ${esc(fmtDate(p.archived_at))}` : ""}
+        ${p.family_email ? `<div class="tiny">Reply to ${esc(p.family_email)}</div>` : ""}
       </div>
       ${p.admin_notes ? `<div class="note mb"><strong>Your note:</strong>
         ${esc(p.admin_notes)}</div>` : ""}
