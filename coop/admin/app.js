@@ -58,6 +58,8 @@ const ROUTES = [
   ["#/registration/:family/:semester/print", PrintRecord.registration],
   ["#/applications/:id/print",  PrintRecord.application],
   ["#/proposals",              Proposals.show],
+  ["#/proposals/print",        PrintRecord.proposalsBatch],
+  ["#/proposals/:id/print",    PrintRecord.proposal],
   ["#/enrollment",             Enrollment.show],
   ["#/volunteers",             Volunteers.show],
   ["#/website",                Website.show],

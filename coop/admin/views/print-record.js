@@ -15,6 +15,7 @@
 
 import { api } from "../../assets/api.js";
 import { esc, $, render, fmtDate, fmtDateTime } from "../../assets/ui.js";
+import { fieldsFor } from "../../assets/proposal-fields.js";
 
 const PRINTED = () => new Date().toLocaleString(undefined,
   { dateStyle: "long", timeStyle: "short" });
@@ -270,4 +271,142 @@ function line(label, value) {
     <th class="sheet-label">${esc(label)}</th>
     <td>${value ? esc(String(value)) : `<span class="faint">—</span>`}</td>
   </tr>`;
+}
+
+// =============================================================================
+// Class proposals, on paper.
+//
+// Two shapes, because two things happen with these.
+//
+// One proposal is read closely by somebody who has to decide whether the co-op
+// can host it — every question, including the ones left blank, because "no, we
+// do not need the printer" and "they did not get that far" are different
+// answers and a summary that hides empties makes them look the same.
+//
+// A batch is what somebody carries into a meeting: all the proposals waiting,
+// one per page, so they can be dealt out around a table. That is the actual
+// use — these get discussed in a room, not clicked through.
+// =============================================================================
+
+/** Every question and answer for one proposal. */
+function proposalBody(p) {
+  return fieldsFor(p.kind).map((f) => {
+    const v = p[f.name];
+    return `<div class="qa">
+      <div class="q">${esc(f.label)}</div>
+      <div class="a">${v ? esc(v) : `<span class="faint">Left blank</span>`}</div>
+    </div>`;
+  }).join("");
+}
+
+function proposalHead(p, semesterName) {
+  return `<header class="sheet-head">
+    <div>
+      <h1>${esc(p.title)}</h1>
+      <div class="sheet-sub">
+        ${p.kind === "student" ? "Proposed by a student" : "Proposed by a parent"}
+        ${p.proposer ? ` · ${esc(p.proposer)}` : ""}
+        · ages ${esc(p.age_range ?? "—")}
+        · homework: ${esc((p.homework ?? "—").toLowerCase())}
+      </div>
+    </div>
+    <div class="sheet-meta">
+      <div>Koinonia Homeschool Group</div>
+      <div>Class proposal${semesterName ? ` — ${esc(semesterName)}` : ""}</div>
+      <div>Sent ${esc(fmtDate(p.submitted_at))}</div>
+    </div>
+  </header>`;
+}
+
+/** One proposal. */
+export async function proposal(app, params) {
+  let rows;
+  try {
+    rows = await api.proposals({ archived: false });
+    if (!rows.some((r) => r.id === params.id)) {
+      rows = rows.concat(await api.proposals({ archived: true }));
+    }
+  } catch (e) {
+    return render(app, `<div class="wrap page">
+      <div class="note note-danger">${esc(e.message)}</div></div>`);
+  }
+
+  const p = rows.find((r) => r.id === params.id);
+  if (!p) {
+    return render(app, `<div class="wrap page"><div class="empty">
+      <h3>No such proposal</h3>
+      <p><a href="#/proposals">Back to Proposals</a></p></div></div>`);
+  }
+
+  render(app, `
+    <div class="sheet-actions no-print">
+      <a class="btn" href="#/proposals">← Back</a>
+      <button class="btn btn-primary" onclick="window.print()">Print</button>
+    </div>
+
+    <div class="sheet">
+      ${proposalHead(p)}
+      ${p.admin_notes ? `<div class="sheet-note"><strong>Note:</strong>
+        ${esc(p.admin_notes)}</div>` : ""}
+      <section>${proposalBody(p)}</section>
+      <footer class="sheet-foot">
+        Decisions about this proposal are made by the leadership in person.
+        Nothing in this system approves or declines a class.
+      </footer>
+    </div>`);
+}
+
+/**
+ * Every proposal still waiting, one per page.
+ *
+ * The handout for a planning meeting. Page breaks between them so a stack can
+ * be split up and passed round rather than read off a screen by one person.
+ */
+export async function proposalsBatch(app) {
+  let rows;
+  try {
+    rows = await api.proposals({ archived: false });
+  } catch (e) {
+    return render(app, `<div class="wrap page">
+      <div class="note note-danger">${esc(e.message)}</div></div>`);
+  }
+
+  if (!rows.length) {
+    return render(app, `<div class="wrap page"><div class="empty">
+      <h3>Nothing waiting</h3>
+      <p>There are no proposals to discuss.</p>
+      <p><a href="#/proposals">Back to Proposals</a></p></div></div>`);
+  }
+
+  render(app, `
+    <div class="sheet-actions no-print">
+      <a class="btn" href="#/proposals">← Back</a>
+      <button class="btn btn-primary" onclick="window.print()">
+        Print all ${rows.length}</button>
+    </div>
+
+    <div class="sheet contents-sheet">
+      <header class="sheet-head">
+        <div>
+          <h1>Class proposals to discuss</h1>
+          <div class="sheet-sub">${rows.length} waiting${
+            `, as at ${esc(PRINTED())}`}</div>
+        </div>
+        <div class="sheet-meta"><div>Koinonia Homeschool Group</div></div>
+      </header>
+      <table class="sheet-table bordered">
+        <thead><tr><th>Class</th><th>From</th><th>Ages</th><th>Sent</th></tr></thead>
+        <tbody>${rows.map((p) => `<tr>
+          <td><strong>${esc(p.title)}</strong></td>
+          <td>${esc(p.proposer ?? (p.kind === "student" ? "a student" : "a parent"))}</td>
+          <td>${esc(p.age_range ?? "—")}</td>
+          <td class="mono">${esc(fmtDate(p.submitted_at))}</td>
+        </tr>`).join("")}</tbody>
+      </table>
+    </div>
+
+    ${rows.map((p) => `<div class="sheet page-break">
+      ${proposalHead(p)}
+      <section>${proposalBody(p)}</section>
+    </div>`).join("")}`);
 }

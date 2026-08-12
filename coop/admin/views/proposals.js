@@ -46,6 +46,9 @@ export async function show(app) {
       <div class="btn-row">
         <a class="btn" href="#/proposals${archived ? "" : "?archived=1"}">
           ${archived ? "Show what is waiting" : "Show what has been filed"}</a>
+        ${!archived && rows.length
+          ? `<a class="btn btn-primary" href="#/proposals/print">Print all for a meeting</a>`
+          : ""}
       </div>
     </div>
 
@@ -80,6 +83,7 @@ function card(p) {
           · sent ${esc(relTime(p.submitted_at))}</div>
       </div>
       <button class="btn btn-sm" data-open="${esc(p.id)}">Read it</button>
+      <a class="btn btn-sm" href="#/proposals/${esc(p.id)}/print">Print</a>
     </div>
     <p class="clamp">${esc(p.description ?? "")}</p>
   </div>`;
