@@ -127,6 +127,14 @@ function childRow(c = {}) {
     <div class="field"><label>Date of birth</label>
       <input type="date" class="c-dob" value="${esc(c.birth_date ?? "")}">
       <div class="hint">This decides which classes they can join.</div></div>
+    <div class="field"><label>Sex</label>
+      <select class="c-sex">
+        <option value="" ${!c.sex ? "selected" : ""}>Rather not say</option>
+        <option value="female" ${c.sex === "female" ? "selected" : ""}>Girl</option>
+        <option value="male" ${c.sex === "male" ? "selected" : ""}>Boy</option>
+      </select>
+      <div class="hint">Only needed for the few classes that are for girls or
+        boys only. Leave it blank otherwise.</div></div>
     <div class="field"><label>Their email</label>
       <input type="email" class="c-email" value="${esc(c.email ?? "")}">
       <div class="hint">Older children only, if they have one.</div></div>
@@ -182,6 +190,7 @@ async function save(el, familyId) {
       first_name: $(".c-first", r).value.trim(),
       last_name: $(".c-last", r).value.trim(),
       birth_date: $(".c-dob", r).value,
+      sex: $(".c-sex", r)?.value ?? "",
       email: $(".c-email", r).value.trim(),
       phone: $(".c-phone", r).value.trim(),
       allergies: $(".c-allergies", r).value.trim(),

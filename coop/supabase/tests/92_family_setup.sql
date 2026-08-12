@@ -234,4 +234,59 @@ reset role;
 -- the file, and a halted file silently skips every test below it — which is
 -- exactly what a broken cast did here once, hiding two thirds of this suite
 -- while the run still reported green.
+
+-- =============================================================================
+-- Sex
+--
+-- Recordable by the family because a class may restrict by it, and eligibility
+-- refuses a child with nothing recorded. A family that cannot set it can be
+-- locked out of a class by a blank field.
+-- =============================================================================
+select pg_temp.be(:u_mary, 'mary@example.com');
+
+select pg_temp.check('the page carries the sex on file',
+  case when (public.family_setup() -> 'families' -> 0 -> 'children' -> 0)
+            ? 'sex' then 'present' else 'MISSING' end,
+  'present');
+
+select public.update_family_setup(jsonb_build_object(
+  'family_id', :johnson,
+  'children', jsonb_build_array(jsonb_build_object('id', :emma, 'sex', 'female'))));
+
+reset role;
+select pg_temp.check('a family can record it',
+  (select sex from public.children where id = :emma::uuid),
+  'female');
+
+-- Blank is a legitimate answer, not an error.
+select pg_temp.be(:u_mary, 'mary@example.com');
+select public.update_family_setup(jsonb_build_object(
+  'family_id', :johnson,
+  'children', jsonb_build_array(jsonb_build_object('id', :emma, 'sex', ''))));
+
+reset role;
+select pg_temp.check('and can decline to say',
+  coalesce((select sex from public.children where id = :emma::uuid), 'not recorded'),
+  'not recorded');
+
+-- Anything the column would refuse becomes nothing, rather than failing a save
+-- that is otherwise perfectly good.
+select pg_temp.be(:u_mary, 'mary@example.com');
+select pg_temp.check('nonsense does not break the save',
+  public.update_family_setup(jsonb_build_object(
+    'family_id', :johnson,
+    'children', jsonb_build_array(jsonb_build_object(
+      'id', :emma, 'sex', 'yes please', 'allergies', 'Bees')))) ->> 'ok',
+  'true');
+
+reset role;
+select pg_temp.check('...the sex is left unrecorded',
+  coalesce((select sex from public.children where id = :emma::uuid), 'not recorded'),
+  'not recorded');
+
+select pg_temp.check('...and the rest of that save still landed',
+  (select allergies from public.children where id = :emma::uuid),
+  'Bees');
+
+
 \echo 'SUITE-REACHED-THE-END'
