@@ -12,7 +12,7 @@
 (function () {
   'use strict';
 
-  var cfg = window.DESLOP_CONFIG || {};
+  var cfg = window.LACQUER_CONFIG || {};
   var $ = function (id) { return document.getElementById(id); };
 
   var stateEl = $('state');

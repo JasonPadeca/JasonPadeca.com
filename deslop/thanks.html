@@ -43,7 +43,7 @@
    and poll briefly because the webhook may land a moment after the redirect. */
 (function () {
   'use strict';
-  var cfg = window.DESLOP_CONFIG || {};
+  var cfg = window.LACQUER_CONFIG || {};
   var stateEl = document.getElementById('state');
   var token = new URLSearchParams(location.search).get('order') || '';
   if (!/^[A-Za-z0-9_-]{20,64}$/.test(token) || !cfg.FUNCTIONS_URL) {

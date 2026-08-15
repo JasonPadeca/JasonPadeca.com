@@ -142,7 +142,7 @@
       return;
     }
 
-    var cfg = window.DESLOP_CONFIG || {};
+    var cfg = window.LACQUER_CONFIG || {};
     if (!cfg.FUNCTIONS_URL || !cfg.SUPABASE_ANON_KEY) {
       window.alert('The order system isn\u2019t connected yet. Nothing was sent.');
       return;
