@@ -202,15 +202,6 @@ p.lede { font-size: 1.06rem; color: var(--ink-soft); margin-bottom: 34px; }
 /* ---------------- hero ---------------- */
 
 .hero { padding-top: 76px; padding-bottom: 84px; }
-.hero-demo {
-  display: grid; gap: 1px;
-  background: var(--rule);
-  border: 1px solid var(--rule);
-  border-radius: 5px;
-  overflow: hidden;
-  box-shadow: var(--shadow);
-  margin-bottom: 34px;
-}
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 
 /* ---------------- specimens ---------------- */
@@ -258,7 +249,7 @@ p.lede { font-size: 1.06rem; color: var(--ink-soft); margin-bottom: 34px; }
 @media (min-width: 900px) {
   #work .col, .hero .col { max-width: var(--wide); }
   #why-us .col + .col { max-width: var(--wide); }
-  .pair-grid, .hero-demo { grid-template-columns: 1fr 1fr; }
+  .pair-grid { grid-template-columns: 1fr 1fr; }
 }
 
 /* ---------------- steps ---------------- */
