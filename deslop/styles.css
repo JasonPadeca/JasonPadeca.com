@@ -236,6 +236,15 @@ p.lede { font-size: 1.06rem; color: var(--ink-soft); margin-bottom: 34px; }
 }
 
 .pair { margin-bottom: 40px; }
+.pair-note {
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  text-align: center;
+  margin: 18px auto 0;
+  max-width: 34rem;
+}
 .pair:last-child { margin-bottom: 0; }
 .pair-grid {
   display: grid; gap: 1px;
