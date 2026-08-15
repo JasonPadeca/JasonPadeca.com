@@ -593,3 +593,48 @@ footer .fine { margin-top: 8px; max-width: 32rem; }
 }
 
 .pay-block { display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------------- faq ---------------- */
+
+.faq { border-top: 1px solid var(--rule); }
+
+.faq-item { border-bottom: 1px solid var(--rule); }
+.faq-item > summary {
+  list-style: none;
+  cursor: pointer;
+  position: relative;
+  padding: 16px 40px 16px 0;
+  font-family: var(--serif);
+  font-size: 1.04rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.faq-item > summary::-webkit-details-marker { display: none; }
+.faq-item > summary::after {
+  content: "";
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  /* a plus that loses its vertical stroke when open */
+  background:
+    linear-gradient(var(--red), var(--red)) center/12px 2px no-repeat,
+    linear-gradient(var(--red), var(--red)) center/2px 12px no-repeat;
+}
+.faq-item[open] > summary::after {
+  background: linear-gradient(var(--red), var(--red)) center/12px 2px no-repeat;
+}
+.faq-item > summary:hover { color: var(--red); }
+
+.faq-body { padding: 0 40px 20px 0; }
+.faq-body p {
+  font-size: 0.99rem;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin-bottom: 0.8em;
+}
+.faq-body p:last-child { margin-bottom: 0; }
