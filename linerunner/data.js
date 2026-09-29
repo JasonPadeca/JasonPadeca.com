@@ -8,7 +8,17 @@ window.LINES = [
   "cue": [
    "The King comes here tonight."
   ],
-  "line": "Thou'rt mad to say it.",
+  "speech": [
+   {
+    "l": "Thou'rt mad to say it."
+   },
+   {
+    "l": "Is not thy master with him? who, were't so,"
+   },
+   {
+    "l": "Would have inform'd for preparation."
+   }
+  ],
   "word": "Thou'rt"
  },
  {
@@ -21,7 +31,86 @@ window.LINES = [
    "Who, almost dead for breath, had scarcely more",
    "Than would make up his message."
   ],
-  "line": "Give him tending.",
+  "speech": [
+   {
+    "l": "Give him tending."
+   },
+   {
+    "l": "He brings great news."
+   },
+   {
+    "s": "Exit Messenger."
+   },
+   {
+    "l": "The raven himself is hoarse"
+   },
+   {
+    "l": "That croaks the fatal entrance of Duncan"
+   },
+   {
+    "l": "Under my battlements. Come, you spirits"
+   },
+   {
+    "l": "That tend on mortal thoughts, unsex me here,"
+   },
+   {
+    "l": "And fill me, from the crown to the toe, top-full"
+   },
+   {
+    "l": "Of direst cruelty! make thick my blood,"
+   },
+   {
+    "l": "Stop up th' access and passage to remorse,"
+   },
+   {
+    "l": "That no compunctious visitings of nature"
+   },
+   {
+    "l": "Shake my fell purpose, nor keep peace between"
+   },
+   {
+    "l": "Th' effect and it! Come to my woman's breasts,"
+   },
+   {
+    "l": "And take my milk for gall, your murd'ring ministers,"
+   },
+   {
+    "l": "Wherever in your sightless substances"
+   },
+   {
+    "l": "You wait on nature's mischief! Come, thick night,"
+   },
+   {
+    "l": "And pall thee in the dunnest smoke of hell"
+   },
+   {
+    "l": "That my keen knife see not the wound it makes,"
+   },
+   {
+    "l": "Nor heaven peep through the blanket of the dark"
+   },
+   {
+    "l": "To cry, \"Hold, hold!\""
+   },
+   {
+    "s": "Enter Macbeth."
+   },
+   {
+    "l": "Great Glamis, worthy Cawdor!"
+   },
+   {
+    "l": "Greater than both, by the all-hail hereafter!"
+   },
+   {
+    "l": "Thy letters have transported me beyond"
+   },
+   {
+    "l": "This ignorant present, and I feel now"
+   },
+   {
+    "l": "The future in the instant."
+   }
+  ],
   "word": "Give"
  },
  {
@@ -33,7 +122,11 @@ window.LINES = [
    "My dearest love,",
    "Duncan comes here tonight."
   ],
-  "line": "And when goes hence?",
+  "speech": [
+   {
+    "l": "And when goes hence?"
+   }
+  ],
   "word": "And"
  },
  {
@@ -44,7 +137,41 @@ window.LINES = [
   "cue": [
    "Tomorrow, as he purposes."
   ],
-  "line": "O, never",
+  "speech": [
+   {
+    "l": "O, never"
+   },
+   {
+    "l": "Shall sun that morrow see!"
+   },
+   {
+    "l": "Your face, my thane, is as a book where men"
+   },
+   {
+    "l": "May read strange matters. To beguile the time,"
+   },
+   {
+    "l": "Look like the time; bear welcome in your eye,"
+   },
+   {
+    "l": "Your hand, your tongue: look like the innocent flower,"
+   },
+   {
+    "l": "But be the serpent under't. He that's coming"
+   },
+   {
+    "l": "Must be provided for; and you shall put"
+   },
+   {
+    "l": "This night's great business into my dispatch;"
+   },
+   {
+    "l": "Which shall to all our nights and days to come"
+   },
+   {
+    "l": "Give solely sovereign sway and masterdom."
+   }
+  ],
   "word": "O"
  },
  {
@@ -55,7 +182,17 @@ window.LINES = [
   "cue": [
    "We will speak further."
   ],
-  "line": "Only look up clear;",
+  "speech": [
+   {
+    "l": "Only look up clear;"
+   },
+   {
+    "l": "To alter favour ever is to fear."
+   },
+   {
+    "l": "Leave all the rest to me."
+   }
+  ],
   "word": "Only"
  },
  {
@@ -68,7 +205,29 @@ window.LINES = [
    "How you shall bid God 'ild us for your pains,",
    "And thank us for your trouble."
   ],
-  "line": "All our service,",
+  "speech": [
+   {
+    "l": "All our service,"
+   },
+   {
+    "l": "In every point twice done, and then done double,"
+   },
+   {
+    "l": "Were poor and single business to contend"
+   },
+   {
+    "l": "Against those honours deep and broad wherewith"
+   },
+   {
+    "l": "Your Majesty loads our house: for those of old,"
+   },
+   {
+    "l": "And the late dignities heap'd up to them,"
+   },
+   {
+    "l": "We rest your hermits."
+   }
+  ],
   "word": "All"
  },
  {
@@ -81,7 +240,20 @@ window.LINES = [
    "To his home before us. Fair and noble hostess,",
    "We are your guest tonight."
   ],
-  "line": "Your servants ever",
+  "speech": [
+   {
+    "l": "Your servants ever"
+   },
+   {
+    "l": "Have theirs, themselves, and what is theirs, in compt,"
+   },
+   {
+    "l": "To make their audit at your Highness' pleasure,"
+   },
+   {
+    "l": "Still to return your own."
+   }
+  ],
   "word": "Your"
  },
  {
@@ -92,7 +264,11 @@ window.LINES = [
   "cue": [
    "How now! what news?"
   ],
-  "line": "He has almost supp'd. Why have you left the chamber?",
+  "speech": [
+   {
+    "l": "He has almost supp'd. Why have you left the chamber?"
+   }
+  ],
   "word": "He"
  },
  {
@@ -103,7 +279,11 @@ window.LINES = [
   "cue": [
    "Hath he ask'd for me?"
   ],
-  "line": "Know you not he has?",
+  "speech": [
+   {
+    "l": "Know you not he has?"
+   }
+  ],
   "word": "Know"
  },
  {
@@ -116,7 +296,41 @@ window.LINES = [
    "Which would be worn now in their newest gloss,",
    "Not cast aside so soon."
   ],
-  "line": "Was the hope drunk",
+  "speech": [
+   {
+    "l": "Was the hope drunk"
+   },
+   {
+    "l": "Wherein you dress'd yourself? Hath it slept since?"
+   },
+   {
+    "l": "And wakes it now, to look so green and pale"
+   },
+   {
+    "l": "At what it did so freely? From this time"
+   },
+   {
+    "l": "Such I account thy love. Art thou afeard"
+   },
+   {
+    "l": "To be the same in thine own act and valour"
+   },
+   {
+    "l": "As thou art in desire? Wouldst thou have that"
+   },
+   {
+    "l": "Which thou esteem'st the ornament of life,"
+   },
+   {
+    "l": "And live a coward in thine own esteem,"
+   },
+   {
+    "l": "Letting \"I dare not\" wait upon \"I would,\""
+   },
+   {
+    "l": "Like the poor cat i' th' adage?"
+   }
+  ],
   "word": "Was"
  },
  {
@@ -129,7 +343,47 @@ window.LINES = [
    "I dare do all that may become a man;",
    "Who dares do more is none."
   ],
-  "line": "What beast was't, then,",
+  "speech": [
+   {
+    "l": "What beast was't, then,"
+   },
+   {
+    "l": "That made you break this enterprise to me?"
+   },
+   {
+    "l": "When you durst do it, then you were a man;"
+   },
+   {
+    "l": "And, to be more than what you were, you would"
+   },
+   {
+    "l": "Be so much more the man. Nor time nor place"
+   },
+   {
+    "l": "Did then adhere, and yet you would make both:"
+   },
+   {
+    "l": "They have made themselves, and that their fitness now"
+   },
+   {
+    "l": "Does unmake you. I have given suck, and know"
+   },
+   {
+    "l": "How tender 'tis to love the babe that milks me:"
+   },
+   {
+    "l": "I would, while it was smiling in my face,"
+   },
+   {
+    "l": "Have pluck'd my nipple from his boneless gums"
+   },
+   {
+    "l": "And dash'd the brains out, had I so sworn as you"
+   },
+   {
+    "l": "Have done to this."
+   }
+  ],
   "word": "What"
  },
  {
@@ -140,7 +394,50 @@ window.LINES = [
   "cue": [
    "If we should fail?"
   ],
-  "line": "We fail?",
+  "speech": [
+   {
+    "l": "We fail?"
+   },
+   {
+    "l": "But screw your courage to the sticking-place,"
+   },
+   {
+    "l": "And we'll not fail. When Duncan is asleep"
+   },
+   {
+    "l": "(Whereto the rather shall his day's hard journey"
+   },
+   {
+    "l": "Soundly invite him), his two chamberlains"
+   },
+   {
+    "l": "Will I with wine and wassail so convince"
+   },
+   {
+    "l": "That memory, the warder of the brain,"
+   },
+   {
+    "l": "Shall be a fume, and the receipt of reason"
+   },
+   {
+    "l": "A limbeck only: when in swinish sleep"
+   },
+   {
+    "l": "Their drenched natures lie as in a death,"
+   },
+   {
+    "l": "What cannot you and I perform upon"
+   },
+   {
+    "l": "Th' unguarded Duncan? what not put upon"
+   },
+   {
+    "l": "His spongy officers; who shall bear the guilt"
+   },
+   {
+    "l": "Of our great quell?"
+   }
+  ],
   "word": "We"
  },
  {
@@ -153,7 +450,17 @@ window.LINES = [
    "Of his own chamber, and us'd their very daggers,",
    "That they have done't?"
   ],
-  "line": "Who dares receive it other,",
+  "speech": [
+   {
+    "l": "Who dares receive it other,"
+   },
+   {
+    "l": "As we shall make our griefs and clamour roar"
+   },
+   {
+    "l": "Upon his death?"
+   }
+  ],
   "word": "Who"
  },
  {
@@ -164,7 +471,14 @@ window.LINES = [
   "cue": [
    "I have done the deed.--Didst thou not hear a noise?"
   ],
-  "line": "I heard the owl scream and the crickets cry.",
+  "speech": [
+   {
+    "l": "I heard the owl scream and the crickets cry."
+   },
+   {
+    "l": "Did not you speak?"
+   }
+  ],
   "word": "I"
  },
  {
@@ -175,7 +489,11 @@ window.LINES = [
   "cue": [
    "When?"
   ],
-  "line": "Now.",
+  "speech": [
+   {
+    "l": "Now."
+   }
+  ],
   "word": "Now"
  },
  {
@@ -186,7 +504,11 @@ window.LINES = [
   "cue": [
    "As I descended?"
   ],
-  "line": "Ay.",
+  "speech": [
+   {
+    "l": "Ay."
+   }
+  ],
   "word": "Ay"
  },
  {
@@ -197,7 +519,11 @@ window.LINES = [
   "cue": [
    "Hark!--Who lies i' th' second chamber?"
   ],
-  "line": "Donalbain.",
+  "speech": [
+   {
+    "l": "Donalbain."
+   }
+  ],
   "word": "Donalbain"
  },
  {
@@ -208,7 +534,11 @@ window.LINES = [
   "cue": [
    "This is a sorry sight."
   ],
-  "line": "A foolish thought, to say a sorry sight.",
+  "speech": [
+   {
+    "l": "A foolish thought, to say a sorry sight."
+   }
+  ],
   "word": "A"
  },
  {
@@ -221,7 +551,11 @@ window.LINES = [
    "But they did say their prayers, and address'd them",
    "Again to sleep."
   ],
-  "line": "There are two lodg'd together.",
+  "speech": [
+   {
+    "l": "There are two lodg'd together."
+   }
+  ],
   "word": "There"
  },
  {
@@ -234,7 +568,11 @@ window.LINES = [
    "List'ning their fear, I could not say \"Amen,\"",
    "When they did say, \"God bless us.\""
   ],
-  "line": "Consider it not so deeply.",
+  "speech": [
+   {
+    "l": "Consider it not so deeply."
+   }
+  ],
   "word": "Consider"
  },
  {
@@ -247,7 +585,14 @@ window.LINES = [
    "I had most need of blessing, and \"Amen\"",
    "Stuck in my throat."
   ],
-  "line": "These deeds must not be thought",
+  "speech": [
+   {
+    "l": "These deeds must not be thought"
+   },
+   {
+    "l": "After these ways; so, it will make us mad."
+   }
+  ],
   "word": "These"
  },
  {
@@ -260,7 +605,11 @@ window.LINES = [
    "Balm of hurt minds, great nature's second course,",
    "Chief nourisher in life's feast."
   ],
-  "line": "What do you mean?",
+  "speech": [
+   {
+    "l": "What do you mean?"
+   }
+  ],
   "word": "What"
  },
  {
@@ -273,7 +622,29 @@ window.LINES = [
    "\"Glamis hath murder'd sleep, and therefore Cawdor",
    "Shall sleep no more. Macbeth shall sleep no more!\""
   ],
-  "line": "Who was it that thus cried? Why, worthy thane,",
+  "speech": [
+   {
+    "l": "Who was it that thus cried? Why, worthy thane,"
+   },
+   {
+    "l": "You do unbend your noble strength to think"
+   },
+   {
+    "l": "So brainsickly of things. Go get some water,"
+   },
+   {
+    "l": "And wash this filthy witness from your hand.--"
+   },
+   {
+    "l": "Why did you bring these daggers from the place?"
+   },
+   {
+    "l": "They must lie there: go carry them, and smear"
+   },
+   {
+    "l": "The sleepy grooms with blood."
+   }
+  ],
   "word": "Who"
  },
  {
@@ -286,7 +657,26 @@ window.LINES = [
    "I am afraid to think what I have done;",
    "Look on't again I dare not."
   ],
-  "line": "Infirm of purpose!",
+  "speech": [
+   {
+    "l": "Infirm of purpose!"
+   },
+   {
+    "l": "Give me the daggers. The sleeping and the dead"
+   },
+   {
+    "l": "Are but as pictures. 'Tis the eye of childhood"
+   },
+   {
+    "l": "That fears a painted devil. If he do bleed,"
+   },
+   {
+    "l": "I'll gild the faces of the grooms withal,"
+   },
+   {
+    "l": "For it must seem their guilt."
+   }
+  ],
   "word": "Infirm"
  },
  {
@@ -299,7 +689,41 @@ window.LINES = [
    "The multitudinous seas incarnadine,",
    "Making the green one red."
   ],
-  "line": "My hands are of your color, but I shame",
+  "speech": [
+   {
+    "l": "My hands are of your color, but I shame"
+   },
+   {
+    "s": "Knocking within."
+   },
+   {
+    "l": "To wear a heart so white.   I hear knocking"
+   },
+   {
+    "l": "At the south entry:--retire we to our chamber."
+   },
+   {
+    "l": "A little water clears us of this deed:"
+   },
+   {
+    "l": "How easy is it then! Your constancy"
+   },
+   {
+    "s": "Knocking within."
+   },
+   {
+    "l": "Hath left you unattended.--  Hark, more knocking."
+   },
+   {
+    "l": "Get on your nightgown, lest occasion call us"
+   },
+   {
+    "l": "And show us to be watchers. Be not lost"
+   },
+   {
+    "l": "So poorly in your thoughts."
+   }
+  ],
   "word": "My"
  },
  {
@@ -312,7 +736,17 @@ window.LINES = [
    "As from your graves rise up, and walk like sprites",
    "To countenance this horror!"
   ],
-  "line": "What's the business,",
+  "speech": [
+   {
+    "l": "What's the business,"
+   },
+   {
+    "l": "That such a hideous trumpet calls to parley"
+   },
+   {
+    "l": "The sleepers of the house? Speak, speak!"
+   }
+  ],
   "word": "What's"
  },
  {
@@ -324,7 +758,14 @@ window.LINES = [
    "O Banquo, Banquo!",
    "Our royal master's murder'd!"
   ],
-  "line": "Woe, alas!",
+  "speech": [
+   {
+    "l": "Woe, alas!"
+   },
+   {
+    "l": "What, in our house?"
+   }
+  ],
   "word": "Woe"
  },
  {
@@ -337,7 +778,11 @@ window.LINES = [
    "That had a heart to love, and in that heart",
    "Courage to make's love known?"
   ],
-  "line": "Help me hence, ho!",
+  "speech": [
+   {
+    "l": "Help me hence, ho!"
+   }
+  ],
   "word": "Help"
  },
  {
@@ -348,7 +793,17 @@ window.LINES = [
   "cue": [
    "Here's our chief guest."
   ],
-  "line": "If he had been forgotten,",
+  "speech": [
+   {
+    "l": "If he had been forgotten,"
+   },
+   {
+    "l": "It had been as a gap in our great feast,"
+   },
+   {
+    "l": "And all-thing unbecoming."
+   }
+  ],
   "word": "If"
  },
  {
@@ -359,7 +814,14 @@ window.LINES = [
   "cue": [
    "Ay, madam, but returns again tonight."
   ],
-  "line": "Say to the King, I would attend his leisure",
+  "speech": [
+   {
+    "l": "Say to the King, I would attend his leisure"
+   },
+   {
+    "l": "For a few words."
+   }
+  ],
   "word": "Say"
  },
  {
@@ -370,7 +832,38 @@ window.LINES = [
   "cue": [
    "Madam, I will."
   ],
-  "line": "Naught's had, all's spent,",
+  "speech": [
+   {
+    "l": "Naught's had, all's spent,"
+   },
+   {
+    "l": "Where our desire is got without content:"
+   },
+   {
+    "l": "'Tis safer to be that which we destroy,"
+   },
+   {
+    "l": "Than by destruction dwell in doubtful joy."
+   },
+   {
+    "s": "Enter Macbeth."
+   },
+   {
+    "l": "How now, my lord, why do you keep alone,"
+   },
+   {
+    "l": "Of sorriest fancies your companions making,"
+   },
+   {
+    "l": "Using those thoughts which should indeed have died"
+   },
+   {
+    "l": "With them they think on? Things without all remedy"
+   },
+   {
+    "l": "Should be without regard: what's done is done."
+   }
+  ],
   "word": "Naught's"
  },
  {
@@ -383,7 +876,17 @@ window.LINES = [
    "Malice domestic, foreign levy, nothing",
    "Can touch him further."
   ],
-  "line": "Come on,",
+  "speech": [
+   {
+    "l": "Come on,"
+   },
+   {
+    "l": "Gently my lord, sleek o'er your rugged looks;"
+   },
+   {
+    "l": "Be bright and jovial among your guests tonight."
+   }
+  ],
   "word": "Come"
  },
  {
@@ -396,7 +899,11 @@ window.LINES = [
    "And make our faces vizards to our hearts,",
    "Disguising what they are."
   ],
-  "line": "You must leave this.",
+  "speech": [
+   {
+    "l": "You must leave this."
+   }
+  ],
   "word": "You"
  },
  {
@@ -408,7 +915,11 @@ window.LINES = [
    "O, full of scorpions is my mind, dear wife!",
    "Thou know'st that Banquo, and his Fleance, lives."
   ],
-  "line": "But in them nature's copy's not eterne.",
+  "speech": [
+   {
+    "l": "But in them nature's copy's not eterne."
+   }
+  ],
   "word": "But"
  },
  {
@@ -421,7 +932,11 @@ window.LINES = [
    "Hath rung night's yawning peal, there shall be done",
    "A deed of dreadful note."
   ],
-  "line": "What's to be done?",
+  "speech": [
+   {
+    "l": "What's to be done?"
+   }
+  ],
   "word": "What's"
  },
  {
@@ -434,7 +949,14 @@ window.LINES = [
    "Our hostess keeps her state; but, in best time,",
    "We will require her welcome."
   ],
-  "line": "Pronounce it for me, sir, to all our friends;",
+  "speech": [
+   {
+    "l": "Pronounce it for me, sir, to all our friends;"
+   },
+   {
+    "l": "For my heart speaks they are welcome."
+   }
+  ],
   "word": "Pronounce"
  },
  {
@@ -447,7 +969,26 @@ window.LINES = [
    "No teeth for th' present.--Get thee gone; tomorrow",
    "We'll hear, ourselves, again."
   ],
-  "line": "My royal lord,",
+  "speech": [
+   {
+    "l": "My royal lord,"
+   },
+   {
+    "l": "You do not give the cheer: the feast is sold"
+   },
+   {
+    "l": "That is not often vouch'd, while 'tis a-making,"
+   },
+   {
+    "l": "'Tis given with welcome. To feed were best at home;"
+   },
+   {
+    "l": "From thence the sauce to meat is ceremony;"
+   },
+   {
+    "l": "Meeting were bare without it."
+   }
+  ],
   "word": "My"
  },
  {
@@ -458,7 +999,26 @@ window.LINES = [
   "cue": [
    "Gentlemen, rise; his Highness is not well."
   ],
-  "line": "Sit, worthy friends. My lord is often thus,",
+  "speech": [
+   {
+    "l": "Sit, worthy friends. My lord is often thus,"
+   },
+   {
+    "l": "And hath been from his youth: pray you, keep seat;"
+   },
+   {
+    "l": "The fit is momentary; upon a thought"
+   },
+   {
+    "l": "He will again be well. If much you note him,"
+   },
+   {
+    "l": "You shall offend him, and extend his passion."
+   },
+   {
+    "l": "Feed, and regard him not.--Are you a man?"
+   }
+  ],
   "word": "Sit"
  },
  {
@@ -470,7 +1030,35 @@ window.LINES = [
    "Ay, and a bold one, that dare look on that",
    "Which might appal the devil."
   ],
-  "line": "O proper stuff!",
+  "speech": [
+   {
+    "l": "O proper stuff!"
+   },
+   {
+    "l": "This is the very painting of your fear:"
+   },
+   {
+    "l": "This is the air-drawn dagger which you said,"
+   },
+   {
+    "l": "Led you to Duncan. O, these flaws, and starts"
+   },
+   {
+    "l": "(Impostors to true fear), would well become"
+   },
+   {
+    "l": "A woman's story at a winter's fire,"
+   },
+   {
+    "l": "Authoris'd by her grandam. Shame itself!"
+   },
+   {
+    "l": "Why do you make such faces? When all's done,"
+   },
+   {
+    "l": "You look but on a stool."
+   }
+  ],
   "word": "O"
  },
  {
@@ -483,7 +1071,11 @@ window.LINES = [
    "Those that we bury back, our monuments",
    "Shall be the maws of kites."
   ],
-  "line": "What, quite unmann'd in folly?",
+  "speech": [
+   {
+    "l": "What, quite unmann'd in folly?"
+   }
+  ],
   "word": "What"
  },
  {
@@ -494,7 +1086,11 @@ window.LINES = [
   "cue": [
    "If I stand here, I saw him."
   ],
-  "line": "Fie, for shame!",
+  "speech": [
+   {
+    "l": "Fie, for shame!"
+   }
+  ],
   "word": "Fie"
  },
  {
@@ -507,7 +1103,14 @@ window.LINES = [
    "And push us from our stools. This is more strange",
    "Than such a murder is."
   ],
-  "line": "My worthy lord,",
+  "speech": [
+   {
+    "l": "My worthy lord,"
+   },
+   {
+    "l": "Your noble friends do lack you."
+   }
+  ],
   "word": "My"
  },
  {
@@ -520,7 +1123,17 @@ window.LINES = [
    "Thou hast no speculation in those eyes",
    "Which thou dost glare with!"
   ],
-  "line": "Think of this, good peers,",
+  "speech": [
+   {
+    "l": "Think of this, good peers,"
+   },
+   {
+    "l": "But as a thing of custom: 'tis no other,"
+   },
+   {
+    "l": "Only it spoils the pleasure of the time."
+   }
+  ],
   "word": "Think"
  },
  {
@@ -532,7 +1145,14 @@ window.LINES = [
    "Why, so;--being gone,",
    "I am a man again.--Pray you, sit still."
   ],
-  "line": "You have displaced the mirth, broke the good meeting",
+  "speech": [
+   {
+    "l": "You have displaced the mirth, broke the good meeting"
+   },
+   {
+    "l": "With most admir'd disorder."
+   }
+  ],
   "word": "You"
  },
  {
@@ -543,7 +1163,20 @@ window.LINES = [
   "cue": [
    "What sights, my lord?"
   ],
-  "line": "I pray you, speak not; he grows worse and worse;",
+  "speech": [
+   {
+    "l": "I pray you, speak not; he grows worse and worse;"
+   },
+   {
+    "l": "Question enrages him. At once, good night:--"
+   },
+   {
+    "l": "Stand not upon the order of your going,"
+   },
+   {
+    "l": "But go at once."
+   }
+  ],
   "word": "I"
  },
  {
@@ -555,7 +1188,11 @@ window.LINES = [
    "Good night; and better health",
    "Attend his Majesty!"
   ],
-  "line": "A kind good night to all!",
+  "speech": [
+   {
+    "l": "A kind good night to all!"
+   }
+  ],
   "word": "A"
  },
  {
@@ -568,7 +1205,11 @@ window.LINES = [
    "By magot-pies, and choughs, and rooks, brought forth",
    "The secret'st man of blood.--What is the night?"
   ],
-  "line": "Almost at odds with morning, which is which.",
+  "speech": [
+   {
+    "l": "Almost at odds with morning, which is which."
+   }
+  ],
   "word": "Almost"
  },
  {
@@ -580,7 +1221,11 @@ window.LINES = [
    "How say'st thou, that Macduff denies his person",
    "At our great bidding?"
   ],
-  "line": "Did you send to him, sir?",
+  "speech": [
+   {
+    "l": "Did you send to him, sir?"
+   }
+  ],
   "word": "Did"
  },
  {
@@ -593,7 +1238,11 @@ window.LINES = [
    "Strange things I have in head, that will to hand,",
    "Which must be acted ere they may be scann'd."
   ],
-  "line": "You lack the season of all natures, sleep.",
+  "speech": [
+   {
+    "l": "You lack the season of all natures, sleep."
+   }
+  ],
   "word": "You"
  },
  {
@@ -605,7 +1254,11 @@ window.LINES = [
    "It is an accustomed action with her, to seem thus washing her hands. I",
    "have known her continue in this a quarter of an hour."
   ],
-  "line": "Yet here's a spot.",
+  "speech": [
+   {
+    "l": "Yet here's a spot."
+   }
+  ],
   "word": "Yet"
  },
  {
@@ -617,7 +1270,20 @@ window.LINES = [
    "Hark, she speaks. I will set down what comes from her, to satisfy my",
    "remembrance the more strongly."
   ],
-  "line": "Out, damned spot! out, I say! One; two. Why, then 'tis time to do't.",
+  "speech": [
+   {
+    "l": "Out, damned spot! out, I say! One; two. Why, then 'tis time to do't."
+   },
+   {
+    "l": "Hell is murky! Fie, my lord, fie! a soldier, and afeard? What need we"
+   },
+   {
+    "l": "fear who knows it, when none can call our power to account? Yet who"
+   },
+   {
+    "l": "would have thought the old man to have had so much blood in him?"
+   }
+  ],
   "word": "Out"
  },
  {
@@ -628,7 +1294,17 @@ window.LINES = [
   "cue": [
    "Do you mark that?"
   ],
-  "line": "The Thane of Fife had a wife. Where is she now?--What, will these hands",
+  "speech": [
+   {
+    "l": "The Thane of Fife had a wife. Where is she now?--What, will these hands"
+   },
+   {
+    "l": "ne'er be clean? No more o' that, my lord, no more o' that: you mar all"
+   },
+   {
+    "l": "with this starting."
+   }
+  ],
   "word": "The"
  },
  {
@@ -640,7 +1316,14 @@ window.LINES = [
    "She has spoke what she should not, I am sure of that: heaven knows what",
    "she has known."
   ],
-  "line": "Here's the smell of the blood still: all the perfumes of Arabia will",
+  "speech": [
+   {
+    "l": "Here's the smell of the blood still: all the perfumes of Arabia will"
+   },
+   {
+    "l": "not sweeten this little hand. Oh, oh, oh!"
+   }
+  ],
   "word": "Here's"
  },
  {
@@ -652,7 +1335,14 @@ window.LINES = [
    "This disease is beyond my practice: yet I have known those which have",
    "walked in their sleep, who have died holily in their beds."
   ],
-  "line": "Wash your hands, put on your nightgown; look not so pale. I tell you",
+  "speech": [
+   {
+    "l": "Wash your hands, put on your nightgown; look not so pale. I tell you"
+   },
+   {
+    "l": "yet again, Banquo's buried; he cannot come out on's grave."
+   }
+  ],
   "word": "Wash"
  },
  {
@@ -663,7 +1353,17 @@ window.LINES = [
   "cue": [
    "Even so?"
   ],
-  "line": "To bed, to bed. There's knocking at the gate. Come, come, come, come,",
+  "speech": [
+   {
+    "l": "To bed, to bed. There's knocking at the gate. Come, come, come, come,"
+   },
+   {
+    "l": "give me your hand. What's done cannot be undone. To bed, to bed, to"
+   },
+   {
+    "l": "bed."
+   }
+  ],
   "word": "To"
  }
 ];

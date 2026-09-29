@@ -84,8 +84,10 @@
         .verdict { font-family: var(--font-serif); font-size: 1.3rem; margin-bottom: .5rem; }
         .verdict.good { color: var(--color-good); }
         .verdict.bad { color: var(--color-bad); }
-        .full { font-family: var(--font-serif); font-size: 1.35rem; font-style: italic; margin-bottom: 1rem; }
-        .full mark { background: none; color: var(--color-accent); font-style: normal; font-weight: 600; }
+        .full { font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.5; margin-top: 1.25rem; }
+        .full div { padding-left: 1.5rem; text-indent: -1.5rem; }
+        .full .stage { font-style: italic; color: var(--color-text-muted); font-size: 1.05rem; margin: .25rem 0; }
+        .full mark { background: none; color: var(--color-accent); font-weight: 600; }
         .hint { color: var(--color-text-muted); font-size: .9rem; margin-top: .6rem; min-height: 1.4em; }
 
         .opts { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-top: 1.5rem; font-size: .85rem; color: var(--color-text-muted); }
@@ -126,8 +128,8 @@
 
                 <div class="result" id="result">
                     <div class="verdict" id="verdict"></div>
-                    <div class="full" id="full"></div>
                     <button type="button" id="next">Next line</button>
+                    <div class="full" id="full"></div>
                 </div>
             </div>
         </section>
@@ -220,13 +222,23 @@
             v.className = "verdict " + (correct ? "good" : "bad");
             v.textContent = correct ? "Yes." : gaveUp ? "The word is " + card.word + "." : "Not quite: " + card.word + ".";
 
-            const i = card.line.indexOf(card.word);
-            const full = $("full");
-            full.replaceChildren(
-                document.createTextNode(card.line.slice(0, i)),
-                Object.assign(document.createElement("mark"), { textContent: card.word }),
-                document.createTextNode(card.line.slice(i + card.word.length))
-            );
+            $("full").replaceChildren(...card.speech.map((item, k) => {
+                const row = document.createElement("div");
+                if (item.s) {
+                    row.className = "stage";
+                    row.textContent = item.s;
+                } else if (k === 0) {
+                    const i = item.l.indexOf(card.word);
+                    row.append(
+                        item.l.slice(0, i),
+                        Object.assign(document.createElement("mark"), { textContent: card.word }),
+                        item.l.slice(i + card.word.length)
+                    );
+                } else {
+                    row.textContent = item.l;
+                }
+                return row;
+            }));
 
             $("guess").disabled = true;
             $("submit").disabled = true;
