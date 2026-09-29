@@ -20,6 +20,7 @@
             --color-border: #2a2a2f;
             --color-good: #7fb79a;
             --color-bad: #d8776a;
+            --color-raised: #1d211e;
             --font-serif: 'Crimson Pro', Georgia, serif;
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
@@ -55,7 +56,7 @@
         .where { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--color-text-muted); }
         .speaker { font-family: var(--font-serif); color: var(--color-accent); font-size: 1.15rem; margin: 1rem 0 .25rem; }
         .cue { font-family: var(--font-serif); font-size: clamp(1.3rem, 4.2vw, 1.65rem); line-height: 1.45; }
-        .cue span { display: block; }
+        .cue .cueline { display: block; }
         .reply { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border); }
         .reply .speaker { margin-top: 0; }
         .prompt { font-family: var(--font-serif); font-size: 1.15rem; margin-bottom: .75rem; }
@@ -87,7 +88,7 @@
         .full { font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.5; margin-top: 1.25rem; }
         .full div { padding-left: 1.5rem; text-indent: -1.5rem; }
         .full .stage { font-style: italic; color: var(--color-text-muted); font-size: 1.05rem; margin: .25rem 0; }
-        .full mark { background: none; color: var(--color-accent); font-weight: 600; }
+        .full .first { color: var(--color-accent); font-weight: 600; }
         .full .ok { color: var(--color-good); }
         .bonus { color: var(--color-text-muted); font-size: .85rem; margin: .6rem 0 0; }
         .hint { color: var(--color-text-muted); font-size: .9rem; margin-top: .6rem; min-height: 1.4em; }
@@ -97,6 +98,69 @@
             font: inherit; color: var(--color-text); background: var(--color-surface);
             border: 1px solid var(--color-border); border-radius: 4px; padding: .25rem .4rem;
         }
+        /* ---------- glossed words (after bard3/mac.html) ---------- */
+        .w, .u {
+            font: inherit; color: inherit; background: none; border: 0; border-radius: 0; padding: 0;
+            cursor: pointer; border-bottom: 1px dotted var(--color-border); transition: color .12s, border-color .12s;
+        }
+        .w:hover, .w:focus-visible, .u:hover, .u:focus-visible { background: none; color: var(--color-accent-hover); border-bottom-color: var(--color-accent-hover); }
+        .w:focus-visible, .u:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; border-radius: 2px; }
+        .w.pin { border-bottom: 2px solid color-mix(in srgb, var(--color-bad) 42%, transparent); }
+        .w.pin:hover, .w.pin:focus-visible, .w.pin.on { color: var(--color-bad); border-bottom-color: var(--color-bad); }
+        .w.on { color: var(--color-bad); border-bottom-color: var(--color-bad); }
+        .u { cursor: help; color: var(--color-text-muted); border-bottom: 0; text-decoration: underline dotted 1px var(--color-text-muted); text-underline-offset: .22em; text-decoration-skip-ink: none; }
+        .u.on { color: var(--color-accent-hover); }
+        .full .ok .w, .full .ok .u { color: var(--color-good); }
+        .full .ok .w:hover, .full .ok .u:hover { color: var(--color-accent-hover); }
+        .tip { color: var(--color-text-muted); font-size: .8rem; margin-top: .75rem; }
+        .legend { display: flex; flex-wrap: wrap; gap: .4rem 1.25rem; margin-top: 1rem; font-size: .75rem; color: var(--color-text-muted); }
+        .legend span { display: inline-flex; align-items: center; gap: .5rem; }
+        .swatch { width: 1.5rem; height: 0; }
+        .swatch.d { border-bottom: 1px dotted var(--color-border); }
+        .swatch.p { border-bottom: 2px solid color-mix(in srgb, var(--color-bad) 42%, transparent); }
+        .swatch.n { border-bottom: 1px dotted var(--color-text-muted); }
+
+        .sheet {
+            position: fixed; left: 0; right: 0; bottom: 0; background: var(--color-raised);
+            border-top: 1px solid var(--color-border); box-shadow: 0 -12px 40px rgba(0,0,0,.4);
+            transform: translateY(101%); transition: transform .26s cubic-bezier(.32,.72,0,1);
+            max-height: 58vh; display: flex; flex-direction: column; z-index: 20;
+        }
+        .sheet.open { transform: translateY(0); }
+        @media (prefers-reduced-motion: reduce) { .sheet { transition: none; } }
+        @media (min-width: 64rem) {
+            main { margin-left: max(1.5rem, calc(50vw - 33rem)); }
+            .sheet {
+                left: auto; right: 1.5rem; bottom: 1.5rem; top: 1.5rem; width: min(26rem, 36vw); max-height: none;
+                border: 1px solid var(--color-border); border-radius: 4px; transform: translateX(calc(100% + 2rem));
+            }
+            .sheet.open { transform: translateX(0); }
+        }
+        @media (max-width: 63.99rem) { body.gloss main { padding-bottom: 62vh; } }
+        .sheet-bar { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1.125rem 1.375rem .75rem; border-bottom: 1px solid var(--color-border); }
+        .headword { font-family: var(--font-serif); font-size: 1.5rem; line-height: 1.2; }
+        .provenance { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .625rem; color: var(--color-text-muted); margin-top: .25rem; }
+        .sheet .close { font-size: 1.5rem; line-height: 1; background: none; border: 0; color: var(--color-text-muted); padding: 0 .25rem; }
+        .sheet .close:hover { color: var(--color-text); background: none; }
+        .sheet-body { overflow-y: auto; padding: 1.125rem 1.375rem 2rem; display: flex; flex-direction: column; gap: 1.125rem; font-family: var(--font-serif); }
+        .tag { font-family: var(--font-sans); font-size: .625rem; letter-spacing: .12em; text-transform: uppercase; color: var(--color-text-muted); }
+        .pinned { border-left: 2px solid var(--color-bad); padding-left: .875rem; display: flex; flex-direction: column; gap: .375rem; }
+        .pinned .tag { color: var(--color-bad); }
+        .pinned .body { font-size: .9375rem; line-height: 1.6; }
+        .fullentry { display: flex; flex-direction: column; gap: .375rem; }
+        .fullentry .body { font-size: .875rem; line-height: 1.65; color: var(--color-text-muted); }
+        .sense { display: flex; gap: .5rem; }
+        .sense + .sense { margin-top: .5rem; }
+        .sense .num { flex: 0 0 1.25rem; font-family: var(--font-sans); font-size: .6875rem; color: var(--color-bad); padding-top: .15rem; }
+        .elision { font-family: var(--font-sans); font-size: .8125rem; line-height: 1.55; color: var(--color-text-muted); background: color-mix(in srgb, var(--color-border) 35%, transparent); padding: .625rem .75rem; border-radius: 3px; }
+        .alts { display: flex; flex-direction: column; gap: .5rem; padding-top: .875rem; border-top: 1px solid var(--color-border); }
+        .alts .tag { font-size: .6875rem; line-height: 1.45; letter-spacing: .02em; }
+        .alts.cited .tag { color: var(--color-text-muted); }
+        .alts.guess .tag, .alts.wordclass .tag, .alts.prior .tag { color: var(--color-bad); }
+        .alt { font-size: .8125rem; line-height: 1.55; color: var(--color-text-muted); padding-left: .75rem; border-left: 1px solid var(--color-border); }
+        .alt .pos { font-style: italic; }
+        .kindnote { display: flex; flex-direction: column; gap: .375rem; }
+        .kindnote .body { font-size: .9375rem; line-height: 1.55; color: var(--color-text-muted); }
         footer { text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--color-text-muted); border-top: 1px solid var(--color-border); }
     </style>
 </head>
@@ -108,7 +172,7 @@
 
     <main>
         <h1>Linerunner</h1>
-        <p class="sub">Here's the cue. What's Lady Macbeth's first word?</p>
+        <p class="sub">Here's the cue. What's Lady Macbeth's first word? Tap any word for Schmidt's gloss.</p>
 
         <section class="card" aria-live="polite">
             <div class="where"><span id="where"></span> <span id="pos"></span></div>
@@ -152,9 +216,25 @@
                 <option value="3" selected>up to 3</option>
             </select>
         </div>
+        <div class="legend">
+            <span><i class="swatch d"></i> in the lexicon</span>
+            <span><i class="swatch p"></i> Schmidt cites this exact line</span>
+            <span><i class="swatch n"></i> no entry: tap for why</span>
+        </div>
     </main>
 
-    <footer>Text: Macbeth, from the <a href="../bard3/mac.html">glossed edition</a>.</footer>
+    <aside class="sheet" id="sheet" role="dialog" aria-modal="false" aria-labelledby="hw">
+        <div class="sheet-bar">
+            <div>
+                <div class="headword" id="hw"></div>
+                <div class="provenance" id="prov"></div>
+            </div>
+            <button class="close" id="close" type="button" aria-label="Close definition">&times;</button>
+        </div>
+        <div class="sheet-body" id="sheetBody"></div>
+    </aside>
+
+    <footer>Text: Macbeth, from the <a href="../bard3/mac.html">glossed edition</a>. Glosses: Alexander Schmidt, <em>Shakespeare Lexicon</em> (1902).</footer>
 
     <script src="data.js"></script>
     <script>
@@ -187,12 +267,71 @@
             next();
         }
 
+        // A line is a list of tokens: bare strings for spaces and punctuation, objects
+        // for words, with .k (lexicon key) or .f (no entry, and why). Cut into
+        // "chunks": runs with no whitespace or "--" in them. A chunk that has letters
+        // in it is a word, the same unit the recital matcher compares.
+        function chunkLine(line) {
+            const out = [];
+            let cur = null;
+            for (const tok of line) {
+                const o = typeof tok === "string" ? { t: tok } : tok;
+                const glossed = o.k || o.f;
+                for (const part of glossed ? [o.t] : o.t.split(/(\s+|--)/)) {
+                    if (part === "") continue;
+                    if (!glossed && /^(\s+|--)$/.test(part)) { out.push({ sep: part }); cur = null; continue; }
+                    if (!cur) out.push(cur = { pieces: [] });
+                    cur.pieces.push(glossed ? o : { t: part });
+                }
+            }
+            for (const c of out) if (c.pieces) c.word = norm(c.pieces.map(p => p.t).join("")) || null;
+            return out;
+        }
+
+        function piece(o) {
+            if (!o.k && !o.f) return document.createTextNode(o.t);
+            const b = document.createElement("button");
+            b.type = "button";
+            b.textContent = o.t;
+            if (o.k) {
+                b.className = "w" + (o.p ? " pin" : "");
+                b.dataset.k = o.k; b.dataset.h = o.h;
+                if (o.p) b.dataset.p = o.p;
+                if (o.x) b.dataset.x = o.x;
+                if (o.d) b.dataset.d = o.d;
+            } else {
+                b.className = "u";
+                b.dataset.f = o.f;
+                b.dataset.g = o.g || "";
+            }
+            return b;
+        }
+
+        // Render one line. `words` says which word indexes (counted across the whole
+        // speech, from `counter.n`) to mark: { ok: Set, first: bool }.
+        function renderLine(line, counter, marks) {
+            const row = document.createElement("div");
+            for (const c of chunkLine(line)) {
+                if (c.sep) { row.append(c.sep); continue; }
+                const wrap = document.createElement("span");
+                if (c.word && marks) {
+                    const i = counter.n++;
+                    if (marks.ok.has(i)) wrap.classList.add("ok");
+                    if (i === 0) wrap.classList.add("first");
+                }
+                wrap.append(...c.pieces.map(piece));
+                row.append(wrap);
+            }
+            return row;
+        }
+
         function showCue() {
             const n = +$("lead").value;
-            $("cue").replaceChildren(...card.cue.slice(-n).map(t => {
-                const s = document.createElement("span");
-                s.textContent = t;
-                return s;
+            const counter = { n: 0 };
+            $("cue").replaceChildren(...card.cue.slice(-n).map(line => {
+                const row = renderLine(line, counter, null);
+                row.className = "cueline";
+                return row;
             }));
         }
 
@@ -215,7 +354,7 @@
         }
 
         // Words of the speech, in order, as normalised strings.
-        const speechWords = speech => speech.flatMap(x => x.l ? x.l.split(/\s+|--/).map(norm).filter(Boolean) : []);
+        const speechWords = speech => speech.flatMap(x => x.l ? chunkLine(x.l).map(c => c.word).filter(Boolean) : []);
 
         // Longest-common-subsequence of typed words against the speech, so a
         // skipped or extra word doesn't throw off everything after it.
@@ -247,30 +386,16 @@
             v.className = "verdict " + (correct ? "good" : "bad");
             v.textContent = correct ? "Yes." : gaveUp ? "The word is " + card.word + "." : "Not quite: " + card.word + ".";
 
-            const bonus = typed.length > 1;
-            const matched = bonus ? matchWords(typed, card.speech) : new Set();
-            let wi = 0;
-            $("full").replaceChildren(...card.speech.map((item, k) => {
-                const row = document.createElement("div");
+            const matched = typed.length > 1 ? matchWords(typed, card.speech) : new Set();
+            const counter = { n: 0 };
+            $("full").replaceChildren(...card.speech.map(item => {
                 if (item.s) {
+                    const row = document.createElement("div");
                     row.className = "stage";
                     row.textContent = item.s;
                     return row;
                 }
-                item.l.split(/(\s+|--)/).forEach(tok => {
-                    if (!norm(tok)) { row.append(tok); return; }
-                    const i = wi++;
-                    if (!bonus && !(k === 0 && i === 0)) { row.append(tok); return; }
-                    const w = document.createElement("span");
-                    w.textContent = tok;
-                    if (matched.has(i)) w.className = "ok";
-                    if (i === 0) {
-                        const m = document.createElement("mark");
-                        m.append(w);
-                        row.append(m);
-                    } else row.append(w);
-                });
-                return row;
+                return renderLine(item.l, counter, { ok: matched });
             }));
 
             $("guess").disabled = true;
@@ -309,6 +434,148 @@
         [...new Set(window.LINES.map(c => c.act))].forEach(a => {
             $("act").add(new Option("Act " + a, a));
         });
+
+        // ---------- Schmidt panel (ported from bard3/mac.html) ----------
+        // The lexicon is a few MB, so it loads on the first tap rather than with the page.
+        const VOCAB_SRC = "vocab.js";
+        let vocabLoad = null;
+        function loadVocab() {
+            if (window.VOCAB) return Promise.resolve();
+            return vocabLoad || (vocabLoad = new Promise((resolve, reject) => {
+                const el = document.createElement("script");
+                el.src = VOCAB_SRC;
+                el.onload = resolve;
+                el.onerror = () => { vocabLoad = null; reject(new Error("vocab")); };
+                document.head.append(el);
+            }));
+        }
+
+        const sheet = $("sheet"), hw = $("hw"), prov = $("prov"), sheetBody = $("sheetBody");
+        let active = null;
+
+        // Schmidt writes his senses as "1)", "2)" run into the prose; break at them.
+        // Text only, never markup: the entry is scanned text and may contain anything.
+        function parseEntry(text) {
+            const parts = String(text || "").split(/(?=(?:^|\s)\d{1,2}\))/);
+            const lead = [], senses = [];
+            parts.forEach(p => {
+                const m = p.match(/^\s*(\d{1,2})\)\s*([\s\S]*)$/);
+                if (m) senses.push([m[1], m[2]]);
+                else if (p.trim()) (senses.length ? senses[senses.length - 1][1] += p : lead.push(p));
+            });
+            return { lead: lead.join(" ").trim(), senses };
+        }
+
+        function senseText(body, n) {
+            const p = parseEntry(body);
+            if (n === null || n === undefined) return p.lead || String(body || "");
+            const hit = p.senses.find(x => x[0] === String(n));
+            return hit ? hit[1].trim() : (p.lead || String(body || ""));
+        }
+
+        function div(cls, text) {
+            const d = document.createElement("div");
+            if (cls) d.className = cls;
+            if (text !== undefined) d.textContent = text;
+            return d;
+        }
+
+        function setEntry(host, text) {
+            const { lead, senses } = parseEntry(text);
+            if (lead || !senses.length) host.append(div("", lead || String(text || "")));
+            senses.forEach(([n, t]) => {
+                const row = div("sense");
+                row.append(div("num", n + ")"), div("", t.trim()));
+                host.append(row);
+            });
+        }
+
+        function openSheet(el, head, provenance) {
+            if (active) active.classList.remove("on");
+            active = el; el.classList.add("on");
+            hw.textContent = head;
+            prov.textContent = provenance;
+            sheetBody.textContent = "";
+            sheetBody.scrollTop = 0;
+            sheet.classList.add("open");
+            document.body.classList.add("gloss");
+        }
+
+        function showUnresolved(el) {
+            openSheet(el, el.textContent, "no entry in Schmidt");
+            const note = div("kindnote");
+            const tag = { french: "French", latin: "Latin", dialect: "Dialect", name: "Proper name",
+                          fragment: "Source text", absent: "Not in the lexicon" }[el.dataset.f] || "No entry";
+            note.append(div("tag", tag), div("body", el.dataset.g || "Schmidt has no entry for this word."));
+            sheetBody.append(note);
+        }
+
+        async function showWord(el) {
+            openSheet(el, el.textContent, "loading the lexicon…");
+            try { await loadVocab(); } catch { prov.textContent = "could not load the lexicon"; return; }
+            if (active !== el) return;                         // they tapped something else meanwhile
+            const e = window.VOCAB[el.dataset.k];
+            if (!e) { prov.textContent = "no entry in Schmidt"; return; }
+            const d = el.dataset;
+
+            hw.textContent = d.x ? el.textContent + " = " + d.x : e.head.charAt(0).toUpperCase() + e.head.slice(1);
+            prov.textContent = "matched: " + d.h + (d.p ? "  ·  cited at " + d.p : "");
+
+            if (d.x) {
+                sheetBody.append(div("elision", "Schmidt does not gloss this contraction: to his readers it was "
+                    + "ordinary. Below is the entry for “" + e.head + "”."));
+            }
+            if (d.p !== undefined && e.cites[d.p] !== undefined) {
+                const n = e.senses[e.cites[d.p]];
+                const box = div("pinned");
+                box.append(div("tag", n ? "Sense " + n + " — Schmidt cites this line" : "Schmidt cites this line"),
+                           div("body", senseText(e.body, n)));
+                sheetBody.append(box);
+            }
+            const full = div("fullentry");
+            const fb = div("body");
+            setEntry(fb, e.body);
+            full.append(div("tag", "Schmidt 1902"), fb);
+            sheetBody.append(full);
+
+            // Schmidt splits homographs into separate entries: say which way this one
+            // was decided, and offer the others.
+            if (d.d && d.d !== "single" && e.alts && e.alts.length) {
+                const box = div("alts " + d.d);
+                box.append(div("tag", "Schmidt has " + (e.alts.length + 1) + " entries for this spelling — " + (
+                    d.d === "cited" ? "he cited this line under the one above"
+                  : d.d === "wordclass" ? "chosen above by word class (" + e.pos + "), not confirmed"
+                  : d.d === "prior" ? "nothing here settles which; the one above is the one he quotes most often elsewhere"
+                  : "nothing settles which applies here")));
+                e.alts.forEach(key => {
+                    const a = window.VOCAB[key];
+                    if (!a) return;
+                    const alt = div("alt");
+                    if (a.pos && a.pos !== "?") {
+                        const pos = document.createElement("span");
+                        pos.className = "pos";
+                        pos.textContent = a.pos + ".  ";
+                        alt.append(pos);
+                    }
+                    setEntry(alt, a.body);
+                    box.append(alt);
+                });
+                sheetBody.append(box);
+            }
+        }
+
+        function hideSheet() {
+            sheet.classList.remove("open");
+            document.body.classList.remove("gloss");
+            if (active) { active.classList.remove("on"); active = null; }
+        }
+
+        document.querySelector(".card").addEventListener("click", ev => {
+            const w = ev.target.closest(".w"), u = ev.target.closest(".u");
+            if (w) showWord(w); else if (u) showUnresolved(u);
+        });
+        $("close").addEventListener("click", hideSheet);
+        document.addEventListener("keydown", ev => { if (ev.key === "Escape") hideSheet(); });
 
         next();
     </script>
