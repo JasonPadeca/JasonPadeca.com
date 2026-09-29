@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linerunner | Jason Padeca</title>
+    <meta name="description" content="Learn Lady Macbeth's lines. Linerunner gives you the cue and asks for the first word of her reply.">
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #0d0d0f;
+            --color-surface: #1a1a1f;
+            --color-text: #e8e6e3;
+            --color-text-muted: #9a9a9a;
+            --color-accent: #8b7355;
+            --color-accent-hover: #a68b6a;
+            --color-border: #2a2a2f;
+            --color-good: #7fb79a;
+            --color-bad: #d8776a;
+            --font-serif: 'Crimson Pro', Georgia, serif;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: var(--font-sans);
+            line-height: 1.6;
+            color: var(--color-text);
+            background: var(--color-bg);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        a { color: var(--color-accent); text-decoration: none; transition: color .2s ease; }
+        a:hover { color: var(--color-accent-hover); }
+
+        .bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 1.5rem; border-bottom: 1px solid var(--color-border);
+            font-family: var(--font-serif); font-size: 1.15rem;
+        }
+        .bar .score { font-family: var(--font-sans); font-size: .85rem; color: var(--color-text-muted); }
+        .bar .score b { color: var(--color-text); font-weight: 500; }
+
+        main { flex: 1; width: 100%; max-width: 680px; margin: 0 auto; padding: 2.5rem 1.5rem 3rem; }
+        h1 { font-family: var(--font-serif); font-weight: 600; font-size: clamp(2rem, 7vw, 3rem); letter-spacing: -.02em; line-height: 1.1; }
+        .sub { color: var(--color-text-muted); margin: .5rem 0 2rem; }
+
+        .card {
+            background: var(--color-surface); border: 1px solid var(--color-border);
+            border-radius: 6px; padding: 1.75rem 1.75rem 1.5rem;
+        }
+        .where { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--color-text-muted); }
+        .speaker { font-family: var(--font-serif); color: var(--color-accent); font-size: 1.15rem; margin: 1rem 0 .25rem; }
+        .cue { font-family: var(--font-serif); font-size: clamp(1.3rem, 4.2vw, 1.65rem); line-height: 1.45; }
+        .cue span { display: block; }
+        .reply { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border); }
+        .reply .speaker { margin-top: 0; }
+        .prompt { font-family: var(--font-serif); font-size: 1.15rem; margin-bottom: .75rem; }
+        .row { display: flex; gap: .6rem; }
+        input[type=text] {
+            flex: 1; min-width: 0; font: inherit; font-size: 1.05rem; color: var(--color-text);
+            background: var(--color-bg); border: 1px solid var(--color-border);
+            border-radius: 4px; padding: .65rem .85rem;
+        }
+        input[type=text]:focus { outline: none; border-color: var(--color-accent); }
+        input[type=text]:disabled { opacity: .7; }
+        button {
+            font: inherit; font-size: .95rem; cursor: pointer; border-radius: 4px; padding: .65rem 1.1rem;
+            border: 1px solid var(--color-accent); background: var(--color-accent); color: #0d0d0f;
+            transition: background .2s ease;
+        }
+        button:hover { background: var(--color-accent-hover); }
+        button.ghost { background: transparent; color: var(--color-accent); }
+        button.ghost:hover { background: rgba(139,115,85,.15); }
+        .links { margin-top: .9rem; font-size: .85rem; display: flex; gap: 1.25rem; }
+        .links button { background: none; border: none; padding: 0; color: var(--color-text-muted); text-decoration: underline; }
+        .links button:hover { color: var(--color-text); background: none; }
+
+        .result { display: none; margin-top: 1.25rem; }
+        .result.show { display: block; }
+        .verdict { font-family: var(--font-serif); font-size: 1.3rem; margin-bottom: .5rem; }
+        .verdict.good { color: var(--color-good); }
+        .verdict.bad { color: var(--color-bad); }
+        .full { font-family: var(--font-serif); font-size: 1.35rem; font-style: italic; margin-bottom: 1rem; }
+        .full mark { background: none; color: var(--color-accent); font-style: normal; font-weight: 600; }
+        .hint { color: var(--color-text-muted); font-size: .9rem; margin-top: .6rem; min-height: 1.4em; }
+
+        .opts { display: flex; align-items: center; gap: .6rem; margin-top: 1.5rem; font-size: .85rem; color: var(--color-text-muted); }
+        select {
+            font: inherit; color: var(--color-text); background: var(--color-surface);
+            border: 1px solid var(--color-border); border-radius: 4px; padding: .25rem .4rem;
+        }
+        footer { text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--color-text-muted); border-top: 1px solid var(--color-border); }
+    </style>
+</head>
+<body>
+    <div class="bar">
+        <a href="../">Jason Padeca</a>
+        <div class="score" aria-live="polite"><b id="right">0</b> / <span id="seen">0</span> right · streak <b id="streak">0</b></div>
+    </div>
+
+    <main>
+        <h1>Linerunner</h1>
+        <p class="sub">Here's the cue. What's Lady Macbeth's first word?</p>
+
+        <section class="card" aria-live="polite">
+            <div class="where" id="where"></div>
+            <div class="speaker" id="who"></div>
+            <div class="cue" id="cue"></div>
+
+            <div class="reply">
+                <div class="speaker">Lady Macbeth</div>
+                <div class="prompt">First word of her reply?</div>
+                <form class="row" id="form" autocomplete="off">
+                    <input type="text" id="guess" aria-label="First word of Lady Macbeth's line" autocapitalize="none" autocorrect="off" spellcheck="false" autofocus>
+                    <button type="submit" id="submit">Check</button>
+                </form>
+                <div class="hint" id="hint"></div>
+                <div class="links" id="links">
+                    <button type="button" id="hintBtn">First letter</button>
+                    <button type="button" id="giveUp">Show me</button>
+                </div>
+
+                <div class="result" id="result">
+                    <div class="verdict" id="verdict"></div>
+                    <div class="full" id="full"></div>
+                    <button type="button" id="next">Next line</button>
+                </div>
+            </div>
+        </section>
+
+        <div class="opts">
+            <label for="lead">Lead-in lines shown</label>
+            <select id="lead">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3" selected>up to 3</option>
+            </select>
+        </div>
+    </main>
+
+    <footer>Text: Macbeth, from the <a href="../bard3/mac.html">glossed edition</a>.</footer>
+
+    <script src="data.js"></script>
+    <script>
+        const $ = id => document.getElementById(id);
+        const norm = s => s.toLowerCase().replace(/[’‘]/g, "'").replace(/[^a-z0-9']/g, "");
+
+        let deck = [], card = null, answered = false;
+        let right = 0, seen = 0, streak = 0;
+
+        function shuffle(a) {
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        function showCue() {
+            const n = +$("lead").value;
+            $("cue").replaceChildren(...card.cue.slice(-n).map(t => {
+                const s = document.createElement("span");
+                s.textContent = t;
+                return s;
+            }));
+        }
+
+        function next() {
+            if (!deck.length) deck = shuffle(window.LINES.slice());
+            card = deck.pop();
+            answered = false;
+            $("where").textContent = `Act ${card.act}, Scene ${card.sc}`;
+            $("who").textContent = card.who;
+            showCue();
+            $("guess").value = "";
+            $("guess").disabled = false;
+            $("submit").disabled = false;
+            $("hint").textContent = "";
+            $("links").style.display = "";
+            $("result").classList.remove("show");
+            $("guess").focus();
+        }
+
+        function reveal(correct, gaveUp) {
+            answered = true;
+            seen++;
+            if (correct) { right++; streak++; } else streak = 0;
+            $("right").textContent = right;
+            $("seen").textContent = seen;
+            $("streak").textContent = streak;
+
+            const v = $("verdict");
+            v.className = "verdict " + (correct ? "good" : "bad");
+            v.textContent = correct ? "Yes." : gaveUp ? "The word is " + card.word + "." : "Not quite: " + card.word + ".";
+
+            const i = card.line.indexOf(card.word);
+            const full = $("full");
+            full.replaceChildren(
+                document.createTextNode(card.line.slice(0, i)),
+                Object.assign(document.createElement("mark"), { textContent: card.word }),
+                document.createTextNode(card.line.slice(i + card.word.length))
+            );
+
+            $("guess").disabled = true;
+            $("submit").disabled = true;
+            $("links").style.display = "none";
+            $("hint").textContent = "";
+            $("result").classList.add("show");
+            $("next").focus();
+        }
+
+        $("form").addEventListener("submit", e => {
+            e.preventDefault();
+            if (answered) return;
+            const g = norm($("guess").value);
+            if (!g) return;
+            reveal(g === norm(card.word), false);
+        });
+        $("giveUp").addEventListener("click", () => { if (!answered) reveal(false, true); });
+        $("hintBtn").addEventListener("click", () => {
+            $("hint").textContent = `Starts with “${card.word[0].toUpperCase()}”, ${card.word.length} letters.`;
+            $("guess").focus();
+        });
+        $("next").addEventListener("click", next);
+        $("lead").addEventListener("change", () => { if (card) showCue(); });
+
+        next();
+    </script>
+</body>
+</html>
