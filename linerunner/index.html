@@ -88,7 +88,7 @@
         .full mark { background: none; color: var(--color-accent); font-style: normal; font-weight: 600; }
         .hint { color: var(--color-text-muted); font-size: .9rem; margin-top: .6rem; min-height: 1.4em; }
 
-        .opts { display: flex; align-items: center; gap: .6rem; margin-top: 1.5rem; font-size: .85rem; color: var(--color-text-muted); }
+        .opts { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-top: 1.5rem; font-size: .85rem; color: var(--color-text-muted); }
         select {
             font: inherit; color: var(--color-text); background: var(--color-surface);
             border: 1px solid var(--color-border); border-radius: 4px; padding: .25rem .4rem;
@@ -107,7 +107,7 @@
         <p class="sub">Here's the cue. What's Lady Macbeth's first word?</p>
 
         <section class="card" aria-live="polite">
-            <div class="where" id="where"></div>
+            <div class="where"><span id="where"></span> <span id="pos"></span></div>
             <div class="speaker" id="who"></div>
             <div class="cue" id="cue"></div>
 
@@ -133,7 +133,14 @@
         </section>
 
         <div class="opts">
-            <label for="lead">Lead-in lines shown</label>
+            <label for="mode">Order</label>
+            <select id="mode">
+                <option value="shuffle" selected>Shuffled</option>
+                <option value="linear">In order</option>
+            </select>
+            <label for="act">Act</label>
+            <select id="act"><option value="all" selected>All</option></select>
+            <label for="lead">Lead-in lines</label>
             <select id="lead">
                 <option value="1">1</option>
                 <option value="2">2</option>
@@ -149,7 +156,7 @@
         const $ = id => document.getElementById(id);
         const norm = s => s.toLowerCase().replace(/[’‘]/g, "'").replace(/[^a-z0-9']/g, "");
 
-        let deck = [], card = null, answered = false;
+        let deck = [], total = 0, card = null, answered = false;
         let right = 0, seen = 0, streak = 0;
 
         function shuffle(a) {
@@ -158,6 +165,21 @@
                 [a[i], a[j]] = [a[j], a[i]];
             }
             return a;
+        }
+
+        function buildDeck() {
+            const act = $("act").value;
+            const pool = window.LINES.filter(c => act === "all" || c.act === act);
+            total = pool.length;
+            // Cards are stored in play order; deck is popped from the end.
+            deck = $("mode").value === "linear" ? pool.reverse() : shuffle(pool);
+        }
+
+        function resetRun() {
+            right = seen = streak = 0;
+            $("right").textContent = $("seen").textContent = $("streak").textContent = 0;
+            deck = [];
+            next();
         }
 
         function showCue() {
@@ -170,10 +192,11 @@
         }
 
         function next() {
-            if (!deck.length) deck = shuffle(window.LINES.slice());
+            if (!deck.length) buildDeck();
             card = deck.pop();
             answered = false;
             $("where").textContent = `Act ${card.act}, Scene ${card.sc}`;
+            $("pos").textContent = `· ${total - deck.length} of ${total}`;
             $("who").textContent = card.who;
             showCue();
             $("guess").value = "";
@@ -227,6 +250,12 @@
         });
         $("next").addEventListener("click", next);
         $("lead").addEventListener("change", () => { if (card) showCue(); });
+        $("mode").addEventListener("change", resetRun);
+        $("act").addEventListener("change", resetRun);
+
+        [...new Set(window.LINES.map(c => c.act))].forEach(a => {
+            $("act").add(new Option("Act " + a, a));
+        });
 
         next();
     </script>
