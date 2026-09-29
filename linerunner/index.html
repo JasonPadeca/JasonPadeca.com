@@ -59,14 +59,14 @@
         .reply { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border); }
         .reply .speaker { margin-top: 0; }
         .prompt { font-family: var(--font-serif); font-size: 1.15rem; margin-bottom: .75rem; }
-        .row { display: flex; gap: .6rem; }
-        input[type=text] {
+        .row { display: flex; gap: .6rem; align-items: flex-start; }
+        textarea {
             flex: 1; min-width: 0; font: inherit; font-size: 1.05rem; color: var(--color-text);
             background: var(--color-bg); border: 1px solid var(--color-border);
-            border-radius: 4px; padding: .65rem .85rem;
+            border-radius: 4px; padding: .65rem .85rem; resize: none; max-height: 12rem;
         }
-        input[type=text]:focus { outline: none; border-color: var(--color-accent); }
-        input[type=text]:disabled { opacity: .7; }
+        textarea:focus { outline: none; border-color: var(--color-accent); }
+        textarea:disabled { opacity: .7; }
         button {
             font: inherit; font-size: .95rem; cursor: pointer; border-radius: 4px; padding: .65rem 1.1rem;
             border: 1px solid var(--color-accent); background: var(--color-accent); color: #0d0d0f;
@@ -88,6 +88,8 @@
         .full div { padding-left: 1.5rem; text-indent: -1.5rem; }
         .full .stage { font-style: italic; color: var(--color-text-muted); font-size: 1.05rem; margin: .25rem 0; }
         .full mark { background: none; color: var(--color-accent); font-weight: 600; }
+        .full .ok { color: var(--color-good); }
+        .bonus { color: var(--color-text-muted); font-size: .85rem; margin: .6rem 0 0; }
         .hint { color: var(--color-text-muted); font-size: .9rem; margin-top: .6rem; min-height: 1.4em; }
 
         .opts { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-top: 1.5rem; font-size: .85rem; color: var(--color-text-muted); }
@@ -117,9 +119,10 @@
                 <div class="speaker">Lady Macbeth</div>
                 <div class="prompt">First word of her reply?</div>
                 <form class="row" id="form" autocomplete="off">
-                    <input type="text" id="guess" aria-label="First word of Lady Macbeth's line" autocapitalize="none" autocorrect="off" spellcheck="false" autofocus>
+                    <textarea id="guess" rows="1" aria-label="Lady Macbeth's reply, first word or more" autocapitalize="none" autocorrect="off" spellcheck="false" autofocus></textarea>
                     <button type="submit" id="submit">Check</button>
                 </form>
+                <div class="bonus">Just the first word is the answer. Keep typing to test yourself on the rest; words you get right turn green.</div>
                 <div class="hint" id="hint"></div>
                 <div class="links" id="links">
                     <button type="button" id="hintBtn">First letter</button>
@@ -202,6 +205,7 @@
             $("who").textContent = card.who;
             showCue();
             $("guess").value = "";
+            $("guess").style.height = "";
             $("guess").disabled = false;
             $("submit").disabled = false;
             $("hint").textContent = "";
@@ -210,7 +214,28 @@
             $("guess").focus();
         }
 
-        function reveal(correct, gaveUp) {
+        // Words of the speech, in order, as normalised strings.
+        const speechWords = speech => speech.flatMap(x => x.l ? x.l.split(/\s+|--/).map(norm).filter(Boolean) : []);
+
+        // Longest-common-subsequence of typed words against the speech, so a
+        // skipped or extra word doesn't throw off everything after it.
+        // Returns the set of speech-word indexes she got right.
+        function matchWords(typed, speech) {
+            const w = speechWords(speech), n = typed.length, m = w.length;
+            const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+            for (let i = n - 1; i >= 0; i--)
+                for (let j = m - 1; j >= 0; j--)
+                    dp[i][j] = typed[i] === w[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+            const hit = new Set();
+            for (let i = 0, j = 0; i < n && j < m;) {
+                if (typed[i] === w[j]) { hit.add(j); i++; j++; }
+                else if (dp[i + 1][j] >= dp[i][j + 1]) i++;
+                else j++;
+            }
+            return hit;
+        }
+
+        function reveal(correct, gaveUp, typed = []) {
             answered = true;
             seen++;
             if (correct) { right++; streak++; } else streak = 0;
@@ -222,21 +247,29 @@
             v.className = "verdict " + (correct ? "good" : "bad");
             v.textContent = correct ? "Yes." : gaveUp ? "The word is " + card.word + "." : "Not quite: " + card.word + ".";
 
+            const bonus = typed.length > 1;
+            const matched = bonus ? matchWords(typed, card.speech) : new Set();
+            let wi = 0;
             $("full").replaceChildren(...card.speech.map((item, k) => {
                 const row = document.createElement("div");
                 if (item.s) {
                     row.className = "stage";
                     row.textContent = item.s;
-                } else if (k === 0) {
-                    const i = item.l.indexOf(card.word);
-                    row.append(
-                        item.l.slice(0, i),
-                        Object.assign(document.createElement("mark"), { textContent: card.word }),
-                        item.l.slice(i + card.word.length)
-                    );
-                } else {
-                    row.textContent = item.l;
+                    return row;
                 }
+                item.l.split(/(\s+|--)/).forEach(tok => {
+                    if (!norm(tok)) { row.append(tok); return; }
+                    const i = wi++;
+                    if (!bonus && !(k === 0 && i === 0)) { row.append(tok); return; }
+                    const w = document.createElement("span");
+                    w.textContent = tok;
+                    if (matched.has(i)) w.className = "ok";
+                    if (i === 0) {
+                        const m = document.createElement("mark");
+                        m.append(w);
+                        row.append(m);
+                    } else row.append(w);
+                });
                 return row;
             }));
 
@@ -251,9 +284,17 @@
         $("form").addEventListener("submit", e => {
             e.preventDefault();
             if (answered) return;
-            const g = norm($("guess").value);
-            if (!g) return;
-            reveal(g === norm(card.word), false);
+            const typed = $("guess").value.split(/\s+|--/).map(norm).filter(Boolean);
+            if (!typed.length) return;
+            reveal(typed[0] === norm(card.word), false, typed);
+        });
+        $("guess").addEventListener("keydown", e => {
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("form").requestSubmit(); }
+        });
+        $("guess").addEventListener("input", e => {
+            const t = e.target;
+            t.style.height = "auto";
+            t.style.height = t.scrollHeight + 2 + "px";
         });
         $("giveUp").addEventListener("click", () => { if (!answered) reveal(false, true); });
         $("hintBtn").addEventListener("click", () => {
