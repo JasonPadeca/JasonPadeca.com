@@ -776,7 +776,7 @@
                 "Cats are the only honest things in the universe.",
                 "Humans aren't.",
                 "Systems like governments aren't, or at least never have been.",
-                "The Greeks and Romans both would tell you their entire pantheon can and does.",
+                "The Greeks and Romans both would tell you their entire pantheon can and does lie.",
                 "Even dogs, good honest dogs, can be sneaky.",
                 "Cats tell the truth, such as there is truth to tell.",
                 "Sometimes I wonder if they don't have all the truth, and we only borrow from it.",
@@ -835,10 +835,13 @@
         }
 
         // Trigger phrases, matched on the typed words joined together ("diet coke",
-        // "Diet-Coke" and "dietcoke" are all "dietcoke"). Add new eggs here.
+        // "Diet-Coke" and "dietcoke" are all "dietcoke"), or by a custom match(typedWords)
+        // for looser rules. Add new eggs here.
         const EGGS = [
             { id: "dietcoke", phrase: "dietcoke", run: dietCokeEgg },
-            { id: "castiron", phrase: "castiron", run: castIronEgg },
+            // "cast", or anything that starts with the words "cast iron" (cast iron pan, cast-iron skillet...)
+            { id: "castiron", run: castIronEgg,
+              match: t => t.join("") === "cast" || t[0] === "castiron" || (t[0] === "cast" && t[1] === "iron") },
             { id: "bass", phrase: "bass", run: bassEgg },
             { id: "butts", phrase: "butts", run: buttsEgg },
             { id: "butts", phrase: "butt", run: buttsEgg },
@@ -854,7 +857,7 @@
             if (!typed.length) return;
             // A right answer always counts, even when it's a word on the list ("Hell is
             // murky!"). Otherwise a short outburst is the egg; long recitals never are.
-            const phrase = EGGS.find(x => x.phrase === typed.join(""));
+            const phrase = EGGS.find(x => x.match ? x.match(typed) : x.phrase === typed.join(""));
             if (phrase && typed[0] !== norm(card.word)) {
                 foundEgg(phrase.id);
                 phrase.run();
