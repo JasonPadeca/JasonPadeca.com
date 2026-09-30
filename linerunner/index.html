@@ -164,6 +164,34 @@
         .alt .pos { font-style: italic; }
         .kindnote { display: flex; flex-direction: column; gap: .375rem; }
         .kindnote .body { font-size: .9375rem; line-height: 1.55; color: var(--color-text-muted); }
+        /* ---------- easter egg: swearing ---------- */
+        #egg { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center;
+               flex-direction: column; background: #000; overflow: hidden; cursor: pointer; text-align: center; padding: 1.5rem; }
+        #egg.on { display: flex; }
+        #egg canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+        #egg .shimmer { position: absolute; inset: -50%; opacity: .55; mix-blend-mode: screen;
+                        background: conic-gradient(from 0deg, #ff0080, #ff8c00, #ffe600, #00e676, #00b0ff, #7c4dff, #ff0080);
+                        animation: eggspin 6s linear infinite; filter: blur(60px); }
+        @keyframes eggspin { to { transform: rotate(360deg); } }
+        #egg .flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+        #egg.wham .flash { animation: eggflash .35s ease-out; }
+        @keyframes eggflash { from { opacity: .9; } to { opacity: 0; } }
+        #egg .big { position: relative; font-family: var(--font-serif); font-weight: 600; text-transform: uppercase; line-height: 1;
+                    letter-spacing: -.02em; display: none; text-shadow: 0 .04em 0 rgba(0,0,0,.35); }
+        #egg.s2 { background: #c0001c; }
+        #egg.s2 #calm { display: block; font-size: clamp(3rem, 17vw, 10rem); color: #fff; animation: eggslam .45s cubic-bezier(.2,1.6,.4,1) both; }
+        #egg.s3 { background: #0a0a0a; }
+        #egg.s3 #jar { display: block; animation: eggslam .45s cubic-bezier(.2,1.6,.4,1) both; }
+        #egg.s3 #sj { display: block; font-size: clamp(2rem, 9.5vw, 5.5rem); color: #ffd400; animation: eggslam .45s .12s cubic-bezier(.2,1.6,.4,1) both; margin-top: 1rem; }
+        @keyframes eggslam { 0% { transform: scale(4); opacity: 0; } 55% { opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        #egg.shake { animation: eggshake .4s linear; }
+        @keyframes eggshake { 0%,100% { transform: translate(0); } 15% { transform: translate(-14px, 6px); } 30% { transform: translate(12px, -8px); }
+                              45% { transform: translate(-9px, -5px); } 60% { transform: translate(8px, 7px); } 80% { transform: translate(-4px, 2px); } }
+        #jar { display: none; width: clamp(7rem, 30vw, 13rem); height: auto; }
+        #egg.s2 .shimmer, #egg.s3 .shimmer, #egg.s2 canvas, #egg.s3 canvas { display: none; }
+        /* Reduced motion: same words in the same order, no spinning, flashing, slamming or shaking. */
+        #egg.still .shimmer { animation: none; }
+        #egg.still.wham .flash, #egg.still.shake, #egg.still.s2 #calm, #egg.still.s3 #jar, #egg.still.s3 #sj { animation: none; }
         footer { text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--color-text-muted); border-top: 1px solid var(--color-border); }
     </style>
 </head>
@@ -226,6 +254,20 @@
             <span><i class="swatch n"></i> no entry: tap for why</span>
         </div>
     </main>
+
+    <div id="egg" aria-hidden="true">
+        <div class="shimmer"></div>
+        <canvas id="eggCanvas"></canvas>
+        <div class="flash"></div>
+        <div class="big" id="calm">Calm down</div>
+        <svg id="jar" viewBox="0 0 100 130" role="img" aria-label="A swear jar">
+            <rect x="30" y="4" width="40" height="14" rx="3" fill="#ffd400"/>
+            <path d="M24 22h52c8 0 14 6 14 14v76c0 9-7 16-16 16H26c-9 0-16-7-16-16V36c0-8 6-14 14-14z" fill="rgba(180,220,255,.25)" stroke="#e8f2ff" stroke-width="4"/>
+            <g fill="#ffd400" stroke="#a88700" stroke-width="2"><circle cx="34" cy="104" r="11"/><circle cx="58" cy="108" r="11"/><circle cx="46" cy="90" r="11"/><circle cx="70" cy="92" r="11"/><circle cx="30" cy="80" r="11"/></g>
+            <text x="50" y="66" text-anchor="middle" font-family="Georgia,serif" font-size="30" font-weight="700" fill="#fff">$</text>
+        </svg>
+        <div class="big" id="sj">Don't make me get the swear jar</div>
+    </div>
 
     <aside class="sheet" id="sheet" role="dialog" aria-modal="false" aria-labelledby="hw">
         <div class="sheet-bar">
@@ -424,11 +466,94 @@
             $("next").focus();
         }
 
+        // ---------- easter egg: swearing ----------
+        // Words people say on their own when frustrated, plus the censored forms they
+        // type (f*ck becomes fck once symbols are stripped). Whole-word matches only.
+        const SWEARS = new Set(("shit shite fuck fucking fuckin damn damnit damnation goddamn goddamnit goddammit goddamned hell crap bollocks " +
+            "bugger bloody balls piss pissed pissoff ass arse asshole arsehole dick prick bastard bitch cunt frick freaking fudge fiddlesticks " +
+            "shoot dang darn heck crud sugar shucks wtf omfg ffs smh ugh argh aargh arrgh grr grrr " +
+            "fck fk fuk fuc fck fcuk sht shyt btch cnt dmn " +
+            "zounds 'sblood sblood 'swounds swounds gadzooks plague").split(" "));
+
+        // Undo leetspeak ($hit, sh!t) and stretched letters (fuuuuck), then look each form up.
+        function isSwear(word) {
+            // Edge punctuation goes first, so "damn!" isn't read as "damni"; only a "!" inside
+            // a word ("sh!t") counts as a letter.
+            const raw = word.toLowerCase().replace(/^[^a-z0-9$@*']+|[^a-z0-9$@*']+$/g, "").replace(/\$/g, "s").replace(/@/g, "a").replace(/!/g, "i")
+                .replace(/0/g, "o").replace(/1/g, "i").replace(/3/g, "e").replace(/[^a-z']/g, "");
+            return [raw, raw.replace(/(.)\1{2,}/g, "$1"), raw.replace(/(.)\1{2,}/g, "$1$1"), raw.replace(/(.)\1+/g, "$1")]
+                .some(w => SWEARS.has(w));
+        }
+
+        // Fireworks over a spinning rainbow, then WHAM, then WHAM, then back to the app.
+        let eggTimers = [], eggRaf = 0;
+        const egg = $("egg");
+        function stopEgg() {
+            eggTimers.forEach(clearTimeout); eggTimers = [];
+            cancelAnimationFrame(eggRaf);
+            egg.className = "";
+            $("guess").value = "";
+            $("guess").style.height = "";
+            $("guess").focus();
+        }
+        function swearEgg() {
+            hideSheet();
+            // Honour the OS "reduce motion" setting; ?motion=1 forces the full show (for testing).
+            const still = matchMedia("(prefers-reduced-motion: reduce)").matches && !/[?&]motion=1/.test(location.search);
+            const cv = $("eggCanvas"), ctx = cv.getContext("2d");
+            const dpr = Math.min(devicePixelRatio || 1, 2);
+            cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
+            ctx.scale(dpr, dpr);
+            const mode = still ? "still" : "";
+            egg.className = "on " + mode;
+            const at = (ms, fn) => eggTimers.push(setTimeout(fn, ms));
+            const wham = cls => { egg.className = "on wham shake " + mode + " " + cls; };
+
+            const sparks = [];
+            let hue = 0, last = performance.now(), nextBurst = 0;
+            const burst = () => {
+                const x = innerWidth * (.15 + Math.random() * .7), y = innerHeight * (.15 + Math.random() * .55);
+                hue = (hue + 47 + Math.random() * 60) % 360;
+                for (let i = 0; i < 70; i++) {
+                    const a = Math.random() * Math.PI * 2, v = 1 + Math.random() * 5.5;
+                    sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 1, h: hue + Math.random() * 40 });
+                }
+            };
+            const frame = now => {
+                const dt = Math.min((now - last) / 16.7, 3); last = now;
+                ctx.clearRect(0, 0, innerWidth, innerHeight);      // clear, so the rainbow shows through
+                ctx.lineCap = "round";
+                if (now > nextBurst) { burst(); nextBurst = now + 260; }
+                for (let i = sparks.length - 1; i >= 0; i--) {
+                    const p = sparks[i];
+                    const px = p.x, py = p.y;
+                    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += .07 * dt; p.vx *= .99; p.life -= .014 * dt;
+                    if (p.life <= 0) { sparks.splice(i, 1); continue; }
+                    ctx.strokeStyle = `hsla(${p.h},100%,${55 + 25 * p.life}%,${p.life})`;
+                    ctx.lineWidth = 1.5 + 3 * p.life;
+                    ctx.beginPath(); ctx.moveTo(px - p.vx * 2.5, py - p.vy * 2.5); ctx.lineTo(p.x, p.y); ctx.stroke();
+                }
+                eggRaf = requestAnimationFrame(frame);
+            };
+            if (still) egg.querySelector(".shimmer").style.opacity = .35; else eggRaf = requestAnimationFrame(frame);
+
+            at(2600, () => { cancelAnimationFrame(eggRaf); ctx.clearRect(0, 0, innerWidth, innerHeight); wham("s2"); });
+            at(4300, () => wham("s3"));
+            at(7000, stopEgg);
+        }
+        egg.addEventListener("click", stopEgg);
+
         $("form").addEventListener("submit", e => {
             e.preventDefault();
-            if (answered) return;
+            if (answered || egg.classList.contains("on")) return;
             const typed = $("guess").value.split(/\s+|--/).map(norm).filter(Boolean);
             if (!typed.length) return;
+            // A right answer always counts, even when it's a word on the list ("Hell is
+            // murky!"). Otherwise a short outburst is the egg; long recitals never are.
+            if (typed[0] !== norm(card.word) && typed.length <= 3 && $("guess").value.split(/\s+/).some(isSwear)) {
+                swearEgg();
+                return;
+            }
             reveal(typed[0] === norm(card.word), false, typed);
         });
         $("guess").addEventListener("keydown", e => {
