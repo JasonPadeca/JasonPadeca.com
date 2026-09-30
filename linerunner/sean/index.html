@@ -591,7 +591,7 @@
 
         const SKILLET = ["                  )        )        )", "                   (        (        (", "                    )        )        )", "                   (        (        (", "", "                     ###############", "                ######=============######", "             ####=====.,.......:...=====####", "          ####===..,......:.........,:..===####", "         ###===,.....:..........,.........===###", "       ###===...:..........:,.........:.....===###", "      ###==:..........:.,........:.......,..:.==###", "     ###==.......:..,.......:........,.:.......==###", "    ###==...:...,......:.........,:..........:..==###", "    ##==....,.....:..........,..........:.....,..==##########################", "  # ##==,....:..........:,.........:......,...:..==##=================----==#", " <####==:..........:.,........:.......,..:.......==###===============(    )=#", "  # ##==......:..,.......:........,.:..........:.==##=================----==#", "    ##==.:...,......:.........,:..........:....,.==##########################", "    ###==,.....:..........,..........:.....,....==###", "     ###==:..........:,.........:......,...:...==###", "      ###==.....:.,........:.......,..:.......==###", "       ###===.,.......:........,.:..........===###", "         ###===..:.........,:..........:..===###", "          ####===......,..........:.....===####", "             ####=====.......:.....=====####", "                ######=============######", "                     ###############", ""];
 
-        // A funky little bassline for the Trace Elliot egg, synthesised live with Web Audio
+        // A funky little bassline for the bass egg, synthesised live with Web Audio
         // (no audio file). Two bars of 16ths in E minor pentatonic, a touch of swing, a
         // sawtooth through a plucked lowpass plus a sine an octave down for weight. Note
         // numbers are semitones above E2; null is a rest. Starts on the submit tap, which
@@ -713,8 +713,8 @@
                       ["can wan human ban dan's LAN naan?"], ["Pan, pan pan, pan-pan, pan. Pan."]],
             art: SKILLET,
         });
-        const traceElliotEgg = () => runPoem({
-            stanzas: [["Last name Elliot, first name Trace"], ["Aluma Pickups, new from Lace!"],
+        const bassEgg = () => runPoem({
+            stanzas: [["Last name Elliot, first name Trace"], ["Return to Eden, Pickup Lace"],
                       ["Belong to us now all your Bass"]],
             bass: true,
         });
@@ -732,9 +732,7 @@
         const EGGS = [
             { phrase: "dietcoke", run: dietCokeEgg },
             { phrase: "castiron", run: castIronEgg },
-            { phrase: "traceelliot", run: traceElliotEgg },
-            { phrase: "traceelliott", run: traceElliotEgg },
-            { phrase: "lacealuma", run: traceElliotEgg },
+            { phrase: "bass", run: bassEgg },
         ];
         const eggBusy = () => egg.classList.contains("on") || poem.classList.contains("on");
 
