@@ -61,22 +61,30 @@ def build(character):
         speeches = [(i, b) for i, b in enumerate(blocks) if b.get("sp")]
         skip_until = -1
         for k, (i, sp) in enumerate(speeches):
-            if i <= skip_until or sp["sp"] != character or k == 0:
-                continue
-            prev = speeches[k - 1][1]
-            if prev["sp"] == character:
+            if i <= skip_until or sp["sp"] != character:
                 continue
             speech, end = speech_from(blocks, i)
             skip_until = end
-            cue = [toks(l) for l in prev["lines"]][-3:]
             first = text(sp["lines"][0])
             word = re.match(r"[^\w']*([\w']+)", first)
-            if not cue or not word:
+            card = {"act": scene["act"], "sc": scene["sc"], "n": sp["lines"][0]["n"]}
+            if k == 0:
+                # Opens the scene, so nobody speaks before it: cue with where we are
+                # and what the stage direction says (e.g. "Enter Lady Macbeth,
+                # reading a letter.").
+                card.update(who="", cue=[], opener={
+                    "setting": scene["setting"],
+                    "stage": " ".join(b["stage"] for b in blocks[:i] if "stage" in b),
+                })
+            else:
+                prev = speeches[k - 1][1]
+                if prev["sp"] == character:
+                    continue
+                card.update(who=prev["sp"], cue=[toks(l) for l in prev["lines"]][-3:])
+            if not word or not (card["cue"] or card.get("opener")):
                 continue
-            cards.append({
-                "act": scene["act"], "sc": scene["sc"], "n": sp["lines"][0]["n"],
-                "who": prev["sp"], "cue": cue, "speech": speech, "word": word.group(1),
-            })
+            card.update(speech=speech, word=word.group(1))
+            cards.append(card)
     return cards
 
 
