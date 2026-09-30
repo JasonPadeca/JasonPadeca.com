@@ -200,6 +200,11 @@
         #poem .pl { font-family: var(--font-serif); font-style: italic; font-size: clamp(1.5rem, 5.4vw, 2.4rem); line-height: 1.35; margin: 0 0 .7rem; color: #f4ece4; }
         #poem .pl b { font-weight: 600; font-style: normal; }
         #poem .tm { color: #ff2a3c; font-style: normal; font-size: .5em; vertical-align: super; margin-left: .1em; display: inline-block; }
+        #poem .pl.names { font-style: normal; font-weight: 600; font-size: clamp(1.7rem, 6.4vw, 2.7rem); letter-spacing: .02em; color: #ffe9d0; }
+        #poem .pl.label { font-style: normal; font-size: .8rem; letter-spacing: .18em; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: .3rem; }
+        #poem .pl.roll { font-size: clamp(1.15rem, 4.2vw, 1.55rem); color: #e6dccf; margin-bottom: .4rem; }
+        #poem .prose { font-family: var(--font-serif); font-size: clamp(1.15rem, 3.9vw, 1.4rem); line-height: 1.65; text-align: left; color: #efe6da; margin: 2rem 0 0; text-wrap: pretty; }
+        #poem .prose .m { transform: none; }
         #poem .pfound, #poem .phint { text-wrap: balance; }
         #poem .ptitle { font-family: var(--font-serif); font-weight: 600; font-size: clamp(1.9rem, 7vw, 3rem); color: #f4ece4; margin: 0 0 1.4rem; }
         #poem .pl.gap { margin-top: 1.5rem; }
@@ -677,9 +682,25 @@
             };
             if (spec.title) add("h2", "ptitle", spec.title, 500);
             let last;
-            spec.stanzas.forEach((lines, si) => lines.forEach((line, li) => {
-                last = add("p", "pl" + (si && !li ? " gap" : ""), line, steps.length ? (si && !li ? 2200 : 1800) : 500);
-            }));
+            // A stanza is a list of lines, or { lines, cls?, tight? }: cls styles its lines,
+            // tight keeps it close to the stanza before instead of opening a gap.
+            spec.stanzas.forEach((st, si) => {
+                const { lines, cls = "", tight = false } = Array.isArray(st) ? { lines: st } : st;
+                lines.forEach((line, li) => {
+                    const opens = si && !li && !tight;
+                    last = add("p", ("pl " + cls + (opens ? " gap" : "")).trim(), line,
+                               steps.length ? (opens ? 2200 : 1800) : 500);
+                });
+            });
+            // Prose: one paragraph whose sentences materialise in turn, each given time to be read.
+            if (spec.prose) {
+                const para = document.createElement("p");
+                para.className = "prose";
+                poemBox.append(para);
+                spec.prose.forEach(sentence => {
+                    add("span", "", sentence + " ", 900 + sentence.length * 32, para);
+                });
+            }
             if (spec.tm) add("span", "tm", "&trade;", 2300, last);
             add("p", "pfound", "You have found one of the easter eggs. Find them all!", 2200);
             add("p", "phint", "(Hint: Many of the easter eggs are words related to things Ben likes.)", 1600);
@@ -718,6 +739,23 @@
                       ["Belong to us now all your Bass"]],
             bass: true,
         });
+        const catsEgg = () => runPoem({
+            stanzas: [
+                { cls: "names", lines: ["Beberly, Jane, Thomas."] },
+                { cls: "label", lines: ["In memoriam:"] },
+                { cls: "roll", tight: true, lines: ["Barclay, Ship's Captain \"Mac\" Mcwhiskers (Whiskers), Fuzzy.",
+                                                    "Honorable Mention Admiral Horatio Nelson."] },
+            ],
+            prose: [
+                "Cats are the only honest things in the universe.",
+                "Humans aren't.",
+                "Systems like governments aren't, or at least never have been.",
+                "The Greeks and Romans both would tell you their entire pantheon can and does.",
+                "Even dogs, good honest dogs, can be sneaky.",
+                "Cats tell the truth, such as there is truth to tell.",
+                "Sometimes I wonder if they don't have all the truth, and we only borrow from it.",
+            ],
+        });
         poem.addEventListener("click", () => { if (poemDone) poemClose(); else poemFinish(); });
         document.addEventListener("keydown", e => {
             if (!poem.classList.contains("on")) return;
@@ -733,6 +771,7 @@
             { phrase: "dietcoke", run: dietCokeEgg },
             { phrase: "castiron", run: castIronEgg },
             { phrase: "bass", run: bassEgg },
+            ...["cat", "cats", "kitty", "kitties", "kitten", "kittens"].map(phrase => ({ phrase, run: catsEgg })),
         ];
         const eggBusy = () => egg.classList.contains("on") || poem.classList.contains("on");
 
