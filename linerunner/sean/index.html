@@ -580,6 +580,7 @@
             poemDone = true;
         }
         function poemClose() {
+            stopBass();
             poemFinish();
             poem.className = "";
             poemBox.replaceChildren();
@@ -590,10 +591,75 @@
 
         const SKILLET = ["                  )        )        )", "                   (        (        (", "                    )        )        )", "                   (        (        (", "", "                     ###############", "                ######=============######", "             ####=====.,.......:...=====####", "          ####===..,......:.........,:..===####", "         ###===,.....:..........,.........===###", "       ###===...:..........:,.........:.....===###", "      ###==:..........:.,........:.......,..:.==###", "     ###==.......:..,.......:........,.:.......==###", "    ###==...:...,......:.........,:..........:..==###", "    ##==....,.....:..........,..........:.....,..==##########################", "  # ##==,....:..........:,.........:......,...:..==##=================----==#", " <####==:..........:.,........:.......,..:.......==###===============(    )=#", "  # ##==......:..,.......:........,.:..........:.==##=================----==#", "    ##==.:...,......:.........,:..........:....,.==##########################", "    ###==,.....:..........,..........:.....,....==###", "     ###==:..........:,.........:......,...:...==###", "      ###==.....:.,........:.......,..:.......==###", "       ###===.,.......:........,.:..........===###", "         ###===..:.........,:..........:..===###", "          ####===......,..........:.....===####", "             ####=====.......:.....=====####", "                ######=============######", "                     ###############", ""];
 
+        // A funky little bassline for the Trace Elliot egg, synthesised live with Web Audio
+        // (no audio file). Two bars of 16ths in E minor pentatonic, a touch of swing, a
+        // sawtooth through a plucked lowpass plus a sine an octave down for weight. Note
+        // numbers are semitones above E2; null is a rest. Starts on the submit tap, which
+        // is the user gesture browsers require, and stops when the screen closes.
+        const BASS = { bpm: 104, swing: .08, root: 82.41, steps: [
+            0, null, null, 0,   null, null, 3, null,   0, null, 5, null,   3, null, null, 2,
+            0, null, null, 0,   null, null, 3, null,   5, null, 7, null,   5, 3, null, 12] };
+
+        function bassNote(ctx, out, t, semis, len, accent) {
+            const f = BASS.root * Math.pow(2, semis / 12);
+            const amp = ctx.createGain(), lp = ctx.createBiquadFilter();
+            lp.type = "lowpass"; lp.Q.value = 6;
+            lp.frequency.setValueAtTime(accent ? 2600 : 1500, t);              // the pluck: filter snaps shut
+            lp.frequency.exponentialRampToValueAtTime(240, t + len);
+            amp.gain.setValueAtTime(0.0001, t);
+            amp.gain.exponentialRampToValueAtTime(accent ? 0.9 : 0.7, t + 0.006);
+            amp.gain.exponentialRampToValueAtTime(0.0001, t + len);
+            lp.connect(amp); amp.connect(out);
+            for (const [type, mult, level] of [["sawtooth", 1, 0.55], ["sine", 0.5, 0.7]]) {
+                const o = ctx.createOscillator(), g = ctx.createGain();
+                o.type = type; o.frequency.value = f * mult; g.gain.value = level;
+                o.connect(g); g.connect(lp);
+                o.start(t); o.stop(t + len + 0.05);
+            }
+        }
+
+        // Schedules every note of the pattern whose start falls before `until`; used by the
+        // live player below and, in tests, by an offline render.
+        function scheduleBass(ctx, out, state, until) {
+            const step = 60 / BASS.bpm / 4;                     // one 16th note, in seconds
+            while (state.next < until) {
+                const n = BASS.steps[state.i % BASS.steps.length];
+                const at = state.next + (state.i % 2 ? step * BASS.swing : 0);
+                if (n !== null) bassNote(ctx, out, at, n, step * (n === 12 ? 0.7 : 1.6), n === 12 || state.i % 8 === 0);
+                state.next += step; state.i++;
+            }
+        }
+
+        let bass = null;
+        function startBass() {
+            stopBass();
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return;
+            const ctx = new AC(), master = ctx.createGain();
+            master.gain.value = 0.45;
+            master.connect(ctx.destination);
+            const state = { next: ctx.currentTime + 0.1, i: 0 };
+            const tick = () => scheduleBass(ctx, master, state, ctx.currentTime + 0.25);
+            ctx.resume();                                        // some browsers start it suspended
+            tick();
+            bass = { ctx, master, timer: setInterval(tick, 40) };
+        }
+        function stopBass() {
+            if (!bass) return;
+            const { ctx, master, timer } = bass;
+            bass = null;
+            clearInterval(timer);
+            master.gain.cancelScheduledValues(ctx.currentTime);
+            master.gain.setValueAtTime(master.gain.value, ctx.currentTime);
+            master.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.25);     // fade out, no click
+            setTimeout(() => ctx.close(), 400);
+        }
+
         // spec: { title?, stanzas: [[line, ...], ...], tm?: bool, art?: [line, ...] }.
         // A line may contain <b>. `tm` adds a red (TM) after the last line's bold words.
         function runPoem(spec) {
             hideSheet();
+            if (spec.bass) startBass();
             const still = matchMedia("(prefers-reduced-motion: reduce)").matches && !/[?&]motion=1/.test(location.search);
             poem.className = "on" + (still ? " still" : "");
             poemBox.replaceChildren();
@@ -647,6 +713,11 @@
                       ["can wan human ban dan's LAN naan?"], ["Pan, pan pan, pan-pan, pan. Pan."]],
             art: SKILLET,
         });
+        const traceElliotEgg = () => runPoem({
+            stanzas: [["Last name Elliot, first name Trace"], ["Aluma Pickups, new from Lace!"],
+                      ["Belong to us now all your Bass"]],
+            bass: true,
+        });
         poem.addEventListener("click", () => { if (poemDone) poemClose(); else poemFinish(); });
         document.addEventListener("keydown", e => {
             if (!poem.classList.contains("on")) return;
@@ -661,6 +732,9 @@
         const EGGS = [
             { phrase: "dietcoke", run: dietCokeEgg },
             { phrase: "castiron", run: castIronEgg },
+            { phrase: "traceelliot", run: traceElliotEgg },
+            { phrase: "traceelliott", run: traceElliotEgg },
+            { phrase: "lacealuma", run: traceElliotEgg },
         ];
         const eggBusy = () => egg.classList.contains("on") || poem.classList.contains("on");
 
