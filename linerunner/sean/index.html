@@ -45,6 +45,13 @@
         .bar .score { font-family: var(--font-sans); font-size: .85rem; color: var(--color-text-muted); }
         .bar .score b { color: var(--color-text); font-weight: 500; }
 
+        .eggbar { text-align: center; padding: .35rem 1rem; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase;
+                  color: var(--color-text-muted); border-bottom: 1px solid var(--color-border); }
+        .eggbar b { color: var(--color-text); font-weight: 500; }
+        .eggbar.done b { color: #ffd400; }
+        .eggbar.pulse { animation: eggpulse 1.4s ease-out; }
+        @keyframes eggpulse { 0% { color: #ffd400; background: rgba(255,212,0,.22); } 100% { background: transparent; } }
+        @media (prefers-reduced-motion: reduce) { .eggbar.pulse { animation: none; } }
         main { flex: 1; width: 100%; max-width: 680px; margin: 0 auto; padding: 2.5rem 1.5rem 3rem; }
         h1 { font-family: var(--font-serif); font-weight: 600; font-size: clamp(2rem, 7vw, 3rem); letter-spacing: -.02em; line-height: 1.1; }
         .sub { color: var(--color-text-muted); margin: .5rem 0 2rem; }
@@ -230,6 +237,8 @@
         <a href="../../">Jason Padeca</a>
         <div class="score" aria-live="polite"><b id="right">0</b> / <span id="seen">0</span> right · streak <b id="streak">0</b></div>
     </div>
+
+    <div class="eggbar" id="eggbar" aria-live="polite">Easter eggs found: <b id="eggCount">0</b> / <span id="eggTotal">0</span></div>
 
     <main>
         <h1>Linerunner</h1>
@@ -523,6 +532,7 @@
         let eggTimers = [], eggRaf = 0;
         const egg = $("egg");
         function stopEgg() {
+            pulseIfNew();
             eggTimers.forEach(clearTimeout); eggTimers = [];
             cancelAnimationFrame(eggRaf);
             egg.className = "";
@@ -531,6 +541,7 @@
             $("guess").focus();
         }
         function swearEgg() {
+            foundEgg("swear");
             hideSheet();
             // Honour the OS "reduce motion" setting; ?motion=1 forces the full show (for testing).
             const still = matchMedia("(prefers-reduced-motion: reduce)").matches && !/[?&]motion=1/.test(location.search);
@@ -588,6 +599,7 @@
             poemDone = true;
         }
         function poemClose() {
+            pulseIfNew();
             stopBass();
             poemFinish();
             poem.className = "";
@@ -789,15 +801,48 @@
             }
         });
 
+        // ---------- easter eggs found ----------
+        // Remembered in localStorage (shared by both pages, same site), each egg counted once
+        // however many of its words are typed. The total comes from the registry, so it grows
+        // as eggs are added. Storage can be unavailable (private windows), so it's all in try/catch.
+        const EGG_KEY = "linerunner.eggs";
+        const eggIds = () => new Set([...EGGS.map(e => e.id), "swear"]);
+        let foundEggs = new Set();
+        try { foundEggs = new Set(JSON.parse(localStorage.getItem(EGG_KEY) || "[]")); } catch {}
+        let eggIsNew = false;
+        function showEggCount() {
+            const all = eggIds();
+            const n = [...foundEggs].filter(id => all.has(id)).length;
+            $("eggCount").textContent = n;
+            $("eggTotal").textContent = all.size;
+            $("eggbar").classList.toggle("done", n === all.size);
+        }
+        function foundEgg(id) {
+            if (foundEggs.has(id)) return;
+            foundEggs.add(id);
+            eggIsNew = true;
+            try { localStorage.setItem(EGG_KEY, JSON.stringify([...foundEggs])); } catch {}
+            showEggCount();
+        }
+        // When the egg screen closes and you're back at the top, make the new count blink.
+        function pulseIfNew() {
+            if (!eggIsNew) return;
+            eggIsNew = false;
+            const bar = $("eggbar");
+            bar.classList.remove("pulse");
+            void bar.offsetWidth;
+            bar.classList.add("pulse");
+        }
+
         // Trigger phrases, matched on the typed words joined together ("diet coke",
         // "Diet-Coke" and "dietcoke" are all "dietcoke"). Add new eggs here.
         const EGGS = [
-            { phrase: "dietcoke", run: dietCokeEgg },
-            { phrase: "castiron", run: castIronEgg },
-            { phrase: "bass", run: bassEgg },
-            { phrase: "butts", run: buttsEgg },
-            { phrase: "butt", run: buttsEgg },
-            ...["cat", "cats", "kitty", "kitties", "kitten", "kittens"].map(phrase => ({ phrase, run: catsEgg })),
+            { id: "dietcoke", phrase: "dietcoke", run: dietCokeEgg },
+            { id: "castiron", phrase: "castiron", run: castIronEgg },
+            { id: "bass", phrase: "bass", run: bassEgg },
+            { id: "butts", phrase: "butts", run: buttsEgg },
+            { id: "butts", phrase: "butt", run: buttsEgg },
+            ...["cat", "cats", "kitty", "kitties", "kitten", "kittens"].map(phrase => ({ id: "cats", phrase, run: catsEgg })),
         ];
         const eggBusy = () => egg.classList.contains("on") || poem.classList.contains("on");
 
@@ -810,6 +855,7 @@
             // murky!"). Otherwise a short outburst is the egg; long recitals never are.
             const phrase = EGGS.find(x => x.phrase === typed.join(""));
             if (phrase && typed[0] !== norm(card.word)) {
+                foundEgg(phrase.id);
                 phrase.run();
                 return;
             }
@@ -984,6 +1030,7 @@
         $("close").addEventListener("click", hideSheet);
         document.addEventListener("keydown", ev => { if (ev.key === "Escape") hideSheet(); });
 
+        showEggCount();
         next();
     </script>
 </body>
