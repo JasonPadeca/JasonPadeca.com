@@ -205,6 +205,9 @@
         #poem .pl.roll { font-size: clamp(1.15rem, 4.2vw, 1.55rem); color: #e6dccf; margin-bottom: .4rem; }
         #poem .prose { font-family: var(--font-serif); font-size: clamp(1.15rem, 3.9vw, 1.4rem); line-height: 1.65; text-align: left; color: #efe6da; margin: 2rem 0 0; text-wrap: pretty; }
         #poem .prose .m { transform: none; }
+        #poem .prose.para { margin-top: 1.25rem; }
+        #poem .prose.para.lede { font-style: italic; color: #ffe9d0; margin-top: 2rem; }
+        #poem .prose.para.first { margin-top: .5rem; }
         #poem .pfound, #poem .phint { text-wrap: balance; }
         #poem .ptitle { font-family: var(--font-serif); font-weight: 600; font-size: clamp(1.9rem, 7vw, 3rem); color: #f4ece4; margin: 0 0 1.4rem; }
         #poem .pl.gap { margin-top: 1.5rem; }
@@ -684,7 +687,7 @@
             let last;
             // A stanza is a list of lines, or { lines, cls?, tight? }: cls styles its lines,
             // tight keeps it close to the stanza before instead of opening a gap.
-            spec.stanzas.forEach((st, si) => {
+            (spec.stanzas || []).forEach((st, si) => {
                 const { lines, cls = "", tight = false } = Array.isArray(st) ? { lines: st } : st;
                 lines.forEach((line, li) => {
                     const opens = si && !li && !tight;
@@ -702,7 +705,18 @@
                 });
             }
             if (spec.tm) add("span", "tm", "&trade;", 2300, last);
-            add("p", "pfound", "You have found one of the easter eggs. Find them all!", 2200);
+            // Paragraphs: each fades in whole and is left up long enough to read before the next.
+            let afterText = 2200;                               // how long the last thing stays up before the message
+            if (spec.paragraphs) {
+                let prev = 0;
+                spec.paragraphs.forEach((para, pi) => {
+                    const { t, cls = "" } = typeof para === "string" ? { t: para } : para;
+                    add("p", ("prose para " + cls + (pi ? "" : " first")).trim(), t, pi ? 1500 + prev * 34 : 1800);
+                    prev = t.length;
+                });
+                afterText = 2500 + prev * 34;
+            }
+            add("p", "pfound", "You have found one of the easter eggs. Find them all!", afterText);
             add("p", "phint", "(Hint: Many of the easter eggs are words related to things Ben likes.)", 1600);
             if (spec.art) {
                 const pre = add("pre", "art", "", 2600);
@@ -756,6 +770,16 @@
                 "Sometimes I wonder if they don't have all the truth, and we only borrow from it.",
             ],
         });
+        const buttsEgg = () => runPoem({
+            title: "Butts",
+            paragraphs: [
+                "You got me. I'm a fan. I'm not writing a poem or a piece about this. It's more included for completeness.",
+                { cls: "lede", t: "A story, though." },
+                "When I was about sixteen, maybe a bit younger, I was at a church lock-in. I was prone, at that time, to bouts of sadness that came on suddenly and powerfully. One hit me there, and I by some means (I'm not sure what; I might have walked) I went back to my house. I was intending to eat something, cry for a while, and then sleep, as used to be the best way to deal with these bouts.",
+                "I got to the house and found the front door locked; I circled around to the back door and went in through there. Again, I was looking for two things: Snacks, preferably heavy ones, and bed. But when I came through the door, face absolutely soaked with tears, the movement of the air forced a mylar balloon from someone's birthday party (I don't remember whose) into a ceiling fan. It couldn't get fully away from the resulting bludgeoning, having one of those extra long strings with a weight on it. So it made what, to this day, was the most unexpectedly loud sound I think I've ever heard.",
+                "My dad came out, saw me crying, asked why I was home, I told him I just wanted to be home. He asked why I was crying, and I said I didn't really know, but it wasn't really caused by anything. I could tell he wanted to help with it, somehow, but didn't know how to break through what he saw as lying to cover up some true cause. He went back to bed. I went to bed. Nothing came of it. It was never mentioned again.",
+            ],
+        });
         poem.addEventListener("click", () => { if (poemDone) poemClose(); else poemFinish(); });
         document.addEventListener("keydown", e => {
             if (!poem.classList.contains("on")) return;
@@ -771,6 +795,8 @@
             { phrase: "dietcoke", run: dietCokeEgg },
             { phrase: "castiron", run: castIronEgg },
             { phrase: "bass", run: bassEgg },
+            { phrase: "butts", run: buttsEgg },
+            { phrase: "butt", run: buttsEgg },
             ...["cat", "cats", "kitty", "kitties", "kitten", "kittens"].map(phrase => ({ phrase, run: catsEgg })),
         ];
         const eggBusy = () => egg.classList.contains("on") || poem.classList.contains("on");
