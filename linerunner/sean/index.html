@@ -194,7 +194,15 @@
         #egg.shake { animation: eggshake .4s linear; }
         @keyframes eggshake { 0%,100% { transform: translate(0); } 15% { transform: translate(-14px, 6px); } 30% { transform: translate(12px, -8px); }
                               45% { transform: translate(-9px, -5px); } 60% { transform: translate(8px, 7px); } 80% { transform: translate(-4px, 2px); } }
-        #jar { display: none; width: clamp(7rem, 30vw, 13rem); height: auto; }
+        #jar { display: none; width: clamp(5rem, 24vw, 11rem); height: auto; }
+        #egg .eggmsg { position: relative; display: none; margin-top: 1.6rem; max-width: 30rem; opacity: 0; transition: opacity .9s ease; }
+        #egg.s3.msg .eggmsg { display: block; }
+        #egg.s3.msg.msgshow .eggmsg { opacity: 1; }
+        #egg .eggmsg p { margin: 0 0 .5rem; text-wrap: balance; }
+        #egg .eggmsg .found { font-family: var(--font-serif); font-size: clamp(1.15rem, 4.2vw, 1.6rem); color: #ffd9b8; }
+        #egg .eggmsg .hint { font-size: .9rem; color: var(--color-text-muted); }
+        #egg .eggmsg .cont { font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; color: var(--color-text-muted); margin-top: 1.2rem; }
+        #egg.s3 { overflow-y: auto; }
         #egg.s2 .shimmer, #egg.s3 .shimmer, #egg.s2 canvas, #egg.s3 canvas { display: none; }
         /* Reduced motion: same words in the same order, no spinning, flashing, slamming or shaking. */
         #egg.still .shimmer { animation: none; }
@@ -306,6 +314,11 @@
             <text x="50" y="66" text-anchor="middle" font-family="Georgia,serif" font-size="30" font-weight="700" fill="#fff">$</text>
         </svg>
         <div class="big" id="sj">Don't make me get the swear jar</div>
+        <div class="eggmsg" id="eggMsg">
+            <p class="found">You have found one of the easter eggs. Find them all!</p>
+            <p class="hint">(Hint: Many of the easter eggs are words related to things Ben likes.)</p>
+            <p class="cont">Tap to continue</p>
+        </div>
     </div>
 
     <div id="poem" role="dialog" aria-label="Easter egg">
@@ -531,10 +544,12 @@
         // Fireworks over a spinning rainbow, then WHAM, then WHAM, then back to the app.
         let eggTimers = [], eggRaf = 0;
         const egg = $("egg");
+        let eggDone = false, eggJumpAt = 0;
         function stopEgg() {
             pulseIfNew();
             eggTimers.forEach(clearTimeout); eggTimers = [];
             cancelAnimationFrame(eggRaf);
+            eggDone = false;
             egg.className = "";
             $("guess").value = "";
             $("guess").style.height = "";
@@ -553,6 +568,21 @@
             egg.className = "on " + mode;
             const at = (ms, fn) => eggTimers.push(setTimeout(fn, ms));
             const wham = cls => { egg.className = "on wham shake " + mode + " " + cls; };
+            eggDone = false;
+            // The last screen: swear jar, then the "you found one" message, held until tapped.
+            const lastScreen = () => {
+                const cvs = $("eggCanvas");
+                cancelAnimationFrame(eggRaf); cvs.getContext("2d").clearRect(0, 0, cvs.width, cvs.height);
+                eggTimers.forEach(clearTimeout); eggTimers = [];
+                egg.className = "on wham " + mode + " s3 msg";
+                at(1500, () => { egg.classList.add("msgshow"); eggDone = true; });
+            };
+            egg.jumpToEnd = () => {                          // a tap before the end skips ahead to it
+                lastScreen();
+                egg.classList.add("msgshow"); eggDone = true;
+                eggTimers.forEach(clearTimeout); eggTimers = [];
+                eggJumpAt = performance.now();
+            };
 
             const sparks = [];
             let hue = 0, last = performance.now(), nextBurst = 0;
@@ -583,16 +613,20 @@
             if (still) egg.querySelector(".shimmer").style.opacity = .35; else eggRaf = requestAnimationFrame(frame);
 
             at(2600, () => { cancelAnimationFrame(eggRaf); ctx.clearRect(0, 0, innerWidth, innerHeight); wham("s2"); });
-            at(4300, () => wham("s3"));
-            at(7000, stopEgg);
+            at(4300, lastScreen);
         }
-        egg.addEventListener("click", stopEgg);
+        // First tap skips to the last screen; once the message is up, the next tap returns to the app.
+        egg.addEventListener("click", () => {
+            if (eggDone) { if (performance.now() - eggJumpAt > 500) stopEgg(); }   // ignore a double-tap
+            else if (egg.jumpToEnd) egg.jumpToEnd();
+        });
 
         // Poem eggs: a screen where a title, lines, and a closing flourish materialise one
         // after another, then the "you found one" message, then (optionally) a picture.
         // Tap/Enter first jumps to the finished screen, then dismisses it.
         const poem = $("poem"), poemBox = $("poemBox");
-        let poemTimers = [], poemDone = false;
+        let poemTimers = [], poemDone = false, poemOpenedAt = 0;
+        const poemGrace = () => performance.now() - poemOpenedAt < 600;   // ignore the tap/keypress that opened it
         function poemFinish() {
             poemTimers.forEach(clearTimeout); poemTimers = [];
             poemBox.querySelectorAll(".m").forEach(el => el.classList.add("show"));
@@ -682,6 +716,7 @@
             if (spec.bass) startBass();
             const still = matchMedia("(prefers-reduced-motion: reduce)").matches && !/[?&]motion=1/.test(location.search);
             poem.className = "on" + (still ? " still" : "");
+            poemOpenedAt = performance.now();
             poemBox.replaceChildren();
             poemDone = false;
             poem.scrollTop = 0;
@@ -792,9 +827,12 @@
                 "My dad came out, saw me crying, asked why I was home, I told him I just wanted to be home. He asked why I was crying, and I said I didn't really know, but it wasn't really caused by anything. I could tell he wanted to help with it, somehow, but didn't know how to break through what he saw as lying to cover up some true cause. He went back to bed. I went to bed. Nothing came of it. It was never mentioned again.",
             ],
         });
-        poem.addEventListener("click", () => { if (poemDone) poemClose(); else poemFinish(); });
+        poem.addEventListener("click", () => {
+            if (poemGrace()) return;
+            if (poemDone) poemClose(); else poemFinish();
+        });
         document.addEventListener("keydown", e => {
-            if (!poem.classList.contains("on")) return;
+            if (!poem.classList.contains("on") || e.repeat || poemGrace()) return;
             if (e.key === "Enter" || e.key === " " || e.key === "Escape") {
                 e.preventDefault();
                 if (poemDone || e.key === "Escape") poemClose(); else poemFinish();
@@ -870,7 +908,11 @@
             reveal(typed[0] === norm(card.word), false, typed);
         });
         $("guess").addEventListener("keydown", e => {
-            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("form").requestSubmit(); }
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                e.stopPropagation();       // else this same keypress reaches the egg screen it just opened and skips it
+                if (!e.repeat) $("form").requestSubmit();
+            }
         });
         $("guess").addEventListener("input", e => {
             const t = e.target;
