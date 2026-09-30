@@ -192,6 +192,24 @@
         /* Reduced motion: same words in the same order, no spinning, flashing, slamming or shaking. */
         #egg.still .shimmer { animation: none; }
         #egg.still.wham .flash, #egg.still.shake, #egg.still.s2 #calm, #egg.still.s3 #jar, #egg.still.s3 #sj { animation: none; }
+        /* ---------- easter egg: Diet Coke ---------- */
+        #poem { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; padding: 2rem 1.5rem;
+                background: radial-gradient(ellipse at 50% 35%, #2b0b10 0%, #14090b 55%, #0a0a0b 100%); cursor: pointer; overflow-y: auto; }
+        #poem.on { display: flex; }
+        #poem .box { max-width: 34rem; text-align: center; margin: auto; }
+        #poem .pl { font-family: var(--font-serif); font-style: italic; font-size: clamp(1.5rem, 5.4vw, 2.4rem); line-height: 1.35; margin: 0 0 .7rem; color: #f4ece4; }
+        #poem .pl b { font-weight: 600; font-style: normal; }
+        #poem .tm { color: #ff2a3c; font-style: normal; font-size: .5em; vertical-align: super; margin-left: .1em; display: inline-block; }
+        #poem .pfound, #poem .phint { text-wrap: balance; }
+        #poem .pfound { font-family: var(--font-serif); font-size: clamp(1.25rem, 4.4vw, 1.75rem); margin: 2.2rem 0 .6rem; color: #ffd9b8; }
+        #poem .phint { font-size: .95rem; color: var(--color-text-muted); margin: 0; }
+        #poem .pcontinue { font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; color: var(--color-text-muted); margin: 2.2rem 0 0; }
+        /* everything materialises: fades up out of a soft blur */
+        #poem .m { opacity: 0; filter: blur(8px); transform: translateY(.6rem); transition: opacity 1.4s ease, filter 1.4s ease, transform 1.4s ease; }
+        #poem .m.show { opacity: 1; filter: none; transform: none; }
+        #poem .tm.m { transform: scale(2.2); transition-duration: 1s; }
+        #poem .tm.m.show { transform: none; }
+        #poem.still .m { filter: none; transform: none !important; transition: opacity .6s ease; }
         footer { text-align: center; padding: 1.5rem; font-size: .8rem; color: var(--color-text-muted); border-top: 1px solid var(--color-border); }
     </style>
 </head>
@@ -267,6 +285,18 @@
             <text x="50" y="66" text-anchor="middle" font-family="Georgia,serif" font-size="30" font-weight="700" fill="#fff">$</text>
         </svg>
         <div class="big" id="sj">Don't make me get the swear jar</div>
+    </div>
+
+    <div id="poem" role="dialog" aria-label="Easter egg">
+        <div class="box">
+            <p class="pl m">Are you thirsty? Do you choke?</p>
+            <p class="pl m">You don't want to light a smoke</p>
+            <p class="pl m">You dasn't need an artichoke</p>
+            <p class="pl m">Pour yourself a <b>Diet Coke</b><span class="tm m">&trade;</span></p>
+            <p class="pfound m">You have found one of the easter eggs. Find them all!</p>
+            <p class="phint m">(Hint: Many of the easter eggs are words related to things Ben likes.)</p>
+            <p class="pcontinue m">Tap to continue</p>
+        </div>
     </div>
 
     <aside class="sheet" id="sheet" role="dialog" aria-modal="false" aria-labelledby="hw">
@@ -543,13 +573,64 @@
         }
         egg.addEventListener("click", stopEgg);
 
+        // Diet Coke: a poem that materialises line by line, then the (TM), then the message.
+        // Tap/Enter first jumps to the finished screen, then dismisses it.
+        const poem = $("poem");
+        let poemTimers = [], poemDone = false;
+        function poemFinish() {
+            poemTimers.forEach(clearTimeout); poemTimers = [];
+            poem.querySelectorAll(".m").forEach(el => el.classList.add("show"));
+            poemDone = true;
+        }
+        function poemClose() {
+            poemFinish();
+            poem.className = "";
+            $("guess").value = "";
+            $("guess").style.height = "";
+            $("guess").focus();
+        }
+        function dietCokeEgg() {
+            hideSheet();
+            poemDone = false;
+            poem.querySelectorAll(".m").forEach(el => el.classList.remove("show"));
+            const still = matchMedia("(prefers-reduced-motion: reduce)").matches && !/[?&]motion=1/.test(location.search);
+            poem.className = "on" + (still ? " still" : "");
+            const parts = [...poem.querySelectorAll(".m")];
+            // four lines, then the TM, then the message, its hint, and the way out
+            const at = [500, 2300, 4100, 5900, 8200, 10400, 12000, 13400];
+            parts.forEach((el, i) => poemTimers.push(setTimeout(() => {
+                el.classList.add("show");
+                if (i === parts.length - 1) poemDone = true;
+            }, at[i])));
+        }
+        poem.addEventListener("click", () => { if (poemDone) poemClose(); else poemFinish(); });
+        document.addEventListener("keydown", e => {
+            if (!poem.classList.contains("on")) return;
+            if (e.key === "Enter" || e.key === " " || e.key === "Escape") {
+                e.preventDefault();
+                if (poemDone || e.key === "Escape") poemClose(); else poemFinish();
+            }
+        });
+
+        // Trigger phrases, matched on the typed words joined together ("diet coke",
+        // "Diet-Coke" and "dietcoke" are all "dietcoke"). Add new eggs here.
+        const EGGS = [
+            { phrase: "dietcoke", run: dietCokeEgg },
+        ];
+        const eggBusy = () => egg.classList.contains("on") || poem.classList.contains("on");
+
         $("form").addEventListener("submit", e => {
             e.preventDefault();
-            if (answered || egg.classList.contains("on")) return;
+            if (answered || eggBusy()) return;
             const typed = $("guess").value.split(/\s+|--/).map(norm).filter(Boolean);
             if (!typed.length) return;
             // A right answer always counts, even when it's a word on the list ("Hell is
             // murky!"). Otherwise a short outburst is the egg; long recitals never are.
+            const phrase = EGGS.find(x => x.phrase === typed.join(""));
+            if (phrase && typed[0] !== norm(card.word)) {
+                phrase.run();
+                return;
+            }
             if (typed[0] !== norm(card.word) && typed.length <= 3 && $("guess").value.split(/\s+/).some(isSwear)) {
                 swearEgg();
                 return;
