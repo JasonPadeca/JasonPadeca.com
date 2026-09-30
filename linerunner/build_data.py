@@ -54,9 +54,8 @@ def speech_from(blocks, i):
 
 def build(character):
     cards = []
-    for scene in data["scenes"]:
-        if scene["act"] == "cast":
-            continue
+    playing = [sc for sc in data["scenes"] if sc["act"] != "cast"]
+    for si, scene in enumerate(playing):
         blocks = scene["blocks"]
         speeches = [(i, b) for i, b in enumerate(blocks) if b.get("sp")]
         skip_until = -1
@@ -69,13 +68,21 @@ def build(character):
             word = re.match(r"[^\w']*([\w']+)", first)
             card = {"act": scene["act"], "sc": scene["sc"], "n": sp["lines"][0]["n"]}
             if k == 0:
-                # Opens the scene, so nobody speaks before it: cue with where we are
-                # and what the stage direction says (e.g. "Enter Lady Macbeth,
-                # reading a letter.").
-                card.update(who="", cue=[], opener={
-                    "setting": scene["setting"],
-                    "stage": " ".join(b["stage"] for b in blocks[:i] if "stage" in b),
-                })
+                # Opens the scene, so nobody speaks before it in it. Cue with the last
+                # thing said in the previous scene, then where we are and what the
+                # stage direction says (e.g. "Enter Lady Macbeth, reading a letter.").
+                last, prev_sc = None, playing[si - 1] if si else None
+                if prev_sc:
+                    said = [b for b in prev_sc["blocks"] if b.get("sp")]
+                    last = said[-1] if said else None
+                card.update(
+                    who=last["sp"] if last else "",
+                    cue=[toks(l) for l in last["lines"]][-3:] if last else [],
+                    **({"from": prev_sc["act"] + "." + prev_sc["sc"]} if last else {}),
+                    opener={
+                        "setting": scene["setting"],
+                        "stage": " ".join(b["stage"] for b in blocks[:i] if "stage" in b),
+                    })
             else:
                 prev = speeches[k - 1][1]
                 if prev["sp"] == character:

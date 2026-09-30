@@ -59,6 +59,7 @@
         .cue .cueline { display: block; }
         .cue .opener { font-style: italic; color: var(--color-text-muted); font-size: 1.15rem; }
         .cue .opener + .opener { margin-top: .35rem; }
+        .cue .cueline + .opener { margin-top: 1rem; }
         .reply { margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border); }
         .reply .speaker { margin-top: 0; }
         .prompt { font-family: var(--font-serif); font-size: 1.15rem; margin-bottom: .75rem; }
@@ -329,10 +330,18 @@
         }
 
         function showCue() {
+            const cue = $("cue");
+            cue.replaceChildren();
+            const n = +$("lead").value;
+            const counter = { n: 0 };
+            for (const line of card.cue.slice(-n)) {
+                const row = renderLine(line, counter, null);
+                row.className = "cueline";
+                cue.append(row);
+            }
+            // A scene opener has nobody speaking before it in its own scene: after the
+            // last line of the previous scene comes where we are and the stage direction.
             if (card.opener) {
-                // Nobody speaks before this one: the cue is the scene itself.
-                const cue = $("cue");
-                cue.replaceChildren();
                 for (const [cls, text] of [["setting", card.opener.setting], ["stagedir", card.opener.stage]]) {
                     if (!text) continue;
                     const row = document.createElement("div");
@@ -340,15 +349,7 @@
                     row.textContent = text;
                     cue.append(row);
                 }
-                return;
             }
-            const n = +$("lead").value;
-            const counter = { n: 0 };
-            $("cue").replaceChildren(...card.cue.slice(-n).map(line => {
-                const row = renderLine(line, counter, null);
-                row.className = "cueline";
-                return row;
-            }));
         }
 
         function next() {
@@ -357,7 +358,7 @@
             answered = false;
             $("where").textContent = `Act ${card.act}, Scene ${card.sc}`;
             $("pos").textContent = `· ${total - deck.length} of ${total}`;
-            $("who").textContent = card.who;
+            $("who").textContent = card.who + (card.from ? ` (end of Act ${card.from.split(".")[0]}, Scene ${card.from.split(".")[1]})` : "");
             $("who").style.display = card.who ? "" : "none";
             showCue();
             $("guess").value = "";
