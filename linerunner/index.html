@@ -201,6 +201,10 @@
         #poem .pl b { font-weight: 600; font-style: normal; }
         #poem .tm { color: #ff2a3c; font-style: normal; font-size: .5em; vertical-align: super; margin-left: .1em; display: inline-block; }
         #poem .pfound, #poem .phint { text-wrap: balance; }
+        #poem .ptitle { font-family: var(--font-serif); font-weight: 600; font-size: clamp(1.9rem, 7vw, 3rem); color: #f4ece4; margin: 0 0 1.4rem; }
+        #poem .pl.gap { margin-top: 1.5rem; }
+        #poem pre.art { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: clamp(.3rem, 1.6vw, 1.05rem); line-height: 1.05;
+                        color: #c8c2b8; margin: 2rem auto 0; display: block; width: max-content; max-width: 100%; text-align: left; }
         #poem .pfound { font-family: var(--font-serif); font-size: clamp(1.25rem, 4.4vw, 1.75rem); margin: 2.2rem 0 .6rem; color: #ffd9b8; }
         #poem .phint { font-size: .95rem; color: var(--color-text-muted); margin: 0; }
         #poem .pcontinue { font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; color: var(--color-text-muted); margin: 2.2rem 0 0; }
@@ -288,15 +292,7 @@
     </div>
 
     <div id="poem" role="dialog" aria-label="Easter egg">
-        <div class="box">
-            <p class="pl m">Are you thirsty? Do you choke?</p>
-            <p class="pl m">You don't want to light a smoke</p>
-            <p class="pl m">You dasn't need an artichoke</p>
-            <p class="pl m">Pour yourself a <b>Diet Coke</b><span class="tm m">&trade;</span></p>
-            <p class="pfound m">You have found one of the easter eggs. Find them all!</p>
-            <p class="phint m">(Hint: Many of the easter eggs are words related to things Ben likes.)</p>
-            <p class="pcontinue m">Tap to continue</p>
-        </div>
+        <div class="box" id="poemBox"></div>
     </div>
 
     <aside class="sheet" id="sheet" role="dialog" aria-modal="false" aria-labelledby="hw">
@@ -573,36 +569,84 @@
         }
         egg.addEventListener("click", stopEgg);
 
-        // Diet Coke: a poem that materialises line by line, then the (TM), then the message.
+        // Poem eggs: a screen where a title, lines, and a closing flourish materialise one
+        // after another, then the "you found one" message, then (optionally) a picture.
         // Tap/Enter first jumps to the finished screen, then dismisses it.
-        const poem = $("poem");
+        const poem = $("poem"), poemBox = $("poemBox");
         let poemTimers = [], poemDone = false;
         function poemFinish() {
             poemTimers.forEach(clearTimeout); poemTimers = [];
-            poem.querySelectorAll(".m").forEach(el => el.classList.add("show"));
+            poemBox.querySelectorAll(".m").forEach(el => el.classList.add("show"));
             poemDone = true;
         }
         function poemClose() {
             poemFinish();
             poem.className = "";
+            poemBox.replaceChildren();
             $("guess").value = "";
             $("guess").style.height = "";
             $("guess").focus();
         }
-        function dietCokeEgg() {
+
+        const SKILLET = ["                  )        )        )", "                   (        (        (", "                    )        )        )", "                   (        (        (", "", "                     ###############", "                ######=============######", "             ####=====.,.......:...=====####", "          ####===..,......:.........,:..===####", "         ###===,.....:..........,.........===###", "       ###===...:..........:,.........:.....===###", "      ###==:..........:.,........:.......,..:.==###", "     ###==.......:..,.......:........,.:.......==###", "    ###==...:...,......:.........,:..........:..==###", "    ##==....,.....:..........,..........:.....,..==##########################", "  # ##==,....:..........:,.........:......,...:..==##=================----==#", " <####==:..........:.,........:.......,..:.......==###===============(    )=#", "  # ##==......:..,.......:........,.:..........:.==##=================----==#", "    ##==.:...,......:.........,:..........:....,.==##########################", "    ###==,.....:..........,..........:.....,....==###", "     ###==:..........:,.........:......,...:...==###", "      ###==.....:.,........:.......,..:.......==###", "       ###===.,.......:........,.:..........===###", "         ###===..:.........,:..........:..===###", "          ####===......,..........:.....===####", "             ####=====.......:.....=====####", "                ######=============######", "                     ###############", ""];
+
+        // spec: { title?, stanzas: [[line, ...], ...], tm?: bool, art?: [line, ...] }.
+        // A line may contain <b>. `tm` adds a red (TM) after the last line's bold words.
+        function runPoem(spec) {
             hideSheet();
-            poemDone = false;
-            poem.querySelectorAll(".m").forEach(el => el.classList.remove("show"));
             const still = matchMedia("(prefers-reduced-motion: reduce)").matches && !/[?&]motion=1/.test(location.search);
             poem.className = "on" + (still ? " still" : "");
-            const parts = [...poem.querySelectorAll(".m")];
-            // four lines, then the TM, then the message, its hint, and the way out
-            const at = [500, 2300, 4100, 5900, 8200, 10400, 12000, 13400];
-            parts.forEach((el, i) => poemTimers.push(setTimeout(() => {
-                el.classList.add("show");
-                if (i === parts.length - 1) poemDone = true;
-            }, at[i])));
+            poemBox.replaceChildren();
+            poemDone = false;
+            poem.scrollTop = 0;
+
+            const steps = [];                               // [element, ms to wait after the previous one]
+            const add = (tag, cls, html, wait, host = poemBox) => {
+                const el = document.createElement(tag);
+                el.className = cls + " m";
+                el.innerHTML = html;                       // our own literals only, never user input
+                host.append(el);
+                steps.push([el, wait]);
+                return el;
+            };
+            if (spec.title) add("h2", "ptitle", spec.title, 500);
+            let last;
+            spec.stanzas.forEach((lines, si) => lines.forEach((line, li) => {
+                last = add("p", "pl" + (si && !li ? " gap" : ""), line, steps.length ? (si && !li ? 2200 : 1800) : 500);
+            }));
+            if (spec.tm) add("span", "tm", "&trade;", 2300, last);
+            add("p", "pfound", "You have found one of the easter eggs. Find them all!", 2200);
+            add("p", "phint", "(Hint: Many of the easter eggs are words related to things Ben likes.)", 1600);
+            if (spec.art) {
+                const pre = add("pre", "art", "", 2600);
+                pre.textContent = spec.art.join("\n");
+                pre.setAttribute("aria-hidden", "true");
+            }
+            add("p", "pcontinue", "Tap to continue", spec.art ? 2400 : 1400);
+
+            let t = 0;
+            steps.forEach(([el, wait], i) => {
+                t += wait;
+                poemTimers.push(setTimeout(() => {
+                    el.classList.add("show");
+                    // keep whatever just appeared in view (the skillet is below the fold on a phone)
+                    el.scrollIntoView({ block: "nearest", behavior: still ? "auto" : "smooth" });
+                    if (i === steps.length - 1) poemDone = true;
+                }, t));
+            });
         }
+
+        const dietCokeEgg = () => runPoem({
+            stanzas: [["Are you thirsty? Do you choke?", "You don't want to light a smoke",
+                       "You dasn't need an artichoke", "Pour yourself a <b>Diet Coke</b>"]],
+            tm: true,
+        });
+        const castIronEgg = () => runPoem({
+            title: "Cast Iron:",
+            stanzas: [["Pan pan pan pan pan pan pan"], ["Scan tan man, Afghanistan!"],
+                      ["can wan human ban dan's LAN naan?"], ["Pan, pan pan, pan-pan, pan. Pan."]],
+            art: SKILLET,
+        });
         poem.addEventListener("click", () => { if (poemDone) poemClose(); else poemFinish(); });
         document.addEventListener("keydown", e => {
             if (!poem.classList.contains("on")) return;
@@ -616,6 +660,7 @@
         // "Diet-Coke" and "dietcoke" are all "dietcoke"). Add new eggs here.
         const EGGS = [
             { phrase: "dietcoke", run: dietCokeEgg },
+            { phrase: "castiron", run: castIronEgg },
         ];
         const eggBusy = () => egg.classList.contains("on") || poem.classList.contains("on");
 
