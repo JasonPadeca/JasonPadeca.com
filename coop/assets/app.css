@@ -1407,3 +1407,59 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
   padding: .05rem .25rem; border-radius: 3px;
   background: var(--accent-soft); font-size: .9em;
 }
+
+/* =============================================================================
+   The paper release form.
+
+   Shown on screen so a parent can see what they are about to print — a print
+   button that opens a dialog onto something unseen is a button people do not
+   press.
+   ============================================================================= */
+.waiver-sheet {
+  max-width: 48rem; margin: 0 auto 1.5rem;
+  padding: 2rem 2.25rem;
+  background: #fff; color: #1a1a1a;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font-size: .92rem; line-height: 1.55;
+}
+.waiver-sheet p { margin: 0 0 .85rem; }
+.waiver-sheet h1 { font-size: 1.2rem; margin: 0; color: #1a1a1a; }
+.waiver-sheet h2 {
+  font-size: 1.05rem; margin: 0 0 .9rem; color: #1a1a1a;
+  padding-bottom: .35rem; border-bottom: 2px solid #1a1a1a;
+}
+
+.wv-head { display: flex; gap: 1rem; align-items: center; margin-bottom: 1.25rem;
+           padding-bottom: .8rem; border-bottom: 2px solid #1a1a1a; }
+.wv-head img { flex: none; border-radius: 50%; }
+.wv-sub { font-size: .82rem; color: #555; margin-top: .15rem; }
+
+.wv-kids { width: 100%; border-collapse: collapse; margin: 0 0 1.25rem; }
+.wv-kids th { text-align: left; font-size: .74rem; text-transform: uppercase;
+              letter-spacing: .04em; color: #555; border-bottom: 1px solid #1a1a1a;
+              padding: .25rem .4rem; }
+.wv-kids td { padding: .45rem .4rem; border-bottom: 1px solid #bbb; }
+.wv-kids tr.wv-blank td { height: 1.7rem; }
+
+.wv-aside { font-size: .84rem; color: #555; font-style: italic; }
+
+.wv-sign { margin-top: 1.5rem; display: flex; flex-direction: column; gap: .95rem; }
+.wv-line { display: flex; align-items: baseline; gap: .6rem; }
+.wv-label { flex: none; width: 13rem; font-size: .84rem; color: #333; }
+.wv-rule { flex: 1; border-bottom: 1px solid #1a1a1a; min-height: 1.3rem; }
+
+@media print {
+  /* Only the forms, and one per sheet. Scoped to the class the print button
+     adds, so the administration side's own print views are untouched. */
+  .printing-waiver .topbar,
+  .printing-waiver .subnav,
+  .printing-waiver .page-head,
+  .printing-waiver .card,
+  .printing-waiver .crumbs { display: none !important; }
+
+  .printing-waiver .waiver-sheet {
+    border: 0; padding: 0; margin: 0; max-width: none;
+    background: #fff; color: #000;
+  }
+  .printing-waiver .wv-break { break-before: page; page-break-before: always; }
+}

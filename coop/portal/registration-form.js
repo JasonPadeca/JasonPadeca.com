@@ -18,6 +18,7 @@
 
 import { api } from "../assets/api.js";
 import { esc, $, $$, render, fmtDate, toastOk, toastErr } from "../assets/ui.js";
+import { waiverSheet } from "./waiver.js";
 
 // Shown against anything the co-op already holds. Consistent wording, because
 // a parent should learn the phrase once and then skim it.
@@ -85,11 +86,52 @@ function drawSubmitted(el) {
       <button class="btn" id="again">Send it again</button>
       <span class="muted">If something you sent was wrong.</span>
     </div>
-  </div>`);
+  </div>
+
+  <div class="card no-print">
+    <div class="card-head"><h3>One thing left — on paper</h3></div>
+
+    <div class="note note-warn">
+      <strong>Please print the forms below, sign them, and bring them with
+      you.</strong>
+      <div class="mt">Hand them in at North Mountain Church, or at the next
+        co-op event. They cannot be signed online — the medical release gives
+        permission for emergency treatment, and that one needs a real
+        signature.</div>
+    </div>
+
+    <p class="muted mt">Your children's names and dates of birth are already
+      filled in. There are three pages: the medical release, the handbook
+      acknowledgement, and photography. <strong>Photography is separate</strong>
+      — if you would rather your children were not photographed, do not sign
+      that page and the others still stand.</p>
+
+    <div class="btn-row mt">
+      <button class="btn btn-primary" id="printwaiver">Print the forms</button>
+      <span class="muted">Three pages</span>
+    </div>
+  </div>
+
+  <div id="waiver">${waiverSheet(payload.family, payload.children, payload.semester)}</div>`);
 
   $("#again", el).addEventListener("click", () => {
     payload.submitted = null;
     drawForm(el);
+  });
+
+  // Print the forms and nothing else.
+  //
+  // A body class rather than a clever selector: this stylesheet is shared with
+  // the administration side, which has print views of its own, and a blanket
+  // "hide every card when printing" rule would quietly break those. The class
+  // exists only for the duration of the dialog.
+  $("#printwaiver", el).addEventListener("click", () => {
+    document.body.classList.add("printing-waiver");
+    window.print();
+    // Chrome fires this after the dialog closes; Safari needs the timeout.
+    const done = () => document.body.classList.remove("printing-waiver");
+    window.addEventListener("afterprint", done, { once: true });
+    setTimeout(done, 2000);
   });
 }
 
