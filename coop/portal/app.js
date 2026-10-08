@@ -278,7 +278,7 @@ function notRecognised() {
   render(app, `<div class="signin-page">
     <div class="signin-card">
       <img src="../assets/koinonia-logo.jpg" alt="" class="signin-mark" width="72" height="72">
-      <h1>We do not recognise that address</h1>
+      <h1>We do not recognize that address</h1>
       <p class="signin-sub">You signed in as <strong>${esc(state.me?.email ?? "")}</strong>,
         but it is not on file for any family in the co-op.</p>
       <p class="signin-sub">If your family uses a different address for co-op business,

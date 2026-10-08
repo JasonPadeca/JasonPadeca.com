@@ -42,7 +42,7 @@ export async function show(app) {
     </div>
 
     <div class="card">
-      <div class="card-head"><h3>Class sign-up behaviour</h3>
+      <div class="card-head"><h3>Class sign-up behavior</h3>
         <button class="btn btn-sm" id="editbehaviour">Edit</button></div>
       <div class="table-scroll"><table><tbody>
         ${row("Ineligible classes",
@@ -122,7 +122,7 @@ export async function show(app) {
 
   $("#editbehaviour").addEventListener("click", async () => {
     const v = await formDialog({
-      title: "Class sign-up behaviour",
+      title: "Class sign-up behavior",
       fields: [
         { name: "show_ineligible_classes", type: "checkbox", value: settings.show_ineligible_classes,
           checkLabel: "Show ineligible classes to families, dimmed, with the reason",

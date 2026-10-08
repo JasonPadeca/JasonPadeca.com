@@ -89,22 +89,16 @@ function drawSubmitted(el) {
   </div>
 
   <div class="card no-print">
-    <div class="card-head"><h3>One thing left — on paper</h3></div>
+    <div class="card-head"><h3>Waiver</h3></div>
 
     <div class="note note-warn">
-      <strong>Please print the forms below, sign them, and bring them with
-      you.</strong>
-      <div class="mt">Hand them in at North Mountain Church, or at the next
-        co-op event. They cannot be signed online — the medical release gives
-        permission for emergency treatment, and that one needs a real
-        signature.</div>
+      Please print the attached waivers and bring them to either North Mountain
+      Church or the next in-person Koinonia event.
     </div>
 
-    <p class="muted mt">Your children's names and dates of birth are already
-      filled in. There are three pages: the medical release, the handbook
-      acknowledgement, and photography. <strong>Photography is separate</strong>
-      — if you would rather your children were not photographed, do not sign
-      that page and the others still stand.</p>
+    <p class="muted mt">Please note that there are three separate forms. The
+      photography release is separate; if you'd rather your children are not
+      photographed, don't sign that page.</p>
 
     <div class="btn-row mt">
       <button class="btn btn-primary" id="printwaiver">Print the forms</button>

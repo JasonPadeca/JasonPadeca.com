@@ -162,7 +162,7 @@ function renderSignIn(error, authenticatedButUnauthorised = false) {
 
   render(app, `<div class="centered">
     <h1>Co-op Administration</h1>
-    <p class="muted mt">Sign in with the Google account your co-op has authorised.</p>
+    <p class="muted mt">Sign in with the Google account your co-op has authorized.</p>
     ${error ? `<div class="note note-danger mt2">${esc(error)}</div>` : ""}
     <div class="btn-row mt2" style="justify-content:center">
       <button class="btn btn-primary" id="signin">Continue with Google</button>
