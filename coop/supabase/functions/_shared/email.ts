@@ -345,48 +345,70 @@ export function registrationNoticeEmail(opts: {
 /**
  * "Which classes would you help with?"
  *
- * Short on purpose. The ask is one question and the page does the explaining;
- * an email that lists twenty classes is an email nobody finishes.
+ * The wording belongs to the co-op, not to this file. Whatever is passed in is
+ * used; the fallback below is only what a blank box falls back to.
+ *
+ * Three placeholders, deliberately. {link} may appear anywhere in the body —
+ * in the plain-text part it becomes the bare URL, in the HTML part a button —
+ * and if somebody deletes it the link is appended rather than lost, because an
+ * email asking people to click something with nothing to click is worse than
+ * an email with an awkwardly placed button.
  */
+const HELPER_SUBJECT_FALLBACK = "Can you help with a class this {semester}?";
+const HELPER_BODY_FALLBACK =
+`{parent},
+
+Every class at our co-op runs on parents helping out. Could you tell us which
+ones you would be willing to take this {semester}?
+
+It takes a minute — tick anything you would be happy to help with:
+
+{link}
+
+Ticking a class is not signing up for it. We work out who goes where and let
+you know.
+
+Thank you!`;
+
 export function helperRequestEmail(opts: {
   programName: string;
   parentName: string;
   semesterName: string;
   portalUrl: string;
+  subject?: string | null;
+  body?: string | null;
 }): { subject: string; html: string; text: string } {
   const { programName, parentName, semesterName, portalUrl } = opts;
   const url = portalUrl.replace(/\/?$/, "/") + "#/helping";
 
-  const subject = `Can you help with a class this ${semesterName}?`;
+  const fill = (t: string) =>
+    t.replace(/\{parent\}/g, parentName)
+     .replace(/\{semester\}/g, semesterName)
+     .replace(/\{program\}/g, programName);
 
-  const text =
-`${parentName},
+  const subject = fill(
+    (opts.subject ?? "").trim() || HELPER_SUBJECT_FALLBACK);
 
-Every class at ${programName} runs on parents helping out. Could you tell us
-which ones you would be willing to take this ${semesterName}?
+  let raw = (opts.body ?? "").trim() || HELPER_BODY_FALLBACK;
+  if (!raw.includes("{link}")) raw += "\n\n{link}";
 
-It takes a minute — tick anything you would be happy to help with:
+  const text = fill(raw).replace(/\{link\}/g, url);
 
-  ${url}
+  // The HTML half. Paragraphs from blank lines, and {link} becomes a button on
+  // its own line rather than a bare URL in the middle of a sentence.
+  const button =
+    `<p><a href="${esc(url)}" style="display:inline-block;padding:10px 18px;` +
+    `background:#1279be;color:#fff;border-radius:4px;text-decoration:none">` +
+    `Choose your classes</a></p>`;
 
-Ticking a class is not signing up for it. We work out who goes where and let
-you know.
-
-Thank you,
-${programName}`;
-
-  const html =
-`<p>${esc(parentName)},</p>
-<p>Every class at ${esc(programName)} runs on parents helping out. Could you
-tell us which ones you would be willing to take this
-<strong>${esc(semesterName)}</strong>?</p>
-<p>It takes a minute — tick anything you would be happy to help with.</p>
-<p><a href="${esc(url)}" style="display:inline-block;padding:10px 18px;
-background:#1279be;color:#fff;border-radius:4px;text-decoration:none">
-Choose your classes</a></p>
-<p style="color:#5f6b73;font-size:14px">Ticking a class is not signing up for
-it. We work out who goes where and let you know.</p>
-<p>Thank you,<br>${esc(programName)}</p>`;
+  const html = fill(raw)
+    .split(/\n\s*\n/)
+    .map((para) => para.trim() === "{link}"
+      ? button
+      : `<p>${esc(para).replace(/\n/g, "<br>").replace(/\{link\}/g,
+          `<a href="${esc(url)}">${esc(url)}</a>`)}</p>`)
+    .join("\n");
 
   return { subject, html, text };
 }
+

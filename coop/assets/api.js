@@ -725,9 +725,13 @@ export const api = {
   },
 
   /** Ask parents to say what they would help with. */
-  sendHelperRequest(semesterId, parentIds) {
+  sendHelperRequest(semesterId, parentIds, wording = {}) {
     return this.callFunction("admin-invites", {
       action: "helper_request", semester_id: semesterId, parent_ids: parentIds,
+      // Sent per-message rather than read from settings, so editing the box
+      // changes THIS send without changing the stored default.
+      subject: wording.subject || null,
+      body: wording.body || null,
     });
   },
 

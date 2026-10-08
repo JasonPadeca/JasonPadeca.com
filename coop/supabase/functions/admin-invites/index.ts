@@ -167,6 +167,10 @@ Deno.serve(async (req) => {
           parentName: p.first_name,
           semesterName: semester.name,
           portalUrl,
+          // What the send screen had in its boxes, falling back to the stored
+          // default, falling back to the wording in the function.
+          subject: body.subject ?? settings.helper_email_subject,
+          body: body.body ?? settings.helper_email_body,
         });
         try {
           await hMailer.send({ ...email, to: p.email!, toName: name });

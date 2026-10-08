@@ -1379,3 +1379,31 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
   .helper-layout { grid-template-columns: 1fr; }
   .helper-ref { position: static; max-height: none; }
 }
+
+/* =============================================================================
+   Email preview on the send screen.
+
+   Deliberately plain — it shows the WORDS, not a mock of Gmail. The thing
+   being checked is whether {semester} was typed correctly, not whether the
+   button is the right blue.
+   ============================================================================= */
+.email-preview {
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface); padding: .9rem 1rem;
+  font-size: .92rem; line-height: 1.55;
+}
+.email-preview p { margin: 0 0 .7rem; }
+.email-preview p:last-child { margin-bottom: 0; }
+.ep-subject {
+  font-weight: 700; color: var(--heading);
+  padding-bottom: .5rem; margin-bottom: .7rem;
+  border-bottom: 1px solid var(--border);
+}
+.ep-button {
+  display: inline-block; padding: .4rem .9rem; border-radius: 4px;
+  background: var(--accent); color: #fff; font-size: .88rem;
+}
+.field .hint code {
+  padding: .05rem .25rem; border-radius: 3px;
+  background: var(--accent-soft); font-size: .9em;
+}

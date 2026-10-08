@@ -33,9 +33,12 @@ export async function show(app) {
       <h3>No semesters</h3><p><a href="#/helpers">Back</a></p></div></div>`);
   }
 
-  let board;
+  let board, settings;
   try {
-    board = await api.helperBoard(semester.id);
+    [board, settings] = await Promise.all([
+      api.helperBoard(semester.id),
+      api.settings(),
+    ]);
   } catch (e) {
     return render(app, `<div class="wrap page">
       <div class="note note-danger">${esc(e.message)}</div></div>`);
@@ -86,11 +89,69 @@ export async function show(app) {
       </table></div>
     </div>
 
+    <div class="card mt">
+      <div class="card-head">
+        <h3>What it says</h3>
+        <button class="btn btn-sm" id="savedefault">Save as the default</button>
+      </div>
+
+      <div class="field">
+        <label for="subj">Subject</label>
+        <input type="text" id="subj" value="${esc(settings?.helper_email_subject ?? "")}">
+      </div>
+
+      <div class="field">
+        <label for="bodytext">Message</label>
+        <textarea id="bodytext" rows="12">${esc(settings?.helper_email_body ?? "")}</textarea>
+        <div class="hint">
+          <code>{parent}</code> becomes their first name,
+          <code>{semester}</code> the semester, and
+          <code>{link}</code> becomes the button they click.
+          Leave <code>{link}</code> somewhere — without it the button is added
+          at the end rather than lost.
+        </div>
+      </div>
+
+      <div class="field">
+        <label>How it will read</label>
+        <div class="email-preview" id="preview"></div>
+      </div>
+    </div>
+
     <div class="btn-row mt2">
       <button class="btn btn-primary" id="send">Send</button>
       <span class="muted" id="count"></span>
     </div>
   </div>`);
+
+  // A live preview against a real recipient, so nobody discovers that
+  // {semester} was typed {Semester} by reading it in their own inbox.
+  const sample = parents[0];
+  const preview = () => {
+    const fill = (t) => (t ?? "")
+      .replace(/\{parent\}/g, sample?.name?.split(" ")[0] ?? "Mary")
+      .replace(/\{semester\}/g, semester.name);
+    let b = $("#bodytext", app).value;
+    if (!b.includes("{link}")) b += "\n\n{link}";
+    render($("#preview", app), `
+      <div class="ep-subject">${esc(fill($("#subj", app).value)) || "<em>no subject</em>"}</div>
+      ${fill(b).split(/\n\s*\n/).map((para) => para.trim() === "{link}"
+        ? `<p><span class="ep-button">Choose your classes</span></p>`
+        : `<p>${esc(para).replace(/\n/g, "<br>")}</p>`).join("")}`);
+  };
+  preview();
+  $("#subj", app).addEventListener("input", preview);
+  $("#bodytext", app).addEventListener("input", preview);
+
+  $("#savedefault", app).addEventListener("click", async () => {
+    try {
+      await api.updateSettings({
+        helper_email_subject: $("#subj", app).value.trim() || null,
+        helper_email_body: $("#bodytext", app).value.trim() || null,
+      });
+      toastOk("Saved — this is what the box will say next time.");
+    } catch (e) { toastErr(e.message); }
+  });
 
   const picks = () => $$(".pick", app).filter((c) => c.checked);
   const tally = () => {
@@ -122,7 +183,10 @@ export async function show(app) {
     const btn = $("#send", app);
     btn.disabled = true;
     try {
-      const res = await api.sendHelperRequest(semester.id, ids);
+      const res = await api.sendHelperRequest(semester.id, ids, {
+        subject: $("#subj", app).value.trim(),
+        body: $("#bodytext", app).value.trim(),
+      });
       if (!res?.ok) throw new Error(res?.error ?? "Could not send.");
       if (res.failed?.length) {
         toastErr(`Sent to ${res.sent}. Could not reach: ` +
