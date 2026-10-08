@@ -41,7 +41,12 @@ interface Sender {
 // --- Transport ---------------------------------------------------------------
 
 function smtpConfig() {
-  const user = Deno.env.get("SMTP_USER");
+  // Trimmed, for the same reason the password is cleaned below: a stored
+  // secret that picked up a trailing newline produces a 535 from Gmail, which
+  // reads as "wrong password" and sends somebody off regenerating a password
+  // that was never the problem. The password was already being cleaned; the
+  // username was not, which is an inconsistency that cost an afternoon.
+  const user = (Deno.env.get("SMTP_USER") ?? "").trim();
   // App Passwords are displayed in four groups of four; people paste the
   // spaces along with them, and the server rejects that without explanation.
   const pass = (Deno.env.get("SMTP_PASSWORD") ?? "").replace(/\s+/g, "");
@@ -148,7 +153,16 @@ function msg(e: unknown): string {
 function friendlySmtpError(raw: string): string {
   const s = raw.toLowerCase();
   if (s.includes("535") || s.includes("username and password not accepted")) {
-    return "The mail server rejected the username or password. For Gmail this must be a 16-character App Password, not the account password, and the account needs 2-Step Verification switched on.";
+    // Worth saying the second half out loud. A 535 also appears when the
+    // credentials are perfectly good and Google has blocked the sign-in
+    // itself — which it does for a while after an account password change,
+    // from server addresses it has not seen before. The remedy then is in
+    // Gmail, not here, and the old wording sent people to regenerate a
+    // password that already worked.
+    return "The mail server rejected the sign-in. Either the password is not a "
+      + "16-character App Password (with 2-Step Verification on), or Google has "
+      + "blocked this sign-in — check the co-op Gmail for a 'critical security "
+      + "alert' and allow it.";
   }
   if (s.includes("534")) {
     return "Gmail requires an App Password for this account. Turn on 2-Step Verification, then generate one.";
