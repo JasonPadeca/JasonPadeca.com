@@ -105,6 +105,23 @@ def absolutise(u, page_url):
         return None
     return urllib.parse.urljoin(page_url, u)
 
+# Files we have deliberately replaced, and which the mirror must leave alone.
+#
+# The co-op's logo was redesigned — new colours, the mountain, the church name —
+# but koinoniaphx.com still serves the old one, so every mirror run would
+# helpfully put it back. Matched on the local filename rather than the URL,
+# because the URL carries a hash that changes when wp.com feels like it.
+#
+# If their WordPress is ever updated to the new logo this list can go; until
+# then it is the difference between a change that sticks and one that lasts
+# ten minutes.
+KEEP_LOCAL = ("logo",)
+
+
+def is_kept(name):
+    return any(k in name.lower() for k in KEEP_LOCAL)
+
+
 def grab_asset(url, page_url, depth=0):
     """Download one asset, and anything a stylesheet points at."""
     abs_url = absolutise(url, page_url)
@@ -120,6 +137,12 @@ def grab_asset(url, page_url, depth=0):
 
     name = local_name(abs_url, ctype)
     path = ASSETS / name
+
+    # Already replaced by hand — keep ours, but still return the name so the
+    # page points at it.
+    if is_kept(name) and path.exists():
+        downloaded["kept (replaced by hand)"] += 1
+        return name
 
     if "css" in ctype and depth < 2:
         text = data.decode("utf-8", "replace")
@@ -481,7 +504,7 @@ def prune_orphans():
 
     removed, freed = 0, 0
     for f in sorted(ASSETS.iterdir()):
-        if f.is_file() and f.name not in referenced:
+        if f.is_file() and f.name not in referenced and not is_kept(f.name):
             freed += f.stat().st_size
             f.unlink()
             removed += 1
