@@ -94,7 +94,14 @@ async function start() {
     return;
   }
 
-  return home();
+  // Through the router, not straight to the week.
+  //
+  // Going directly to home() ignored the hash on first load, so a link to
+  // #/helping — which is exactly what the helper email sends people — opened
+  // on This week. It corrected itself the moment you touched a tab, because
+  // only then did the router run, which made it look like a rendering glitch
+  // rather than the entry point skipping the router.
+  return route();
 }
 
 // -----------------------------------------------------------------------------
