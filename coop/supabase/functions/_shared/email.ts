@@ -341,3 +341,52 @@ export function registrationNoticeEmail(opts: {
     text,
   };
 }
+
+/**
+ * "Which classes would you help with?"
+ *
+ * Short on purpose. The ask is one question and the page does the explaining;
+ * an email that lists twenty classes is an email nobody finishes.
+ */
+export function helperRequestEmail(opts: {
+  programName: string;
+  parentName: string;
+  semesterName: string;
+  portalUrl: string;
+}): { subject: string; html: string; text: string } {
+  const { programName, parentName, semesterName, portalUrl } = opts;
+  const url = portalUrl.replace(/\/?$/, "/") + "#/helping";
+
+  const subject = `Can you help with a class this ${semesterName}?`;
+
+  const text =
+`${parentName},
+
+Every class at ${programName} runs on parents helping out. Could you tell us
+which ones you would be willing to take this ${semesterName}?
+
+It takes a minute — tick anything you would be happy to help with:
+
+  ${url}
+
+Ticking a class is not signing up for it. We work out who goes where and let
+you know.
+
+Thank you,
+${programName}`;
+
+  const html =
+`<p>${esc(parentName)},</p>
+<p>Every class at ${esc(programName)} runs on parents helping out. Could you
+tell us which ones you would be willing to take this
+<strong>${esc(semesterName)}</strong>?</p>
+<p>It takes a minute — tick anything you would be happy to help with.</p>
+<p><a href="${esc(url)}" style="display:inline-block;padding:10px 18px;
+background:#1279be;color:#fff;border-radius:4px;text-decoration:none">
+Choose your classes</a></p>
+<p style="color:#5f6b73;font-size:14px">Ticking a class is not signing up for
+it. We work out who goes where and let you know.</p>
+<p>Thank you,<br>${esc(programName)}</p>`;
+
+  return { subject, html, text };
+}

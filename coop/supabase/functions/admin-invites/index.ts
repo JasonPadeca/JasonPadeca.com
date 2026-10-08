@@ -20,7 +20,7 @@
 //   Kill the link without issuing a replacement.
 
 import { json, preflight, requireAdmin, serviceClient, type SupabaseClient } from "../_shared/deps.ts";
-import { invitationEmail, registrationNoticeEmail, openMailer, type Mailer }
+import { invitationEmail, registrationNoticeEmail, helperRequestEmail, openMailer, type Mailer }
   from "../_shared/email.ts";
 
 interface Settings {
@@ -133,6 +133,60 @@ Deno.serve(async (req) => {
     // address the co-op already holds, so a forwarded copy is useless to
     // anybody else rather than being a way into somebody's registration.
     // -------------------------------------------------------------------------
+    case "helper_request": {
+      if (!settings.registration_base_url) {
+        return json(req, { ok: false, error: "no_base_url" }, 400);
+      }
+      const portalUrl = settings.registration_base_url
+        .replace(/#.*$/, "").replace(/register\/?$/, "portal/");
+
+      const ids: string[] = Array.isArray(body.parent_ids) ? body.parent_ids : [];
+      let pq = db.from("parents")
+        .select("id, first_name, last_name, email")
+        .not("email", "is", null);
+      // No ids means everybody. An explicit empty list means nobody, which is
+      // a different thing and must not quietly become "all".
+      if (Array.isArray(body.parent_ids)) pq = pq.in("id", ids.length ? ids : [crypto.randomUUID()]);
+
+      const { data: parents } = await pq;
+      const targets = parents ?? [];
+      if (!targets.length) {
+        return json(req, { ok: false, error: "nobody_to_email" }, 400);
+      }
+
+      const hMailer = await openMailer(db);
+      if (!hMailer.ready) return json(req, { ok: false, error: hMailer.error }, 500);
+
+      const hSent: string[] = [];
+      const hFailed: { parent: string; error: string }[] = [];
+
+      for (const p of targets) {
+        const name = `${p.first_name} ${p.last_name ?? ""}`.trim();
+        const email = helperRequestEmail({
+          programName: settings.program_name,
+          parentName: p.first_name,
+          semesterName: semester.name,
+          portalUrl,
+        });
+        try {
+          await hMailer.send({ ...email, to: p.email!, toName: name });
+          hSent.push(name);
+        } catch (e) {
+          hFailed.push({ parent: name, error: String(e) });
+        }
+      }
+      await hMailer.close();
+
+      await db.rpc("write_audit", {
+        p_action: "helper_request_sent",
+        p_entity: "semester",
+        p_entity_id: semester.id,
+        p_details: { sent: hSent.length, failed: hFailed.length },
+      });
+
+      return json(req, { ok: true, sent: hSent.length, failed: hFailed });
+    }
+
     case "registration_notice": {
       if (!settings.registration_base_url) {
         return json(req, { ok: false, error: "no_base_url" }, 400);

@@ -443,6 +443,10 @@ async function classDialog(period, existing, siblings = []) {
         hint: "Families see this on the class sign-up page." },
       { name: "capacity", label: "Capacity", type: "number", min: 0, value: existing?.capacity,
         hint: "Leave blank for no limit. Enforced by the database, not the browser." },
+      { name: "adult_helper_limit", label: "Adult helpers wanted", type: "number", min: 0,
+        value: existing?.adult_helper_limit ?? 2,
+        hint: "How many parents this class needs. Shown as 1/2 on the class page, "
+            + "and the Class Helpers screen will not place more than this." },
       { name: "age_min", label: "Minimum age", type: "number", min: 0, value: existing?.age_min,
         hint: "Age on the semester's first class day. Blank means no minimum." },
       { name: "age_max", label: "Maximum age", type: "number", min: 0, value: existing?.age_max },
@@ -546,6 +550,15 @@ export async function classDetail(app, { id }) {
     </div>
 
     <div class="card">
+      <div class="card-head"><h3>Adult helpers</h3>
+        <span class="small muted" id="ahcount"></span></div>
+      <div id="adulthelpers"><div class="loading"><span class="spinner"></span></div></div>
+      <p class="tiny faint mt">Parents who help with this class. They are placed
+        from <a href="#/helpers">Class Helpers</a>, where every parent is shown
+        against what they offered.</p>
+    </div>
+
+    <div class="card">
       <div class="card-head"><h3>Volunteers</h3>
         <button class="btn btn-sm" id="addvolunteer">+ Add Volunteer</button></div>
       ${volunteers.length ? `<div class="table-scroll"><table>
@@ -612,6 +625,32 @@ export async function classDetail(app, { id }) {
 
   $("#editclass").addEventListener("click", () => classDialog(period, cls));
   $("#addstudent").addEventListener("click", () => addStudent(cls));
+  // Adult helpers, fetched separately: the roster above must not disappear
+  // because this one call failed.
+  (async () => {
+    const host = $("#adulthelpers");
+    if (!host) return;
+    try {
+      const d = await api.classAdultHelpers(cls.id);
+      const n = (d.helpers ?? []).length;
+      const full = n >= d.wanted;
+      $("#ahcount").innerHTML =
+        `<span class="badge ${full ? "badge-ok" : "badge-warn"}">${n}/${d.wanted}</span>`;
+      render(host, (d.helpers ?? []).length
+        ? `<div class="table-scroll"><table>
+            <thead><tr><th>Parent</th><th>Family</th><th>Contact</th><th>Note</th></tr></thead>
+            <tbody>${d.helpers.map((h) => `<tr>
+              <td><strong>${esc(h.name)}</strong></td>
+              <td class="small muted">${esc(h.family ?? "")}</td>
+              <td class="small">${contactCell(h.email, h.phone)}</td>
+              <td class="small muted">${esc(h.note ?? "")}</td>
+            </tr>`).join("")}</tbody></table></div>`
+        : `<p class="muted">Nobody yet. This class wants ${plural(d.wanted, "adult helper")}.</p>`);
+    } catch (e) {
+      render(host, `<p class="muted tiny">Could not load helpers: ${esc(e.message)}</p>`);
+    }
+  })();
+
   $("#addvolunteer").addEventListener("click", () => addVolunteer(cls, semester));
 
   drawClassTeachers(cls);

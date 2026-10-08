@@ -19,6 +19,8 @@ import * as Absences from "./views/absences.js";
 import * as Applications from "./views/applications.js";
 import * as Registration from "./views/registration.js";
 import * as Proposals  from "./views/proposals.js";
+import * as Helpers from "./views/helpers.js";
+import * as HelperEmail from "./views/helper-email.js";
 import * as PrintRecord from "./views/print-record.js";
 import * as Website    from "./views/website.js";
 import * as Exports    from "./views/exports.js";
@@ -62,6 +64,8 @@ const ROUTES = [
   ["#/proposals/:id/print",    PrintRecord.proposal],
   ["#/enrollment",             Enrollment.show],
   ["#/volunteers",             Volunteers.show],
+  ["#/helpers",                Helpers.show],
+  ["#/helpers/email",          HelperEmail.show],
   ["#/website",                Website.show],
   ["#/website/:page",          Website.page],
   ["#/exports",                Exports.show],
@@ -79,6 +83,7 @@ const NAV = [
   ["#/proposals",  "Proposals"],
   ["#/absences",   "Absences"],
   ["#/volunteers", "Volunteers"],
+  ["#/helpers",    "Class Helpers"],
   ["#/website",    "Website"],
   ["#/exports",    "Exports"],
   ["#/settings",   "Settings"],

@@ -1299,3 +1299,83 @@ dialog::backdrop { background: rgba(20, 18, 16, .55); backdrop-filter: blur(2px)
    it is still here, and still editable, it simply is not published. */
 .block.is-hidden { opacity: .62; border-style: dashed; }
 .block.is-hidden .block-text { background: var(--surface-2); }
+
+/* =============================================================================
+   Class helpers — the board of parents.
+
+   The colour is the feature. Somebody placing sixty parents is scanning for
+   red, not reading; the state has to carry at arm's length and must never
+   require counting.
+   ============================================================================= */
+.helper-layout { display: grid; grid-template-columns: 1fr 20rem; gap: 1.25rem; align-items: start; }
+.helper-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); gap: .8rem; }
+
+.helper-rect {
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--danger);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: .75rem .85rem;
+}
+.helper-rect.is-part { border-left-color: var(--warn); }
+.helper-rect.is-done { border-left-color: var(--ok, #2e7d32); background: rgba(46,125,50,.05); }
+
+.hr-head { display: flex; justify-content: space-between; align-items: baseline; gap: .6rem; }
+.hr-count {
+  flex: none; font-variant-numeric: tabular-nums; font-weight: 700;
+  padding: .1rem .45rem; border-radius: 999px; font-size: .82rem;
+  background: var(--surface-2); color: var(--text-muted);
+}
+.helper-rect.is-done .hr-count { background: var(--ok, #2e7d32); color: #fff; }
+
+.hr-wants { margin-top: .5rem; font-size: .84rem; }
+.chip-sm {
+  display: inline-block; margin: .1rem .2rem .1rem 0; padding: .05rem .4rem;
+  border-radius: 3px; background: var(--accent-soft); color: var(--accent-strong);
+  font-size: .78rem;
+}
+.hr-note {
+  margin-top: .45rem; padding-left: .5rem; border-left: 2px solid var(--border);
+  font-size: .82rem; color: var(--text-muted); font-style: italic;
+}
+.hr-slots { display: flex; flex-direction: column; gap: .35rem; margin-top: .6rem; }
+.hr-slot { display: flex; flex-direction: column; gap: .1rem; }
+.hr-slot select { width: 100%; font-size: .88rem; padding: .25rem .35rem; }
+
+/* The reference pane. Sticky, because its whole job is to be glanceable while
+   you work down the board. */
+.helper-ref {
+  position: sticky; top: calc(var(--topbar-h) + 1rem);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-2); padding: .85rem;
+  max-height: calc(100vh - var(--topbar-h) - 3rem); overflow-y: auto;
+}
+.helper-ref h3 { margin-bottom: .1rem; }
+.helper-ref h4 { margin: .9rem 0 .25rem; font-size: .8rem; text-transform: uppercase;
+                 letter-spacing: .04em; color: var(--text-muted); }
+.ref-table { width: 100%; font-size: .82rem; border-collapse: collapse; }
+.ref-table th { font-weight: 400; color: var(--text-faint); font-size: .74rem; text-align: left; }
+.ref-table td { padding: .18rem 0; border-top: 1px solid var(--border); }
+.ref-table td.ok   { color: var(--ok, #2e7d32); font-weight: 700; }
+.ref-table td.bad  { color: var(--danger); font-weight: 700; }
+.ref-table td.warn { color: var(--warn); }
+
+/* The parent's own page. */
+.helper-classes { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: .5rem; }
+.helper-class {
+  display: flex; gap: .55rem; align-items: flex-start;
+  padding: .6rem .7rem; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); cursor: pointer; background: var(--surface);
+}
+.helper-class:hover { border-color: var(--accent); }
+.helper-class.is-on { border-color: var(--accent); background: var(--accent-soft); }
+.helper-class input { margin-top: .15rem; flex: none; }
+.hc-body { display: flex; flex-direction: column; gap: .1rem; }
+.hc-need { font-size: .78rem; color: var(--text-muted); }
+.hc-need.is-full { color: var(--ok, #2e7d32); }
+.hc-desc { margin-top: .15rem; }
+
+@media (max-width: 900px) {
+  .helper-layout { grid-template-columns: 1fr; }
+  .helper-ref { position: static; max-height: none; }
+}

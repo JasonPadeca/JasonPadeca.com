@@ -687,6 +687,50 @@ export const api = {
     return unwrap(await db.rpc("family_volunteering", { p_semester_id: semesterId }));
   },
 
+  // --- Adult helpers: parents working in classes ---
+  /** The parent's own page: every class, and what they offered last time. */
+  async helperForm(semesterId = null) {
+    const db = await client();
+    return unwrap(await db.rpc("helper_form", { p_semester_id: semesterId }));
+  },
+
+  async submitHelperInterest(payload) {
+    const db = await client();
+    return unwrap(await db.rpc("submit_helper_interest", { p_payload: payload }));
+  },
+
+  /** Parents, their offers, their placements, and every class — in one call. */
+  async helperBoard(semesterId) {
+    const db = await client();
+    return unwrap(await db.rpc("helper_board", { p_semester_id: semesterId }));
+  },
+
+  async assignAdultHelper(parentId, classId, note = null) {
+    const db = await client();
+    return unwrap(await db.rpc("assign_adult_helper", {
+      p_parent_id: parentId, p_class_id: classId, p_note: note,
+    }));
+  },
+
+  async removeAdultHelper(parentId, periodId) {
+    const db = await client();
+    return unwrap(await db.rpc("remove_adult_helper", {
+      p_parent_id: parentId, p_period_id: periodId,
+    }));
+  },
+
+  async classAdultHelpers(classId) {
+    const db = await client();
+    return unwrap(await db.rpc("class_adult_helper_list", { p_class_id: classId }));
+  },
+
+  /** Ask parents to say what they would help with. */
+  sendHelperRequest(semesterId, parentIds) {
+    return this.callFunction("admin-invites", {
+      action: "helper_request", semester_id: semesterId, parent_ids: parentIds,
+    });
+  },
+
   // --- Records: what was held, and when ---
   async registrationRecord(familyId, semesterId) {
     const db = await client();

@@ -24,6 +24,7 @@ import * as Week from "./week.js";
 import * as Proposals from "./proposals.js";
 import * as RegForm from "./registration-form.js";
 import * as FamilySetup from "./family-setup.js";
+import * as Helping from "./helping.js";
 import { REGISTRATION_STATUS } from "../assets/proposal-fields.js";
 
 const app = document.getElementById("app");
@@ -40,7 +41,7 @@ let state = { session: null, me: null };
 async function start() {
   // See needsFresh in api.js: reload once if the browser handed us a cached
   // copy from before these existed, rather than failing with "not a function".
-  if (needsFresh(["familyWeek", "familySetup", "familyVolunteering"])) return;
+  if (needsFresh(["familySetup", "helperForm", "submitHelperInterest"])) return;
 
   if (!IS_CONFIGURED) {
     return render(app, `<div class="wrap page"><div class="note note-danger">
@@ -305,6 +306,7 @@ const PAGES = [
   ["/",             "This week"],
   ["/family",       "Your family"],
   ["/registration", "Registration"],
+  ["/helping",      "Helping out"],
   ["/proposals",    "Propose a class"],
 ];
 
@@ -328,6 +330,7 @@ async function route() {
   shownPath = path;
 
   if (path === "/family") return familyPage();
+  if (path === "/helping") return helpingPage();
   if (path === "/registration") return registrationPage();
   if (path === "/proposals") return proposalsPage();
   return home();
@@ -507,6 +510,14 @@ async function registrationPage() {
 async function familyPage() {
   shell("/family", `<div id="famsetup"></div>`);
   await FamilySetup.render_($("#famsetup"));
+}
+
+// -----------------------------------------------------------------------------
+// Helping out
+// -----------------------------------------------------------------------------
+async function helpingPage() {
+  shell("/helping", `<div id="helping"></div>`);
+  await Helping.render_($("#helping"));
 }
 
 // -----------------------------------------------------------------------------
