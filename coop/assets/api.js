@@ -1147,6 +1147,19 @@ export const api = {
     return this.callFunction("admin-invites",
       { action: "revoke", family_id: familyId, semester_id: semesterId });
   },
+
+  // --- Mail diagnostics (§43) -------------------------------------------------
+  //
+  // Reports the shape of the mail configuration without ever returning the
+  // password itself. This exists because a wrong-length secret once cost an
+  // evening of guesswork; the length is now something a person can just read.
+  emailDiagnose() {
+    return this.callFunction("test-email", { action: "diagnose" });
+  },
+
+  sendTestEmail(template, to) {
+    return this.callFunction("test-email", { action: "send", template, to });
+  },
 };
 
 // =============================================================================

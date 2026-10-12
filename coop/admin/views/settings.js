@@ -89,6 +89,7 @@ export async function show(app) {
 
     <div class="card">
       <div class="card-head"><h3>System</h3>
+        <a class="btn btn-sm" href="#/settings/email">Email</a>
         <a class="btn btn-sm" href="#/audit">View Audit Log</a></div>
       <div class="table-scroll"><table><tbody>
         ${row("Backend status", status ? "OK" : "Unknown")}

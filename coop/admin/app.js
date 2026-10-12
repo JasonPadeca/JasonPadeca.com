@@ -25,6 +25,7 @@ import * as PrintRecord from "./views/print-record.js";
 import * as Website    from "./views/website.js";
 import * as Exports    from "./views/exports.js";
 import * as Settings   from "./views/settings.js";
+import * as EmailTest from "./views/email-test.js";
 
 const app = $("#app");
 
@@ -70,6 +71,7 @@ const ROUTES = [
   ["#/website/:page",          Website.page],
   ["#/exports",                Exports.show],
   ["#/settings",               Settings.show],
+  ["#/settings/email",         EmailTest.show],
   ["#/audit",                  Settings.audit],
 ];
 
@@ -96,7 +98,8 @@ const NAV = [
   // Newest things this build calls. If the browser handed us a cached api.js
   // from before they existed, needsFresh reloads once rather than letting a
   // page fail with "api.something is not a function".
-  if (needsFresh(["registrationReport", "sendRegistrationNotice", "registerFamily"])) return;
+  if (needsFresh(["registrationReport", "sendRegistrationNotice", "registerFamily",
+                   "emailDiagnose"])) return;
 
   if (!IS_CONFIGURED) {
     return render(app, `<div class="centered">
