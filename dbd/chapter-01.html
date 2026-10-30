@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 1: Daggers ’n David | Drafted By Dice: Gatestormers</title>
+    <meta name="description" content="Chapter 1 of Drafted By Dice: Gatestormers, a novel where real dice decide what happens next.">
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+/* Drafted By Dice — shared styles for the landing page and chapters.
+   Tokens match the main site (../styles.css). */
+
+:root {
+    --color-bg: #0d0d0f;
+    --color-bg-alt: #131316;
+    --color-surface: #1a1a1f;
+    --color-text: #e8e6e3;
+    --color-text-muted: #9a9a9a;
+    --color-accent: #8b7355;
+    --color-accent-hover: #a68b6a;
+    --color-border: #2a2a2f;
+    --color-good: #7fb79a;
+    --color-bad: #d8776a;
+    --color-crit: #e3c06b;
+    --font-serif: 'Crimson Pro', Georgia, serif;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --sidebar-width: clamp(210px, 36vw, 360px);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--color-text);
+    background: var(--color-bg);
+}
+
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { color: var(--color-accent-hover); }
+
+.visually-hidden {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* ---- Top bar ---------------------------------------------------------- */
+
+.topbar {
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-alt);
+}
+.topbar-content {
+    max-width: 1200px; margin: 0 auto; padding: 0.9rem 1.5rem;
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+    font-size: 0.9rem;
+}
+.topbar-title { font-family: var(--font-serif); font-size: 1.2rem; font-weight: 600; color: var(--color-text); }
+.topbar-links { display: flex; gap: 1.25rem; list-style: none; }
+.topbar-links a { color: var(--color-text-muted); }
+.topbar-links a:hover { color: var(--color-text); }
+
+/* ---- Landing page ----------------------------------------------------- */
+
+.landing { max-width: 760px; margin: 0 auto; padding: 4rem 1.5rem 3rem; }
+.eyebrow {
+    font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--color-accent); margin-bottom: 0.75rem;
+}
+.landing h1 {
+    font-family: var(--font-serif); font-weight: 600; line-height: 1.1;
+    font-size: clamp(2.4rem, 7vw, 3.6rem); letter-spacing: -0.02em; margin-bottom: 1.25rem;
+}
+.landing h2 {
+    font-family: var(--font-serif); font-weight: 600; font-size: 1.6rem;
+    color: var(--color-accent); margin: 3rem 0 1rem;
+}
+.landing p { margin-bottom: 1rem; color: var(--color-text); }
+.landing .lede { font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.5; color: var(--color-text); }
+
+.how-it-works { list-style: none; display: grid; gap: 1rem; }
+.how-it-works li {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: 6px; padding: 1rem 1.25rem;
+}
+.how-it-works strong { display: block; font-family: var(--font-serif); font-size: 1.15rem; margin-bottom: 0.25rem; }
+
+.chapter-list { list-style: none; border-top: 1px solid var(--color-border); }
+.chapter-list li { border-bottom: 1px solid var(--color-border); }
+.chapter-list a {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+    padding: 1rem 0.25rem; color: var(--color-text);
+}
+.chapter-list a:hover { color: var(--color-accent-hover); }
+.chapter-list .chapter-name { font-family: var(--font-serif); font-size: 1.2rem; }
+.chapter-list .chapter-meta { font-size: 0.85rem; color: var(--color-text-muted); white-space: nowrap; }
+
+.attribution {
+    margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border);
+    font-size: 0.8rem; color: var(--color-text-muted);
+}
+.attribution p { color: var(--color-text-muted); }
+
+/* ---- Chapter layout --------------------------------------------------- */
+
+.reader {
+    max-width: 1200px; margin: 0 auto; padding: 3rem 1.5rem 4rem;
+    display: grid; grid-template-columns: minmax(0, 1fr); gap: 3rem;
+}
+/* With no roll open the story has the page to itself. Opening a roll slides
+   the sidebar in beside it; the zero-width track keeps the transition smooth. */
+@media (min-width: 520px) {
+    .reader {
+        grid-template-columns: minmax(0, 680px) 0px; column-gap: 0;
+        justify-content: center; padding-inline: clamp(1rem, 3vw, 1.5rem);
+        transition: grid-template-columns 0.25s ease, column-gap 0.25s ease;
+    }
+    .reader.has-roll { grid-template-columns: minmax(0, 680px) var(--sidebar-width); column-gap: clamp(1.25rem, 3vw, 3rem); }
+}
+@media (min-width: 520px) and (max-width: 899px) {
+    .roll-panel { padding: 1rem !important; }
+}
+
+.chapter header { margin-bottom: 2.5rem; }
+.chapter .chapter-number {
+    font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-accent);
+}
+.chapter h1 {
+    font-family: var(--font-serif); font-weight: 600; line-height: 1.15;
+    font-size: clamp(2rem, 5vw, 2.8rem); margin-top: 0.4rem;
+}
+
+.prose {
+    font-family: var(--font-serif); font-size: 1.25rem; line-height: 1.7;
+}
+.prose p { margin-bottom: 1.2em; }
+.prose hr { border: none; text-align: center; margin: 2em 0; color: var(--color-text-muted); }
+.prose hr::after { content: '⁂'; font-size: 1.2rem; }
+
+/* A passage that a roll decided. Dotted underline so it reads as "there's
+   more here" without shouting over the prose. */
+.roll {
+    text-decoration: underline dotted var(--color-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.22em;
+    border-radius: 3px;
+    transition: background-color 0.15s ease, text-decoration-color 0.15s ease;
+}
+.dice-ready .roll { cursor: pointer; }
+.dice-ready .roll::after {
+    content: '⚄'; font-family: var(--font-sans); font-size: 0.7em;
+    vertical-align: super; margin-left: 0.15em; color: var(--color-accent);
+}
+.dice-ready .roll:hover,
+.dice-ready .roll:focus-visible,
+.dice-ready .roll.active {
+    background: rgba(139, 115, 85, 0.18);
+    text-decoration-color: var(--color-accent-hover);
+    outline: none;
+}
+.dice-ready .roll:focus-visible { box-shadow: 0 0 0 2px var(--color-accent-hover); }
+
+/* ---- Sidebar ---------------------------------------------------------- */
+
+/* Without the script the sidebar has nothing to do. */
+.roll-sidebar { display: none; }
+.dice-ready .roll-sidebar { display: block; }
+
+@media (min-width: 520px) {
+    .roll-sidebar { overflow: hidden; }
+    .reader:not(.has-roll) .roll-sidebar { visibility: hidden; }
+    .roll-sidebar {
+        position: sticky; top: 1.5rem; align-self: start;
+        max-height: calc(100vh - 3rem);
+    }
+    .roll-panel {
+        max-height: calc(100vh - 3rem); overflow-y: auto;
+        background: var(--color-surface); border: 1px solid var(--color-border);
+        border-radius: 8px; padding: 1.5rem;
+    }
+}
+
+/* Phones and tablets: the sidebar becomes a bottom sheet. */
+@media (max-width: 519px) {
+    .dice-ready .roll-sidebar {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+        max-height: 72vh;
+        background: var(--color-surface); border-top: 1px solid var(--color-border);
+        border-radius: 14px 14px 0 0;
+        box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.55);
+        transform: translateY(105%); transition: transform 0.25s ease;
+        visibility: hidden;
+    }
+    .dice-ready .roll-sidebar.open { transform: translateY(0); visibility: visible; }
+    .roll-panel { max-height: 72vh; overflow-y: auto; padding: 1.25rem 1.25rem 2rem; }
+}
+
+.roll-close {
+    position: absolute; top: 0.5rem; right: 0.6rem; z-index: 1;
+    background: none; border: none; color: var(--color-text-muted);
+    font-size: 1.6rem; line-height: 1; padding: 0.25rem 0.5rem; cursor: pointer;
+    display: none;
+}
+.roll-sidebar.has-roll .roll-close { display: block; }
+.roll-close:hover { color: var(--color-text); }
+
+
+/* ---- Roll detail (shown in the sidebar) ------------------------------- */
+
+.roll-header { text-align: center; padding-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); margin-bottom: 1.25rem; }
+.roll-check { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted); }
+
+.roll-face {
+    position: relative; width: 96px; height: 96px; margin: 0.75rem auto;
+    display: grid; place-items: center;
+    border: 2px solid var(--color-accent); border-radius: 18px;
+    background: var(--color-bg);
+    transform: rotate(45deg);
+}
+.roll-face > * { transform: rotate(-45deg); }
+.roll-number { font-family: var(--font-serif); font-size: 2.6rem; font-weight: 600; line-height: 1; }
+.roll-face.tumbling { animation: tumble 0.66s ease-out; }
+.roll-face.tumbling .roll-number { color: var(--color-text-muted); }
+@keyframes tumble {
+    0%   { transform: rotate(45deg) scale(0.85); }
+    40%  { transform: rotate(225deg) scale(1.05); }
+    100% { transform: rotate(405deg) scale(1); }
+}
+.roll-face.landed.verdict-success,  .roll-face.landed.verdict-success  .roll-number { border-color: var(--color-good); color: var(--color-good); }
+.roll-face.landed.verdict-failure,  .roll-face.landed.verdict-failure  .roll-number { border-color: var(--color-bad);  color: var(--color-bad); }
+.roll-face.landed.verdict-crit,     .roll-face.landed.verdict-crit     .roll-number { border-color: var(--color-crit); color: var(--color-crit); }
+.roll-face.landed.verdict-fumble,   .roll-face.landed.verdict-fumble   .roll-number { border-color: var(--color-bad);  color: var(--color-bad); }
+.roll-face.landed.verdict-crit { box-shadow: 0 0 24px rgba(227, 192, 107, 0.35); }
+
+.roll-math { font-size: 0.9rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.roll-verdict { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 600; margin-top: 0.15rem; }
+.roll-header:has(.verdict-success) .roll-verdict { color: var(--color-good); }
+.roll-header:has(.verdict-failure) .roll-verdict,
+.roll-header:has(.verdict-fumble) .roll-verdict { color: var(--color-bad); }
+.roll-header:has(.verdict-crit) .roll-verdict { color: var(--color-crit); }
+
+.roll-detail h3 { font-family: var(--font-serif); font-size: 1.35rem; font-weight: 600; line-height: 1.25; margin-bottom: 1rem; }
+.roll-detail h4 {
+    font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--color-accent); margin: 1.25rem 0 0.4rem;
+}
+.roll-detail p { font-size: 0.95rem; margin-bottom: 0.6rem; }
+
+.stakes { list-style: none; display: grid; gap: 0.4rem; }
+.stakes li {
+    font-size: 0.9rem; color: var(--color-text-muted);
+    padding: 0.5rem 0.7rem; border-radius: 5px; border: 1px solid var(--color-border);
+    display: grid; grid-template-columns: 3.6rem 1fr; gap: 0.6rem; align-items: baseline;
+}
+.stake-range { font-variant-numeric: tabular-nums; font-weight: 500; color: var(--color-text-muted); }
+.stakes li.stake-hit {
+    color: var(--color-text); border-color: var(--color-accent);
+    background: rgba(139, 115, 85, 0.14);
+}
+.stakes li.stake-hit .stake-range { color: var(--color-accent-hover); }
+
+.author-note {
+    margin-top: 1.25rem; padding: 0.9rem 1rem; border-left: 3px solid var(--color-accent);
+    background: var(--color-bg-alt); border-radius: 0 5px 5px 0;
+}
+.author-note h4 { margin-top: 0; }
+.author-note p { font-style: italic; font-family: var(--font-serif); font-size: 1.05rem; }
+
+/* ---- End-of-chapter ledger ------------------------------------------- */
+
+.roll-ledger { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--color-border); }
+.roll-ledger > h2 { font-family: var(--font-serif); font-size: 1.5rem; color: var(--color-accent); margin-bottom: 0.4rem; }
+.roll-ledger > p { font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 1.25rem; }
+
+/* No script: the full cards are the ledger. */
+.roll-card {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: 6px; padding: 1.25rem; margin-bottom: 1rem;
+}
+.roll-card .roll-summary { font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 0.5rem; }
+/* With script: hide the cards, show the compact clickable list instead. */
+.dice-ready .roll-card { display: none; }
+.roll-ledger-list { display: none; list-style: none; }
+.dice-ready .roll-ledger-list { display: grid; gap: 0.4rem; }
+
+.ledger-entry {
+    width: 100%; text-align: left; cursor: pointer;
+    display: grid; grid-template-columns: 9rem 1fr auto; gap: 1rem; align-items: baseline;
+    padding: 0.7rem 0.9rem; border-radius: 5px;
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    color: var(--color-text); font: inherit; font-size: 0.9rem;
+}
+.ledger-entry:hover, .ledger-entry:focus-visible { border-color: var(--color-accent); outline: none; }
+.ledger-check { color: var(--color-text-muted); font-size: 0.8rem; }
+.ledger-title { font-family: var(--font-serif); font-size: 1.05rem; }
+.ledger-roll { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ledger-entry.verdict-success .ledger-roll { color: var(--color-good); }
+.ledger-entry.verdict-failure .ledger-roll,
+.ledger-entry.verdict-fumble .ledger-roll { color: var(--color-bad); }
+.ledger-entry.verdict-crit .ledger-roll { color: var(--color-crit); }
+
+@media (max-width: 600px) {
+    .ledger-entry { grid-template-columns: 1fr auto; }
+    .ledger-check { grid-column: 1 / -1; }
+    .topbar-links { gap: 0.9rem; }
+}
+
+.chapter-nav {
+    display: flex; justify-content: space-between; gap: 1rem;
+    margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border);
+    font-size: 0.95rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reader { transition: none; }
+    .roll-face.tumbling { animation: none; }
+    .dice-ready .roll-sidebar { transition: none; }
+}
+    </style>
+</head>
+<body>
+    <nav class="topbar">
+        <div class="topbar-content">
+            <a href="./" class="topbar-title">Gatestormers</a>
+            <ul class="topbar-links">
+                <li><a href="./#chapters">Chapters</a></li>
+                <li><a href="../">Jason Padeca</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="reader">
+        <article class="chapter">
+            <header>
+                <p class="chapter-number">Chapter 1 · Sample</p>
+                <h1>Daggers ’n David</h1>
+            </header>
+
+            <div class="prose">
+                <p>The shadows in the room reached out at improbable angles across the wood floor. That suited David just fine. Considering the trouble he already had to take to avoid betrayal by creaking floorboards, having his choice of patches of darkness to dart into felt like a gift.</p>
+
+                <p>The old man was still drifting off by the fire. It was his near-mad decoration sense that had split up the shadows in this place that way. Mirror after mirror collected the light from the dying fire in front of him, sending it in random-seeming directions but leaving the better part of the house unilluminated. The half-empty bottle in his hand should have made his personality make more sense, but it didn’t. David had spent plenty of time researching his target, just as he had been taught. He knew him inside and out. Liquor had nothing to do with the decor, the lifestyle, or a dozen other mystifying decisions the old man regularly made. He was just like that.</p>
+
+                <p>The old man’s head nodded a few times, then hung down until his ragged beard folded against his chest. In the shadow of a non-functional grandfather clock, David knew not to trust appearances.</p>
+
+                <p>If he was actually asleep, he’d drop the bottle.</p>
+
+                <p>There were rules for this sort of thing. Guidelines, at least. A hand grasping something might allow for the hand’s owner to be slightly asleep, but slightly asleep was still somewhat aware. Jobs were best completed quickly enough to avoid complications, but that speed had to trade off against safety. David hadn’t alerted any guards on his way in. The lock had picked as smoothly as if it was greased, mostly because he had actually greased it. Rogues didn’t write many books, and they wrote even fewer honest books. The small handful of legitimate-looking tomes he had collected all seemed to agree that this was a time to wait.</p>
+
+                <p>So he waited. The old man’s head couldn’t droop deeper, but it dipped heavier and heavier against his ribs as he got further and further from consciousness. David waited until the balance tipped away from waiting in favor of moving, darting from shadow to shadow again once it was clear the old man was either sleeping like a rock or faking the entire thing anyway.</p>
+
+                <p>He had been working this target for months, and it had never felt this close. A board creaked very slightly under one of his feet as he moved, but so faintly he couldn’t imagine anyone hearing it any further from the source than he was. He shifted his weight subtly before completing that step, quieting the nightingale board in a fraction of an instant as he slipped into position directly behind the old man’s chair.</p>
+
+                <p>Like all the things the elderly target seemed to own, the chair had seen better days. It was probably once a sturdy dependable kind of thing. Decades later, the fact that it was still standing almost qualified as a magic trick. It had been splintered, broken, glued, rebroken, and refinished with some sort of suspicious remnant oil until it was more scars than intact bits, but it was still going. Even better, it was a thin-backed affair. The man had fallen asleep in his own coat, and his pockets were beckoning from well past any interfering chair edge, begging to be picked.</p>
+
+                <p>David didn’t have to hold his breath for what came next. He had been holding it for over half a minute already. His hand snaked forward, passing the mouth of the pockets without so much as scraping the edges of the fabric. His fingers hit cold wood, slipping slightly over a beveled edge before a stronger, rougher hand clamped over his wrist.</p>
+
+                <p>“Gotcha.” The old man said. “Not a bad try, though.”</p>
+
+                <p>“You weren’t asleep.”</p>
+
+                <p>“I was. It was the board.” The old man pinned down the box with his free hand before jerking David’s hand out of his pocket and shoving him backwards to the floor. David would have never got away with the box anyway, but it was deeply consistent with everything he knew about the old rogue in front of him to take no unnecessary chances. “Quite the racket. If you hadn't hit that, you might have got me.”</p>
+
+                <p>“I doubt it.” David stood up. “You felt my hand in your pocket. I felt you feel it.”</p>
+
+                <p>“That I did. But the dice weren’t with you, I think.”</p>
+
+                <p>It was true. David’s skills were nothing next to beginner rogue’s, let alone the old man’s. The support of the dice was still enough to make the nearly impossible possible, if you got it. David almost never did.</p>
+
+                <p>“No. Even so, I got close, old man. I can’t believe anyone ever gets closer than this.”</p>
+
+                <p>It wasn’t entirely bluster on David’s part. He might not be doing a superhuman job and the dice might not be backing him up, but he had dedicated an enormous amount of good old-fashioned work to the job of getting the old man’s approval. His friends had all done significantly less, and were all walking around with classes now. It was only him that was still waiting.</p>
+
+                <p>“I don’t owe you anything, boy. If you were ready, you’d have my approval. You aren’t, so you don’t. It’s as simple as that.”</p>
+
+                <p>Months ago, David had taken that same statement at face value. Deep in the old man’s sprawling, broken-down mess of a house and stinging with defeat, he caught something in the old man’s face that made him look twice. <span class="roll" data-roll="read-the-old-man">Even so, there was just nothing there to see.</span> The man looked patently honest, as if David would have had to explain what dishonesty was to the man before accusing him of it.</p>
+
+                <p>Either way, it didn’t matter. The rule was one attempt a day. It had been hard enough to convince the man to train him that David didn’t dare tempt fate beyond that. The terms were the terms.</p>
+
+                <p>“No luck?”</p>
+
+                <p>A massive shadow emerged from the raised walkway running alongside the old man’s house. <span class="roll" data-roll="jasa-arrives">David almost jumped out of his skin and whipped around to see a massive half orc woman approaching</span>, a greataxe slung lazily across her shoulder.</p>
+
+                <p>“Gods, female Jasa. Announce yourself.”</p>
+
+                <p>“Aren’t you supposed to be a rogue? Aren’t they supposed to be attentive?</p>
+
+                <p>“I’m supposed to be a rogue.” David’s shoulders slumped despite his best efforts. Jasa was a good person. They had been together a long time. He still didn’t want her to see him looking as broken as he felt. “I’m supposed to have been a rogue a long time ago.”</p>
+
+                <p>“You really don’t think it’s your birthroll?”</p>
+
+                <p>“I don’t. You know it could be a one or a twenty.”</p>
+
+                <p>“It’s a shame, that. If I had been a thirteen, people would have known. They would have thought I’d end up being a criminal.”</p>
+
+                <p>“Or a thorn in the side of criminals. It goes both ways.”</p>
+
+                <p>“Sure. But at least we’d know. Not that we don’t know now.”</p>
+
+                <p>Jasa closed one of her powerful barbarian hands around his arm and yanked him around to face her. She was just a level one, but a level one barbarian was so much stronger than a normal common person like him could resist.</p>
+
+                <p>“You don’t know.” Her eye glinted. When she got like this, David knew that Jasa wasn’t arguing so much as she was commanding him to believe in a certain way. “Nobody does. The life of 1 is doomed. The life of a 20 is important. You can’t know which until the doom or the importance happens.”</p>
+
+                <p>“It’s not always doom, you know. Some ones go on to long lives of importance just like the twenties.”</p>
+
+                <p>“As liches, sure.” Jasa shook her head, spun David back around, and clapped him on the back. “Now come on. There’s a planning meeting at the tavern.”</p>
+
+                <p>“So soon?”</p>
+
+                <p>“Yes, so soon. We just got word from the sons of the gate today. It should be opening soon.”</p>
+            </div>
+
+            <section class="roll-ledger" aria-labelledby="ledger-heading">
+                <h2 id="ledger-heading">Roll ledger</h2>
+                <p>Every roll in this chapter, in the order it happened. Nothing was rerolled.</p>
+                <ol class="roll-ledger-list"></ol>
+
+                <!-- Roll cards. The script below moves these into the sidebar; without
+                     JavaScript they show here in full. See AUTHORING.md. -->
+
+                <aside class="roll-card" id="read-the-old-man"
+                       data-check="Wisdom (Insight)" data-die="d20" data-natural="6">
+                    <h3>Is the old man hiding something?</h3>
+                    <p class="roll-summary">Wisdom (Insight), d20: 6</p>
+                    <h4>What happened</h4>
+                    <p>A 6. Something in the old man’s face makes David look twice, but he can’t find anything there.</p>
+                    <div class="author-note">
+                        <h4>Author’s note</h4>
+                        <p>[Your note on this roll goes here.]</p>
+                    </div>
+                </aside>
+
+                <aside class="roll-card" id="jasa-arrives"
+                       data-check="Wisdom (Perception)" data-die="d20" data-natural="7">
+                    <h3>Does David hear Jasa coming?</h3>
+                    <p class="roll-summary">Wisdom (Perception), d20: 7</p>
+                    <h4>What happened</h4>
+                    <p>A 7. Jasa makes it all the way along the walkway before David notices her, and he nearly jumps out of his skin.</p>
+                    <div class="author-note">
+                        <h4>Author’s note</h4>
+                        <p>[Your note on this roll goes here.]</p>
+                    </div>
+                </aside>
+            </section>
+
+            <nav class="chapter-nav">
+                <a href="./">← All chapters</a>
+                <span></span>
+            </nav>
+        </article>
+
+        <aside class="roll-sidebar" aria-label="Roll details">
+            <button type="button" class="roll-close" aria-label="Close roll details">×</button>
+            <div class="roll-panel" id="roll-panel" aria-live="polite">
+            </div>
+        </aside>
+    </div>
+
+    <script>
+// Drafted By Dice — roll reader.
+//
+// A chapter marks a passage as roll-worthy with
+//     <span class="roll" data-roll="some-id">the passage</span>
+// and describes the roll in an <aside class="roll-card" id="some-id"> (see
+// AUTHORING.md). Without this script the cards simply sit at the end of the
+// chapter as a readable ledger. With it, the cards move into a sidebar that
+// fills in when a reader hovers, focuses or taps a marked passage.
+
+(function () {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const wide = window.matchMedia('(min-width: 520px)');
+    const mouse = window.matchMedia('(hover: hover)');
+    const HOVER_DELAY = 350;
+    let hoverTimer = null;
+
+    const cards = new Map();
+    document.querySelectorAll('.roll-card[id]').forEach(card => cards.set(card.id, readCard(card)));
+    const marks = [...document.querySelectorAll('.roll[data-roll]')].filter(m => cards.has(m.dataset.roll));
+    if (!marks.length) return;
+
+    document.body.classList.add('dice-ready');
+
+    const sidebar = document.querySelector('.roll-sidebar');
+    const panel = sidebar.querySelector('.roll-panel');
+    const closeButton = sidebar.querySelector('.roll-close');
+    const seen = new Set();
+    let current = null;
+    let openedByHover = false;
+    const reader = document.querySelector('.reader');
+
+    // ---- Reading a card ---------------------------------------------------
+
+    function readCard(card) {
+        const d = card.dataset;
+        const natural = d.natural !== undefined ? parseInt(d.natural, 10) : null;
+        const mod = d.mod ? parseInt(d.mod, 10) : 0;
+        const total = natural === null ? null : natural + mod;
+        const dc = d.dc ? parseInt(d.dc, 10) : null;
+        const die = d.die || 'd20';
+        const isD20 = /^1?d20$/i.test(die);
+
+        let verdict = null;
+        if (isD20 && natural === 20) verdict = 'crit';
+        else if (isD20 && natural === 1) verdict = 'fumble';
+        else if (dc !== null && total !== null) verdict = total >= dc ? 'success' : 'failure';
+
+        return { card, natural, mod, total, dc, die, isD20, verdict,
+                 check: d.check || 'Roll', vs: d.vs || 'DC', dice: d.dice ? d.dice.trim().split(/[\s,]+/) : null };
+    }
+
+    // A stakes line matches by "nat1"/"nat20" first, then by a range of totals.
+    function stakeMatches(range, roll) {
+        range = range.trim().toLowerCase();
+        if (range === 'nat1') return roll.isD20 && roll.natural === 1;
+        if (range === 'nat20') return roll.isD20 && roll.natural === 20;
+        const m = range.match(/^(\d+)\s*(?:[-–]\s*(\d+)|(\+))?$/);
+        if (!m || roll.total === null) return false;
+        const lo = parseInt(m[1], 10);
+        const hi = m[3] ? Infinity : m[2] ? parseInt(m[2], 10) : lo;
+        return roll.total >= lo && roll.total <= hi;
+    }
+
+    function pickStake(items, roll) {
+        const special = items.find(li => /^nat(1|20)$/i.test(li.dataset.range.trim()) && stakeMatches(li.dataset.range, roll));
+        return special || items.find(li => !/^nat/i.test(li.dataset.range.trim()) && stakeMatches(li.dataset.range, roll));
+    }
+
+    // ---- Rendering --------------------------------------------------------
+
+    const VERDICT_TEXT = { crit: 'Natural 20', fumble: 'Natural 1', success: 'Success', failure: 'Failure' };
+
+    function formatMod(n) { return n === 0 ? '' : (n > 0 ? ` + ${n}` : ` − ${Math.abs(n)}`); }
+
+    function render(roll) {
+        const body = roll.card.cloneNode(true);
+        body.removeAttribute('id');
+        body.classList.remove('roll-card');
+        body.classList.add('roll-detail');
+
+        // Strip the static summary line the no-JS ledger shows; the header replaces it.
+        body.querySelectorAll('.roll-summary').forEach(el => el.remove());
+
+        const items = [...body.querySelectorAll('.stakes > li[data-range]')];
+        const hit = pickStake(items, roll);
+        items.forEach(li => {
+            const tag = document.createElement('span');
+            tag.className = 'stake-range';
+            tag.textContent = li.dataset.range.replace(/^nat/i, 'Nat ');
+            li.prepend(tag);
+            li.classList.toggle('stake-hit', li === hit);
+        });
+
+        const header = document.createElement('div');
+        header.className = 'roll-header';
+        header.innerHTML = `
+            <p class="roll-check"></p>
+            <div class="roll-face ${roll.verdict ? 'verdict-' + roll.verdict : ''}">
+                <span class="roll-number" aria-hidden="true"></span>
+            </div>
+            <p class="roll-math"></p>
+            <p class="roll-verdict"></p>`;
+        header.querySelector('.roll-check').textContent = `${roll.check} · ${roll.die}`;
+        const number = header.querySelector('.roll-number');
+        number.textContent = roll.natural ?? '?';
+
+        const math = [];
+        if (roll.dice) math.push(`[${roll.dice.join(', ')}]`);
+        if (roll.natural !== null && roll.mod) math.push(`${roll.natural}${formatMod(roll.mod)} = ${roll.total}`);
+        if (roll.dc !== null) math.push(`${roll.vs} ${roll.dc}`);
+        header.querySelector('.roll-math').textContent = math.join('  ·  ');
+        header.querySelector('.roll-verdict').textContent = roll.verdict ? VERDICT_TEXT[roll.verdict] : '';
+
+        // Screen readers get the result in one sentence rather than the animated digits.
+        const sr = document.createElement('p');
+        sr.className = 'visually-hidden';
+        sr.textContent = `${roll.check}: rolled ${roll.natural ?? 'unknown'} on ${roll.die}` +
+            (roll.mod ? `, total ${roll.total}` : '') + (roll.dc !== null ? ` against ${roll.vs} ${roll.dc}` : '') +
+            (roll.verdict ? `. ${VERDICT_TEXT[roll.verdict]}.` : '.');
+        header.append(sr);
+
+        body.prepend(header);
+        return { body, number };
+    }
+
+    // The first time a reader opens a roll, the die tumbles before landing,
+    // so the result arrives the way it did at the table.
+    function tumble(number, roll) {
+        const face = number.parentElement;
+        if (reduceMotion || roll.natural === null) { face.classList.add('landed'); return; }
+        const faces = parseInt((roll.die.match(/d(\d+)/i) || [])[1], 10) || 20;
+        face.classList.add('tumbling');
+        let ticks = 0;
+        const timer = setInterval(() => {
+            number.textContent = 1 + Math.floor(Math.random() * faces);
+            if (++ticks >= 12) {
+                clearInterval(timer);
+                number.textContent = roll.natural;
+                face.classList.remove('tumbling');
+                face.classList.add('landed');
+            }
+        }, 55);
+    }
+
+    function show(id, { fromHash = false } = {}) {
+        const roll = cards.get(id);
+        if (!roll || current === id) {
+            if (current === id && !wide.matches) sidebar.classList.add('open');
+            return;
+        }
+        current = id;
+        sidebar.classList.add('has-roll');
+        reader.classList.add('has-roll');
+
+        const { body, number } = render(roll);
+        panel.replaceChildren(body);
+        panel.scrollTop = 0;
+
+        if (!seen.has(id)) {
+            seen.add(id);
+            tumble(number, roll);
+        } else {
+            number.parentElement.classList.add('landed');
+        }
+
+        marks.forEach(m => m.classList.toggle('active', m.dataset.roll === id));
+        if (!wide.matches) sidebar.classList.add('open');
+        if (!fromHash) history.replaceState(null, '', '#' + id);
+    }
+
+    // Back to the story: empty the sidebar and drop the highlight.
+    function close() {
+        clearTimeout(hoverTimer);
+        sidebar.classList.remove('open', 'has-roll');
+        reader.classList.remove('has-roll');
+        if (current === null) return;
+        current = null;
+        panel.replaceChildren();
+        marks.forEach(m => m.classList.remove('active'));
+        history.replaceState(null, '', location.href.split('#')[0]);
+    }
+
+    // ---- Wiring -----------------------------------------------------------
+
+    marks.forEach(mark => {
+        const roll = cards.get(mark.dataset.roll);
+        mark.setAttribute('tabindex', '0');
+        mark.setAttribute('role', 'button');
+        mark.setAttribute('aria-controls', 'roll-panel');
+        mark.setAttribute('aria-label', `${mark.textContent.trim()} — show roll: ${roll.check}`);
+        if (roll.verdict) mark.classList.add('verdict-' + roll.verdict);
+
+        // Hover previews only with a real mouse; on phones a stray touch-hover
+        // would pop the sheet open while the reader scrolls.
+        // Hover only updates the sidebar beside the text, and only once the
+        // pointer has rested on a passage, so skimming past does nothing.
+        mark.addEventListener('mouseenter', () => {
+            if (!mouse.matches || !wide.matches) return;
+            clearTimeout(hoverTimer);
+            hoverTimer = setTimeout(() => {
+                const before = current;
+                show(mark.dataset.roll);
+                if (current !== before) openedByHover = true;
+            }, HOVER_DELAY);
+        });
+        mark.addEventListener('mouseleave', () => clearTimeout(hoverTimer));
+        mark.addEventListener('focus', () => { if (wide.matches) show(mark.dataset.roll); });
+        // Clicking a passage opens it. Clicking it again closes it, unless it
+        // was only opened by resting the pointer on it, in which case the
+        // click just keeps it open.
+        mark.addEventListener('click', () => {
+            clearTimeout(hoverTimer);
+            if (current === mark.dataset.roll && !openedByHover) return close();
+            show(mark.dataset.roll);
+            openedByHover = false;
+        });
+        mark.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(mark.dataset.roll); }
+        });
+    });
+
+    closeButton.addEventListener('click', close);
+    // Any interaction with the page outside the sidebar collapses it: a click
+    // or tap, a scroll, or a key press. Merely moving the mouse doesn't count,
+    // or the reader could never travel from a passage to the sidebar.
+    const outside = target => !sidebar.contains(target) && !target.closest('.roll');
+    document.addEventListener('pointerdown', e => { if (outside(e.target)) close(); });
+    document.addEventListener('wheel', e => { if (!sidebar.contains(e.target)) close(); }, { passive: true });
+    document.addEventListener('touchmove', e => { if (!sidebar.contains(e.target)) close(); }, { passive: true });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') return close();
+        if (sidebar.contains(e.target)) return;
+        if (e.target.closest('.roll') && (e.key === 'Enter' || e.key === ' ')) return;
+        close();
+    });
+    wide.addEventListener('change', () => { if (wide.matches) close(); });
+
+    // Build the end-of-chapter ledger: every roll, in order, one line each.
+    const ledger = document.querySelector('.roll-ledger-list');
+    if (ledger) {
+        const order = [...new Set(marks.map(m => m.dataset.roll))];
+        ledger.replaceChildren(...order.map(id => {
+            const roll = cards.get(id);
+            const li = document.createElement('li');
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'ledger-entry' + (roll.verdict ? ' verdict-' + roll.verdict : '');
+            const title = roll.card.querySelector('h3');
+            btn.innerHTML = '<span class="ledger-check"></span><span class="ledger-title"></span><span class="ledger-roll"></span>';
+            btn.querySelector('.ledger-check').textContent = roll.check;
+            btn.querySelector('.ledger-title').textContent = title ? title.textContent : '';
+            btn.querySelector('.ledger-roll').textContent =
+                `${roll.die} ${roll.natural ?? '?'}` + (roll.mod ? ` → ${roll.total}` : '') + (roll.dc !== null ? ` vs ${roll.dc}` : '');
+            btn.addEventListener('click', () => {
+                const mark = marks.find(m => m.dataset.roll === id);
+                mark.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+                show(id);
+            });
+            li.append(btn);
+            return li;
+        }));
+    }
+
+
+    const fromHash = decodeURIComponent(location.hash.slice(1));
+    if (cards.has(fromHash)) {
+        const mark = marks.find(m => m.dataset.roll === fromHash);
+        mark.scrollIntoView({ block: 'center' });
+        show(fromHash, { fromHash: true });
+    }
+})();
+    </script>
+</body>
+</html>
