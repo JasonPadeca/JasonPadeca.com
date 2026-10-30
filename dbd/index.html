@@ -9,7 +9,306 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="dice.css">
+    <style>
+/* Drafted By Dice — shared styles for the landing page and chapters.
+   Tokens match the main site (../styles.css). */
+
+:root {
+    --color-bg: #0d0d0f;
+    --color-bg-alt: #131316;
+    --color-surface: #1a1a1f;
+    --color-text: #e8e6e3;
+    --color-text-muted: #9a9a9a;
+    --color-accent: #8b7355;
+    --color-accent-hover: #a68b6a;
+    --color-border: #2a2a2f;
+    --color-good: #7fb79a;
+    --color-bad: #d8776a;
+    --color-crit: #e3c06b;
+    --font-serif: 'Crimson Pro', Georgia, serif;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --sidebar-width: 360px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--color-text);
+    background: var(--color-bg);
+}
+
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { color: var(--color-accent-hover); }
+
+.visually-hidden {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* ---- Top bar ---------------------------------------------------------- */
+
+.topbar {
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-alt);
+}
+.topbar-content {
+    max-width: 1200px; margin: 0 auto; padding: 0.9rem 1.5rem;
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+    font-size: 0.9rem;
+}
+.topbar-title { font-family: var(--font-serif); font-size: 1.2rem; font-weight: 600; color: var(--color-text); }
+.topbar-links { display: flex; gap: 1.25rem; list-style: none; }
+.topbar-links a { color: var(--color-text-muted); }
+.topbar-links a:hover { color: var(--color-text); }
+
+/* ---- Landing page ----------------------------------------------------- */
+
+.landing { max-width: 760px; margin: 0 auto; padding: 4rem 1.5rem 3rem; }
+.eyebrow {
+    font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--color-accent); margin-bottom: 0.75rem;
+}
+.landing h1 {
+    font-family: var(--font-serif); font-weight: 600; line-height: 1.1;
+    font-size: clamp(2.4rem, 7vw, 3.6rem); letter-spacing: -0.02em; margin-bottom: 1.25rem;
+}
+.landing h2 {
+    font-family: var(--font-serif); font-weight: 600; font-size: 1.6rem;
+    color: var(--color-accent); margin: 3rem 0 1rem;
+}
+.landing p { margin-bottom: 1rem; color: var(--color-text); }
+.landing .lede { font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.5; color: var(--color-text); }
+
+.how-it-works { list-style: none; display: grid; gap: 1rem; }
+.how-it-works li {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: 6px; padding: 1rem 1.25rem;
+}
+.how-it-works strong { display: block; font-family: var(--font-serif); font-size: 1.15rem; margin-bottom: 0.25rem; }
+
+.chapter-list { list-style: none; border-top: 1px solid var(--color-border); }
+.chapter-list li { border-bottom: 1px solid var(--color-border); }
+.chapter-list a {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+    padding: 1rem 0.25rem; color: var(--color-text);
+}
+.chapter-list a:hover { color: var(--color-accent-hover); }
+.chapter-list .chapter-name { font-family: var(--font-serif); font-size: 1.2rem; }
+.chapter-list .chapter-meta { font-size: 0.85rem; color: var(--color-text-muted); white-space: nowrap; }
+
+.attribution {
+    margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border);
+    font-size: 0.8rem; color: var(--color-text-muted);
+}
+.attribution p { color: var(--color-text-muted); }
+
+/* ---- Chapter layout --------------------------------------------------- */
+
+.reader {
+    max-width: 1200px; margin: 0 auto; padding: 3rem 1.5rem 4rem;
+    display: grid; grid-template-columns: minmax(0, 1fr); gap: 3rem;
+}
+@media (min-width: 1100px) {
+    .reader { grid-template-columns: minmax(0, 680px) var(--sidebar-width); justify-content: center; }
+}
+
+.chapter header { margin-bottom: 2.5rem; }
+.chapter .chapter-number {
+    font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-accent);
+}
+.chapter h1 {
+    font-family: var(--font-serif); font-weight: 600; line-height: 1.15;
+    font-size: clamp(2rem, 5vw, 2.8rem); margin-top: 0.4rem;
+}
+
+.prose {
+    font-family: var(--font-serif); font-size: 1.25rem; line-height: 1.7;
+}
+.prose p { margin-bottom: 1.2em; }
+.prose hr { border: none; text-align: center; margin: 2em 0; color: var(--color-text-muted); }
+.prose hr::after { content: '⁂'; font-size: 1.2rem; }
+
+/* A passage that a roll decided. Dotted underline so it reads as "there's
+   more here" without shouting over the prose. */
+.roll {
+    text-decoration: underline dotted var(--color-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.22em;
+    border-radius: 3px;
+    transition: background-color 0.15s ease, text-decoration-color 0.15s ease;
+}
+.dice-ready .roll { cursor: pointer; }
+.dice-ready .roll::after {
+    content: '⚄'; font-family: var(--font-sans); font-size: 0.7em;
+    vertical-align: super; margin-left: 0.15em; color: var(--color-accent);
+}
+.dice-ready .roll:hover,
+.dice-ready .roll:focus-visible,
+.dice-ready .roll.active {
+    background: rgba(139, 115, 85, 0.18);
+    text-decoration-color: var(--color-accent-hover);
+    outline: none;
+}
+.dice-ready .roll:focus-visible { box-shadow: 0 0 0 2px var(--color-accent-hover); }
+
+/* ---- Sidebar ---------------------------------------------------------- */
+
+/* Without the script the sidebar has nothing to do. */
+.roll-sidebar { display: none; }
+.dice-ready .roll-sidebar { display: block; }
+
+@media (min-width: 1100px) {
+    .roll-sidebar {
+        position: sticky; top: 1.5rem; align-self: start;
+        max-height: calc(100vh - 3rem);
+    }
+    .roll-panel {
+        max-height: calc(100vh - 3rem); overflow-y: auto;
+        background: var(--color-surface); border: 1px solid var(--color-border);
+        border-radius: 8px; padding: 1.5rem;
+    }
+    .roll-close { display: none; }
+}
+
+/* Phones and tablets: the sidebar becomes a bottom sheet. */
+@media (max-width: 1099px) {
+    .dice-ready .roll-sidebar {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+        max-height: 72vh;
+        background: var(--color-surface); border-top: 1px solid var(--color-border);
+        border-radius: 14px 14px 0 0;
+        box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.55);
+        transform: translateY(105%); transition: transform 0.25s ease;
+        visibility: hidden;
+    }
+    .dice-ready .roll-sidebar.open { transform: translateY(0); visibility: visible; }
+    .roll-panel { max-height: 72vh; overflow-y: auto; padding: 1.25rem 1.25rem 2rem; }
+    .roll-close {
+        position: absolute; top: 0.6rem; right: 0.75rem; z-index: 1;
+        background: none; border: none; color: var(--color-text-muted);
+        font-size: 1.6rem; line-height: 1; padding: 0.25rem 0.5rem; cursor: pointer;
+    }
+    .roll-close:hover { color: var(--color-text); }
+    .roll-idle { display: none; }
+}
+
+.roll-idle h2 { font-family: var(--font-serif); font-size: 1.3rem; margin-bottom: 0.5rem; }
+.roll-idle p { font-size: 0.92rem; color: var(--color-text-muted); margin-bottom: 0.75rem; }
+
+/* ---- Roll detail (shown in the sidebar) ------------------------------- */
+
+.roll-header { text-align: center; padding-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); margin-bottom: 1.25rem; }
+.roll-check { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted); }
+
+.roll-face {
+    position: relative; width: 96px; height: 96px; margin: 0.75rem auto;
+    display: grid; place-items: center;
+    border: 2px solid var(--color-accent); border-radius: 18px;
+    background: var(--color-bg);
+    transform: rotate(45deg);
+}
+.roll-face > * { transform: rotate(-45deg); }
+.roll-number { font-family: var(--font-serif); font-size: 2.6rem; font-weight: 600; line-height: 1; }
+.roll-face.tumbling { animation: tumble 0.66s ease-out; }
+.roll-face.tumbling .roll-number { color: var(--color-text-muted); }
+@keyframes tumble {
+    0%   { transform: rotate(45deg) scale(0.85); }
+    40%  { transform: rotate(225deg) scale(1.05); }
+    100% { transform: rotate(405deg) scale(1); }
+}
+.roll-face.landed.verdict-success,  .roll-face.landed.verdict-success  .roll-number { border-color: var(--color-good); color: var(--color-good); }
+.roll-face.landed.verdict-failure,  .roll-face.landed.verdict-failure  .roll-number { border-color: var(--color-bad);  color: var(--color-bad); }
+.roll-face.landed.verdict-crit,     .roll-face.landed.verdict-crit     .roll-number { border-color: var(--color-crit); color: var(--color-crit); }
+.roll-face.landed.verdict-fumble,   .roll-face.landed.verdict-fumble   .roll-number { border-color: var(--color-bad);  color: var(--color-bad); }
+.roll-face.landed.verdict-crit { box-shadow: 0 0 24px rgba(227, 192, 107, 0.35); }
+
+.roll-math { font-size: 0.9rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.roll-verdict { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 600; margin-top: 0.15rem; }
+.roll-header:has(.verdict-success) .roll-verdict { color: var(--color-good); }
+.roll-header:has(.verdict-failure) .roll-verdict,
+.roll-header:has(.verdict-fumble) .roll-verdict { color: var(--color-bad); }
+.roll-header:has(.verdict-crit) .roll-verdict { color: var(--color-crit); }
+
+.roll-detail h3 { font-family: var(--font-serif); font-size: 1.35rem; font-weight: 600; line-height: 1.25; margin-bottom: 1rem; }
+.roll-detail h4 {
+    font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--color-accent); margin: 1.25rem 0 0.4rem;
+}
+.roll-detail p { font-size: 0.95rem; margin-bottom: 0.6rem; }
+
+.stakes { list-style: none; display: grid; gap: 0.4rem; }
+.stakes li {
+    font-size: 0.9rem; color: var(--color-text-muted);
+    padding: 0.5rem 0.7rem; border-radius: 5px; border: 1px solid var(--color-border);
+    display: grid; grid-template-columns: 3.6rem 1fr; gap: 0.6rem; align-items: baseline;
+}
+.stake-range { font-variant-numeric: tabular-nums; font-weight: 500; color: var(--color-text-muted); }
+.stakes li.stake-hit {
+    color: var(--color-text); border-color: var(--color-accent);
+    background: rgba(139, 115, 85, 0.14);
+}
+.stakes li.stake-hit .stake-range { color: var(--color-accent-hover); }
+
+.author-note {
+    margin-top: 1.25rem; padding: 0.9rem 1rem; border-left: 3px solid var(--color-accent);
+    background: var(--color-bg-alt); border-radius: 0 5px 5px 0;
+}
+.author-note h4 { margin-top: 0; }
+.author-note p { font-style: italic; font-family: var(--font-serif); font-size: 1.05rem; }
+
+/* ---- End-of-chapter ledger ------------------------------------------- */
+
+.roll-ledger { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--color-border); }
+.roll-ledger > h2 { font-family: var(--font-serif); font-size: 1.5rem; color: var(--color-accent); margin-bottom: 0.4rem; }
+.roll-ledger > p { font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 1.25rem; }
+
+/* No script: the full cards are the ledger. */
+.roll-card {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: 6px; padding: 1.25rem; margin-bottom: 1rem;
+}
+.roll-card .roll-summary { font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 0.5rem; }
+/* With script: hide the cards, show the compact clickable list instead. */
+.dice-ready .roll-card { display: none; }
+.roll-ledger-list { display: none; list-style: none; }
+.dice-ready .roll-ledger-list { display: grid; gap: 0.4rem; }
+
+.ledger-entry {
+    width: 100%; text-align: left; cursor: pointer;
+    display: grid; grid-template-columns: 9rem 1fr auto; gap: 1rem; align-items: baseline;
+    padding: 0.7rem 0.9rem; border-radius: 5px;
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    color: var(--color-text); font: inherit; font-size: 0.9rem;
+}
+.ledger-entry:hover, .ledger-entry:focus-visible { border-color: var(--color-accent); outline: none; }
+.ledger-check { color: var(--color-text-muted); font-size: 0.8rem; }
+.ledger-title { font-family: var(--font-serif); font-size: 1.05rem; }
+.ledger-roll { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ledger-entry.verdict-success .ledger-roll { color: var(--color-good); }
+.ledger-entry.verdict-failure .ledger-roll,
+.ledger-entry.verdict-fumble .ledger-roll { color: var(--color-bad); }
+.ledger-entry.verdict-crit .ledger-roll { color: var(--color-crit); }
+
+@media (max-width: 600px) {
+    .ledger-entry { grid-template-columns: 1fr auto; }
+    .ledger-check { grid-column: 1 / -1; }
+    .topbar-links { gap: 0.9rem; }
+}
+
+.chapter-nav {
+    display: flex; justify-content: space-between; gap: 1rem;
+    margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border);
+    font-size: 0.95rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .roll-face.tumbling { animation: none; }
+    .dice-ready .roll-sidebar { transition: none; }
+}
+    </style>
 </head>
 <body>
     <nav class="topbar">
@@ -25,26 +324,21 @@
     <main class="landing">
         <p class="eyebrow">Drafted By Dice</p>
         <h1>Gatestormers</h1>
-        <p class="lede">A fantasy novel I don't get to fully control. At every turning point I set the stakes, roll real dice, and write whatever comes up.</p>
+        <p class="lede">This is a story written by dice. The outcome of every major moment is determined by luck, as adjudicated by the Open Game License v1.0a. The author, such as he is, does his best to keep up with the whims of fortune.</p>
 
-        <h2>How it works</h2>
-        <ol class="how-it-works">
-            <li>
-                <strong>Stakes first</strong>
-                Before each roll, I write down what a failure, a success and anything in between would mean for the story.
-            </li>
-            <li>
-                <strong>Then the roll</strong>
-                Real dice, under the standard fifth-edition rules. I don't reroll and I don't fudge.
-            </li>
-            <li>
-                <strong>Then the story</strong>
-                Underlined passages <span aria-hidden="true">⚄</span> were decided by a roll. Hover over one (or tap it on your phone) to see the roll, what was riding on it, and my notes on what it changed.
-            </li>
-        </ol>
+        <p>David is an acorn: A cast-off, parentless child of the stumps, a colony of adventurers, craftsmen, and tavernmasters who make their home on the ruins of enormous trees far above a deadly forest floor.</p>
+
+        <p>Like all acorns, he has nothing but potential. As he takes the first steps into a classed existence as a newly minted rogue, he catches wind of a danger to the stumps far more insidious than the throngs of monsters that make their home below.</p>
+
+        <p>David has a chance to grow and make a name for himself in one fell swoop, but like all inhabitants of his world he is at the mercy of luck. Will the dice smile on him?</p>
 
         <h2 id="chapters">Chapters</h2>
         <ol class="chapter-list">
+            <li>
+                <a href="preface.html">
+                    <span class="chapter-name">How this story works</span>
+                </a>
+            </li>
             <li>
                 <a href="chapter-01.html">
                     <span class="chapter-name">1. Daggers ’n David</span>
@@ -54,8 +348,7 @@
         </ol>
 
         <footer class="attribution">
-            <p>This work includes material from the System Reference Document 5.2 ("SRD 5.2") by Wizards of the Coast LLC, available at <a href="https://www.dndbeyond.com/srd">https://www.dndbeyond.com/srd</a>. The SRD 5.2 is licensed under the Creative Commons Attribution 4.0 International License, available at <a href="https://creativecommons.org/licenses/by/4.0/legalcode">https://creativecommons.org/licenses/by/4.0/legalcode</a>.</p>
-            <p>Drafted By Dice is not affiliated with or endorsed by Wizards of the Coast. &copy; 2026 Jason Padeca.</p>
+            <p><a href="preface.html#ogl">Open Game License v1.0a</a> · &copy; 2026 Jason Padeca</p>
         </footer>
     </main>
 </body>

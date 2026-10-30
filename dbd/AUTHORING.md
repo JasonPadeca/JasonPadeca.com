@@ -81,7 +81,7 @@ Leave it out entirely when there's nothing to say.
 
 ## Licensing
 
-The landing page carries the SRD 5.2 attribution that CC-BY-4.0 requires. If you work
-from SRD 5.1 (the 2014 rules) instead, change the attribution to 5.1's wording. Only use
-creatures, spells and rules that appear in the SRD. Settings, named characters and product
-identity such as beholders and mind flayers are not in it.
+The story uses the Open Game License v1.0a. Its full text is at the bottom of
+`preface.html` ("How this story works"), and the landing page footer links to it.
+Only use rules, creatures and spells that are open game content. Settings, named
+characters and product identity are not.

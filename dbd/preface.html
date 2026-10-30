@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How this story works | Drafted By Dice: Gatestormers</title>
+    <meta name="description" content="How this story works: Drafted By Dice: Gatestormers.">
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+/* Drafted By Dice — shared styles for the landing page and chapters.
+   Tokens match the main site (../styles.css). */
+
+:root {
+    --color-bg: #0d0d0f;
+    --color-bg-alt: #131316;
+    --color-surface: #1a1a1f;
+    --color-text: #e8e6e3;
+    --color-text-muted: #9a9a9a;
+    --color-accent: #8b7355;
+    --color-accent-hover: #a68b6a;
+    --color-border: #2a2a2f;
+    --color-good: #7fb79a;
+    --color-bad: #d8776a;
+    --color-crit: #e3c06b;
+    --font-serif: 'Crimson Pro', Georgia, serif;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --sidebar-width: clamp(210px, 36vw, 360px);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--color-text);
+    background: var(--color-bg);
+}
+
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { color: var(--color-accent-hover); }
+
+.visually-hidden {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* ---- Top bar ---------------------------------------------------------- */
+
+.topbar {
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-alt);
+}
+.topbar-content {
+    max-width: 1200px; margin: 0 auto; padding: 0.9rem 1.5rem;
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+    font-size: 0.9rem;
+}
+.topbar-title { font-family: var(--font-serif); font-size: 1.2rem; font-weight: 600; color: var(--color-text); }
+.topbar-links { display: flex; gap: 1.25rem; list-style: none; }
+.topbar-links a { color: var(--color-text-muted); }
+.topbar-links a:hover { color: var(--color-text); }
+
+/* ---- Landing page ----------------------------------------------------- */
+
+.landing { max-width: 760px; margin: 0 auto; padding: 4rem 1.5rem 3rem; }
+.eyebrow {
+    font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--color-accent); margin-bottom: 0.75rem;
+}
+.landing h1 {
+    font-family: var(--font-serif); font-weight: 600; line-height: 1.1;
+    font-size: clamp(2.4rem, 7vw, 3.6rem); letter-spacing: -0.02em; margin-bottom: 1.25rem;
+}
+.landing h2 {
+    font-family: var(--font-serif); font-weight: 600; font-size: 1.6rem;
+    color: var(--color-accent); margin: 3rem 0 1rem;
+}
+.landing p { margin-bottom: 1rem; color: var(--color-text); }
+.landing .lede { font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.5; color: var(--color-text); }
+
+.how-it-works { list-style: none; display: grid; gap: 1rem; }
+.how-it-works li {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: 6px; padding: 1rem 1.25rem;
+}
+.how-it-works strong { display: block; font-family: var(--font-serif); font-size: 1.15rem; margin-bottom: 0.25rem; }
+
+.chapter-list { list-style: none; border-top: 1px solid var(--color-border); }
+.chapter-list li { border-bottom: 1px solid var(--color-border); }
+.chapter-list a {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+    padding: 1rem 0.25rem; color: var(--color-text);
+}
+.chapter-list a:hover { color: var(--color-accent-hover); }
+.chapter-list .chapter-name { font-family: var(--font-serif); font-size: 1.2rem; }
+.chapter-list .chapter-meta { font-size: 0.85rem; color: var(--color-text-muted); white-space: nowrap; }
+
+.attribution {
+    margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border);
+    font-size: 0.8rem; color: var(--color-text-muted);
+}
+.attribution p { color: var(--color-text-muted); }
+
+/* ---- Chapter layout --------------------------------------------------- */
+
+.reader {
+    max-width: 1200px; margin: 0 auto; padding: 3rem 1.5rem 4rem;
+    display: grid; grid-template-columns: minmax(0, 1fr); gap: 3rem;
+}
+/* With no roll open the story has the page to itself. Opening a roll slides
+   the sidebar in beside it; the zero-width track keeps the transition smooth. */
+@media (min-width: 520px) {
+    .reader {
+        grid-template-columns: minmax(0, 680px) 0px; column-gap: 0;
+        justify-content: center; padding-inline: clamp(1rem, 3vw, 1.5rem);
+        transition: grid-template-columns 0.25s ease, column-gap 0.25s ease;
+    }
+    .reader.has-roll { grid-template-columns: minmax(0, 680px) var(--sidebar-width); column-gap: clamp(1.25rem, 3vw, 3rem); }
+}
+@media (min-width: 520px) and (max-width: 899px) {
+    .roll-panel { padding: 1rem !important; }
+}
+
+.chapter header { margin-bottom: 2.5rem; }
+.chapter .chapter-number {
+    font-size: 0.8rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-accent);
+}
+.chapter h1 {
+    font-family: var(--font-serif); font-weight: 600; line-height: 1.15;
+    font-size: clamp(2rem, 5vw, 2.8rem); margin-top: 0.4rem;
+}
+
+.prose {
+    font-family: var(--font-serif); font-size: 1.25rem; line-height: 1.7;
+}
+.prose p { margin-bottom: 1.2em; }
+.prose hr { border: none; text-align: center; margin: 2em 0; color: var(--color-text-muted); }
+.prose hr::after { content: '⁂'; font-size: 1.2rem; }
+
+/* A passage that a roll decided. Dotted underline so it reads as "there's
+   more here" without shouting over the prose. */
+.roll {
+    text-decoration: underline dotted var(--color-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.22em;
+    border-radius: 3px;
+    transition: background-color 0.15s ease, text-decoration-color 0.15s ease;
+}
+.dice-ready .roll { cursor: pointer; }
+.dice-ready .roll::after {
+    content: '⚄'; font-family: var(--font-sans); font-size: 0.7em;
+    vertical-align: super; margin-left: 0.15em; color: var(--color-accent);
+}
+.dice-ready .roll:hover,
+.dice-ready .roll:focus-visible,
+.dice-ready .roll.active {
+    background: rgba(139, 115, 85, 0.18);
+    text-decoration-color: var(--color-accent-hover);
+    outline: none;
+}
+.dice-ready .roll:focus-visible { box-shadow: 0 0 0 2px var(--color-accent-hover); }
+
+/* ---- Sidebar ---------------------------------------------------------- */
+
+/* Without the script the sidebar has nothing to do. */
+.roll-sidebar { display: none; }
+.dice-ready .roll-sidebar { display: block; }
+
+@media (min-width: 520px) {
+    .roll-sidebar { overflow: hidden; }
+    .reader:not(.has-roll) .roll-sidebar { visibility: hidden; }
+    .roll-sidebar {
+        position: sticky; top: 1.5rem; align-self: start;
+        max-height: calc(100vh - 3rem);
+    }
+    .roll-panel {
+        max-height: calc(100vh - 3rem); overflow-y: auto;
+        background: var(--color-surface); border: 1px solid var(--color-border);
+        border-radius: 8px; padding: 1.5rem;
+    }
+}
+
+/* Phones and tablets: the sidebar becomes a bottom sheet. */
+@media (max-width: 519px) {
+    .dice-ready .roll-sidebar {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+        max-height: 72vh;
+        background: var(--color-surface); border-top: 1px solid var(--color-border);
+        border-radius: 14px 14px 0 0;
+        box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.55);
+        transform: translateY(105%); transition: transform 0.25s ease;
+        visibility: hidden;
+    }
+    .dice-ready .roll-sidebar.open { transform: translateY(0); visibility: visible; }
+    .roll-panel { max-height: 72vh; overflow-y: auto; padding: 1.25rem 1.25rem 2rem; }
+}
+
+.roll-close {
+    position: absolute; top: 0.5rem; right: 0.6rem; z-index: 1;
+    background: none; border: none; color: var(--color-text-muted);
+    font-size: 1.6rem; line-height: 1; padding: 0.25rem 0.5rem; cursor: pointer;
+    display: none;
+}
+.roll-sidebar.has-roll .roll-close { display: block; }
+.roll-close:hover { color: var(--color-text); }
+
+
+/* ---- Roll detail (shown in the sidebar) ------------------------------- */
+
+.roll-header { text-align: center; padding-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); margin-bottom: 1.25rem; }
+.roll-check { padding-inline: 1.5rem; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted); }
+
+.roll-face {
+    position: relative; width: 96px; height: 96px; margin: 0.75rem auto;
+    display: grid; place-items: center;
+    border: 2px solid var(--color-accent); border-radius: 18px;
+    background: var(--color-bg);
+    transform: rotate(45deg);
+}
+.roll-face > * { transform: rotate(-45deg); }
+.roll-number { font-family: var(--font-serif); font-size: 2.6rem; font-weight: 600; line-height: 1; }
+.roll-face.tumbling { animation: tumble 0.66s ease-out; }
+.roll-face.tumbling .roll-number { color: var(--color-text-muted); }
+@keyframes tumble {
+    0%   { transform: rotate(45deg) scale(0.85); }
+    40%  { transform: rotate(225deg) scale(1.05); }
+    100% { transform: rotate(405deg) scale(1); }
+}
+.roll-face.landed.verdict-success,  .roll-face.landed.verdict-success  .roll-number { border-color: var(--color-good); color: var(--color-good); }
+.roll-face.landed.verdict-failure,  .roll-face.landed.verdict-failure  .roll-number { border-color: var(--color-bad);  color: var(--color-bad); }
+.roll-face.landed.verdict-crit,     .roll-face.landed.verdict-crit     .roll-number { border-color: var(--color-crit); color: var(--color-crit); }
+.roll-face.landed.verdict-fumble,   .roll-face.landed.verdict-fumble   .roll-number { border-color: var(--color-bad);  color: var(--color-bad); }
+.roll-face.landed.verdict-crit { box-shadow: 0 0 24px rgba(227, 192, 107, 0.35); }
+
+.roll-result { font-family: var(--font-serif); font-size: 1.25rem !important; font-variant-numeric: tabular-nums; }
+.roll-result.verdict-success { color: var(--color-good); }
+.roll-result.verdict-failure, .roll-result.verdict-fumble { color: var(--color-bad); }
+.roll-result.verdict-crit { color: var(--color-crit); }
+.roll-happened h4 { margin-top: 0; }
+.roll-math { font-size: 0.9rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.roll-verdict { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 600; margin-top: 0.15rem; }
+.roll-header:has(.verdict-success) .roll-verdict { color: var(--color-good); }
+.roll-header:has(.verdict-failure) .roll-verdict,
+.roll-header:has(.verdict-fumble) .roll-verdict { color: var(--color-bad); }
+.roll-header:has(.verdict-crit) .roll-verdict { color: var(--color-crit); }
+
+.roll-detail h3 { font-family: var(--font-serif); font-size: 1.35rem; font-weight: 600; line-height: 1.25; margin-bottom: 1rem; }
+.roll-detail h4 {
+    font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--color-accent); margin: 1.25rem 0 0.4rem;
+}
+.roll-detail p { font-size: 0.95rem; margin-bottom: 0.6rem; }
+
+.stakes { list-style: none; display: grid; gap: 0.4rem; }
+.stakes li {
+    font-size: 0.9rem; color: var(--color-text-muted);
+    padding: 0.5rem 0.7rem; border-radius: 5px; border: 1px solid var(--color-border);
+    display: grid; grid-template-columns: 3.6rem 1fr; gap: 0.6rem; align-items: baseline;
+}
+.stake-range { font-variant-numeric: tabular-nums; font-weight: 500; color: var(--color-text-muted); }
+.stakes li.stake-hit {
+    color: var(--color-text); border-color: var(--color-accent);
+    background: rgba(139, 115, 85, 0.14);
+}
+.stakes li.stake-hit .stake-range { color: var(--color-accent-hover); }
+
+.author-note {
+    margin-top: 1.25rem; padding: 0.9rem 1rem; border-left: 3px solid var(--color-accent);
+    background: var(--color-bg-alt); border-radius: 0 5px 5px 0;
+}
+.author-note h4 { margin-top: 0; }
+.author-note p { font-style: italic; font-family: var(--font-serif); font-size: 1.05rem; }
+
+/* ---- End-of-chapter ledger ------------------------------------------- */
+
+.roll-ledger { margin-top: 4rem; padding-top: 2rem; border-top: 1px solid var(--color-border); }
+.roll-ledger > h2 { font-family: var(--font-serif); font-size: 1.5rem; color: var(--color-accent); margin-bottom: 0.4rem; }
+.roll-ledger > p { font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 1.25rem; }
+
+/* No script: the full cards are the ledger. */
+.roll-card {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: 6px; padding: 1.25rem; margin-bottom: 1rem;
+}
+.roll-card .roll-summary { font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 0.5rem; }
+/* With script: hide the cards, show the compact clickable list instead. */
+.dice-ready .roll-card { display: none; }
+.roll-ledger-list { display: none; list-style: none; }
+.dice-ready .roll-ledger-list { display: grid; gap: 0.4rem; }
+
+.ledger-entry {
+    width: 100%; text-align: left; cursor: pointer;
+    display: grid; grid-template-columns: 9rem 1fr auto; gap: 1rem; align-items: baseline;
+    padding: 0.7rem 0.9rem; border-radius: 5px;
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    color: var(--color-text); font: inherit; font-size: 0.9rem;
+}
+.ledger-entry:hover, .ledger-entry:focus-visible { border-color: var(--color-accent); outline: none; }
+.ledger-check { color: var(--color-text-muted); font-size: 0.8rem; }
+.ledger-title { font-family: var(--font-serif); font-size: 1.05rem; }
+.ledger-roll { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ledger-entry.verdict-success .ledger-roll { color: var(--color-good); }
+.ledger-entry.verdict-failure .ledger-roll,
+.ledger-entry.verdict-fumble .ledger-roll { color: var(--color-bad); }
+.ledger-entry.verdict-crit .ledger-roll { color: var(--color-crit); }
+
+@media (max-width: 600px) {
+    .ledger-entry { grid-template-columns: 1fr auto; }
+    .ledger-check { grid-column: 1 / -1; }
+    .topbar-links { gap: 0.9rem; }
+}
+
+.chapter-nav {
+    display: flex; justify-content: space-between; gap: 1rem;
+    margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--color-border);
+    font-size: 0.95rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reader { transition: none; }
+    .roll-face.tumbling { animation: none; }
+    .dice-ready .roll-sidebar { transition: none; }
+}
+
+/* Front matter: headings, quoted license text and lists inside the prose. */
+.prose h2 { font-size: 1.6rem; color: var(--color-accent); margin: 0.5em 0 0.8em; }
+.prose h3 { font-size: 1.3rem; margin: 1.4em 0 0.6em; }
+.prose blockquote { margin: 0 0 1.2em; padding-left: 1.1rem; border-left: 3px solid var(--color-border); color: var(--color-text-muted); }
+.prose ul { margin: 0 0 1.2em 1.3rem; }
+.prose li { margin-bottom: 0.6em; }
+.prose .license p { font-family: var(--font-sans); font-size: 0.9rem; line-height: 1.6; color: var(--color-text-muted); }
+    </style>
+</head>
+<body>
+    <nav class="topbar">
+        <div class="topbar-content">
+            <a href="./" class="topbar-title">Gatestormers</a>
+            <ul class="topbar-links">
+                <li><a href="./#chapters">Chapters</a></li>
+                <li><a href="../">Jason Padeca</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="reader">
+        <article class="chapter">
+            <header>
+                <h1>How this story works</h1>
+            </header>
+
+            <div class="prose">
+                <h2>Before You Begin</h2>
+
+                <p>This is a book about dice, kind of.</p>
+
+                <p>You know those Choose-Your-Own-Adventure books? Where you-the-reader influence the path of the story using your ability to choose? This book is written by me-the-author and directed by dice rolls I’m obligated to make every time a character faces an interesting test. I have a general idea of where the plot is headed, but that can be upended at any time by cruel, fickle fate—also known as an unexpected 1 showing up on the topmost face of a 20-sided die.</p>
+
+                <p>Put another way, this is a book with rules that the writer has to follow. That means I need a set of rules to hold myself to—and ideally, a set of rules you recognize too. Fortunately, there’s a system built for that, provided courtesy of Wizards of the Coast, who generously offer a certain amount of their ruleset as open-source content anyone can use:</p>
+
+                <blockquote><p>4. Grant and Consideration: In consideration for agreeing to use this License, the Contributors grant You a perpetual, worldwide, royalty-free, non-exclusive license with the exact terms of this License to Use, the Open Game Content.</p></blockquote>
+
+                <p>Use is defined broadly, which is good news:</p>
+
+                <blockquote><p>1(f). "Use", "Used" or "Using" means to use, Distribute, copy, edit, format, modify, translate and otherwise create Derivative Material of Open Game Content. 1(h). "You" or "Your" means the licensee in terms of this agreement.</p></blockquote>
+
+                <p>That’s what gives me the right to use the rules, but it also comes with boundaries. I can’t use existing D&amp;D characters, name-drop trademarked places or factions, or refer to spells with proper names in them (like TrademarkedCharacter’s Acid Arrow).</p>
+
+                <p>So I’m playing it safe. You’ll see classes and races you recognize, and doing something like rolling Initiative or making a Perception check will look just like it does at your table.</p>
+
+                <p>Here's how this book will work:</p>
+
+                <ul>
+                    <li><strong>Dice rolls matter.</strong> Every time the MC does something that would usually call for a GM ruling, I’ll roll in a semi-public, verifiable way via Discord. That includes stat checks, Insight rolls, short rest HP recovery, persuasion attempts—you name it.</li>
+                    <li><strong>The world knows about the dice.</strong> Everyone in this setting is aware that their fate is ruled by the dice, which they usually perceive as a kind of stronger-than-luck force—something that respects skill, but isn't controlled by it. They understand leveling too, although in this story, it’ll happen on milestone-and-performance logic (think DanMachi).</li>
+                    <li><strong>Natural 20s fuel me.</strong> Every time the MC rolls a 20, I get to bank one “DM Favor”—essentially Advantage or Disadvantage I can apply to a roll of my choosing at a later moment. I can store up to three. This is my little cheat code to avoid the whole story TPKing at an anticlimactic moment.</li>
+                </ul>
+
+                <p>That’s it. That’s all you need to know. Hopefully, you’re now equipped to enjoy an adventure that starts with a level-0 commoner and (dice willing) ends with a level 20 master of the shadows.</p>
+
+                <p>If you’re someone who wants the full legal and structural info, hang tight. After the next break, I’ll include the full text of the OGL license—just in case.</p>
+
+                <hr>
+
+                <h2>Session 0</h2>
+
+                <p>Just like a real table, nobody likes a weirdo DM-slash-author jumping over the boundaries of what their readers want, making everyone uncomfortable and ruining all the fun.</p>
+
+                <p>On the other hand, nobody likes a boring story. There needs to be some violence, and I want this to be a pretty realistic world where bad things happen.</p>
+
+                <p>The best way I can handle the balance between those two things is to give you an idea of what's coming via a set of rules I commit to.</p>
+
+                <p>This document might change a bit in the future as I add more restrictions, but you can rely on the following rules.</p>
+
+                <h3>No Excessive Gore</h3>
+
+                <p>There's going to be violence in this world. Things are going to bleed. Monsters will be stabbed.</p>
+
+                <p>What won't happen is torture or intentionally gross descriptions of injury, especially when it comes to things with human-like personalities.</p>
+
+                <p>Within this category, I'm also committing to something like "no focused violence on children". Kids aren't immortal, and something like a town burning down might come with casualties, but I'm not all that interested in showing that except in the vaguest ways.</p>
+
+                <h3>No SA, No Harem, No Porn</h3>
+
+                <p>Sort of self-explanatory, but this isn't a fetish novel. People can have all sorts of backgrounds and it's vaguely possible that there might be people with tragic past events at some point in the story. I'm not going to show that in real-time.</p>
+
+                <p>At the same time, this is not a work of erotica. Everyone is an adult and usual drama-as-mirror-of-life rules apply, but things like sex are going to be pretty lampshaded if they happen at all.</p>
+
+                <h3>Only Slight Fantasy Race Tropes</h3>
+
+                <p>Dwarves are tavern-guys who mine, and tend to be boisterous. Elves are tall and tend to be a little more proper. Humans are, you know, humans.</p>
+
+                <p>All that is true in this book, but only applied as truth with the lightest of touches. Something like a quiet, shy dwarf is possible here, even if they trend a certain way as a people. I'm not looking to write a boring book, overall, so while each species has a kind of bias, individuals might swim against that current.</p>
+
+                <p>Skin pigment differences exist, but I don't see people in a multi-sentient-humanoid world caring about that very much, so neither will I.</p>
+
+                <hr>
+
+                <section class="license" id="ogl">
+                <h2>OPEN GAME LICENSE Version 1.0a</h2>
+
+                <p>1. Definitions: (a) "Contributors" means the copyright and/or trademark owners who have contributed Open Game Content; (b) "Derivative Material" means copyrighted material including derivative works and translations (including into other computer languages), potation, modification, correction, addition, extension, upgrade, improvement, compilation, abridgment or other form in which an existing work may be recast, transformed or adapted; (c) "Distribute" means to reproduce, license, rent, lease, sell, broadcast, publicly display, transmit or otherwise distribute; (d) "Open Game Content" means the game mechanic and includes the methods, procedures, processes and routines to the extent such content does not embody the Product Identity and is an enhancement over the prior art and any additional content clearly identified as Open Game Content by the Contributor, and means any work covered by this License, including translations and derivative works under copyright law, but specifically excludes Product Identity. (e) "Product Identity" means product and product line names, logos and identifying marks including trade dress; artifacts; creatures characters; stories, storylines, plots, thematic elements, dialogue, incidents, language, artwork, symbols, designs, depictions, likenesses, formats, poses, concepts, themes and graphic, photographic and other visual or audio representations; names and descriptions of characters, spells, enchantments, personalities, teams, personas, likenesses and special abilities; places, locations, environments, creatures, equipment, magical or supernatural abilities or effects, logos, symbols, or graphic designs; and any other trademark or registered trademark clearly identified as Product identity by the owner of the Product Identity, and which specifically excludes the Open Game Content; (f) "Use", "Used" or "Using" means to use, Distribute, copy, edit, format, modify, translate and otherwise create Derivative Material of Open Game Content. (g) "You" or "Your" means the licensee in terms of this agreement.</p>
+
+                <p>2. The License: This License applies to any Open Game Content that contains a notice indicating that the Open Game Content may only be Used under and in terms of this License. You must affix such a notice to any Open Game Content that you Use. No terms may be added to or subtracted from this License except as described by the License itself. No other terms or conditions may be applied to any Open Game Content distributed using this License.</p>
+
+                <p>3. Offer and Acceptance: By Using the Open Game Content You indicate Your acceptance of the terms of this License.</p>
+
+                <p>4. Grant and Consideration: In consideration for agreeing to use this License, the Contributors grant You a perpetual, worldwide, royalty-free, non-exclusive license with the exact terms of this License to Use, the Open Game Content.</p>
+
+                <p>5. Representation of Authority to Contribute: If You are contributing original material as Open Game Content, You represent that Your Contributions are Your original creation and/or You have sufficient rights to grant the rights conveyed by this License.</p>
+
+                <p>6. Notice of License Copyright: You must update the COPYRIGHT NOTICE portion of this License to include the exact text of the COPYRIGHT NOTICE of any Open Game Content You are copying, modifying or distributing.</p>
+
+                <p>7. Use of Product Identity: You agree not to Use any Product Identity, including as an indication as to compatibility, except as expressly licensed in another, independent Agreement with the owner of each element of that Product Identity. You agree not to indicate compatibility or co-adaptability with any Trademark or Registered Trademark in conjunction with a work containing Open Game Content except as expressly licensed in another, independent Agreement with the owner of such Trademark or Registered Trademark. The use of any Product Identity in Open Game Content does not constitute a challenge to the ownership of that Product Identity. The owner of any Product Identity used in Open Game Content shall retain all rights, title and interest in and to that Product Identity.</p>
+
+                <p>8. Identification: If you distribute Open Game Content you must clearly indicate which portions of the work that you are distributing are Open Game Content.</p>
+
+                <p>9. Updating the License: Wizards or its designated Agents may publish updated versions of this License. You may use any authorized version of this License to copy, modify and distribute any Open Game Content originally distributed under any version of this License.</p>
+
+                <p>10. Copy of the License: You MUST include a copy of this License with every copy of the Open Game Content You distribute.</p>
+
+                <p>11. Use of Contributor Credits: You may not market or advertise the Open Game Content using the name of any Contributor unless You have written permission from the Contributor to do so.</p>
+
+                <p>12. Inability to Comply: If it is impossible for You to comply with any of the terms of this License with respect to some or all of the Open Game Content due to statute, judicial order, or governmental regulation then You may not Use any Open Game Material so affected.</p>
+
+                <p>13. Termination: This License will terminate automatically if You fail to comply with all terms herein and fail to cure such breach within 30 days of becoming aware of the breach. All sublicenses shall survive the termination of this License.</p>
+
+                <p>14. Reformation: If any provision of this License is held to be unenforceable, such provision shall be reformed only to the extent necessary to make it enforceable.</p>
+
+                <p>15. COPYRIGHT NOTICE Open Game License v 1.0a © 2000 Wizards of the Coast, Inc.</p>
+                </section>
+            </div>
+
+            <nav class="chapter-nav">
+                <a href="./">← All chapters</a>
+                <a href="chapter-01.html">Chapter 1 →</a>
+            </nav>
+        </article>
+    </div>
+</body>
+</html>
