@@ -212,7 +212,7 @@ a:hover { color: var(--color-accent-hover); }
 /* ---- Roll detail (shown in the sidebar) ------------------------------- */
 
 .roll-header { text-align: center; padding-bottom: 1.25rem; border-bottom: 1px solid var(--color-border); margin-bottom: 1.25rem; }
-.roll-check { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted); }
+.roll-check { padding-inline: 1.5rem; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-text-muted); }
 
 .roll-face {
     position: relative; width: 96px; height: 96px; margin: 0.75rem auto;
@@ -236,6 +236,11 @@ a:hover { color: var(--color-accent-hover); }
 .roll-face.landed.verdict-fumble,   .roll-face.landed.verdict-fumble   .roll-number { border-color: var(--color-bad);  color: var(--color-bad); }
 .roll-face.landed.verdict-crit { box-shadow: 0 0 24px rgba(227, 192, 107, 0.35); }
 
+.roll-result { font-family: var(--font-serif); font-size: 1.25rem !important; font-variant-numeric: tabular-nums; }
+.roll-result.verdict-success { color: var(--color-good); }
+.roll-result.verdict-failure, .roll-result.verdict-fumble { color: var(--color-bad); }
+.roll-result.verdict-crit { color: var(--color-crit); }
+.roll-happened h4 { margin-top: 0; }
 .roll-math { font-size: 0.9rem; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
 .roll-verdict { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 600; margin-top: 0.15rem; }
 .roll-header:has(.verdict-success) .roll-verdict { color: var(--color-good); }
@@ -423,27 +428,15 @@ a:hover { color: var(--color-accent-hover); }
                      JavaScript they show here in full. See AUTHORING.md. -->
 
                 <aside class="roll-card" id="read-the-old-man"
-                       data-check="Wisdom (Insight)" data-die="d20" data-natural="6">
-                    <h3>Is the old man hiding something?</h3>
-                    <p class="roll-summary">Wisdom (Insight), d20: 6</p>
-                    <h4>What happened</h4>
-                    <p>A 6. Something in the old man’s face makes David look twice, but he can’t find anything there.</p>
-                    <div class="author-note">
-                        <h4>Author’s note</h4>
-                        <p>[Your note on this roll goes here.]</p>
-                    </div>
+                       data-check="Wisdom (Insight) Check" data-die="d20" data-natural="6" data-dc="20">
+                    <h3>Does David see through the old man?</h3>
+                    <p class="roll-summary">Wisdom (Insight) Check, d20, DC 20: 6. Failure.</p>
                 </aside>
 
                 <aside class="roll-card" id="jasa-arrives"
-                       data-check="Wisdom (Perception)" data-die="d20" data-natural="7">
-                    <h3>Does David hear Jasa coming?</h3>
-                    <p class="roll-summary">Wisdom (Perception), d20: 7</p>
-                    <h4>What happened</h4>
-                    <p>A 7. Jasa makes it all the way along the walkway before David notices her, and he nearly jumps out of his skin.</p>
-                    <div class="author-note">
-                        <h4>Author’s note</h4>
-                        <p>[Your note on this roll goes here.]</p>
-                    </div>
+                       data-check="Wisdom (Perception) Check" data-die="d20" data-natural="7" data-dc="12">
+                    <h3>Does David notice Jasa?</h3>
+                    <p class="roll-summary">Wisdom (Perception) Check, d20, DC 12: 7. Failure.</p>
                 </aside>
             </section>
 
@@ -487,7 +480,6 @@ a:hover { color: var(--color-accent-hover); }
     const sidebar = document.querySelector('.roll-sidebar');
     const panel = sidebar.querySelector('.roll-panel');
     const closeButton = sidebar.querySelector('.roll-close');
-    const seen = new Set();
     let current = null;
     let openedByHover = false;
     const reader = document.querySelector('.reader');
@@ -531,17 +523,27 @@ a:hover { color: var(--color-accent-hover); }
 
     // ---- Rendering --------------------------------------------------------
 
-    const VERDICT_TEXT = { crit: 'Natural 20', fumble: 'Natural 1', success: 'Success', failure: 'Failure' };
+    const VERDICT_TEXT = { crit: 'Critical success', fumble: 'Critical failure', success: 'Success', failure: 'Failure' };
 
     function formatMod(n) { return n === 0 ? '' : (n > 0 ? ` + ${n}` : ` − ${Math.abs(n)}`); }
 
+    // "7. Failure."  "12 + 3 = 15. Success."  "4." (no DC)
+    function resultLine(roll) {
+        if (roll.natural === null) return '';
+        let line = roll.mod ? `${roll.natural}${formatMod(roll.mod)} = ${roll.total}` : `${roll.natural}`;
+        if (roll.dice) line = `${roll.dice.join(' + ')} = ${line}`;
+        return line + '.' + (roll.verdict ? ` ${VERDICT_TEXT[roll.verdict]}.` : '');
+    }
+
+    // Card layout: check and die type, the die showing the DC (or the roll,
+    // when there is no DC), the question, then "What happened" with the
+    // result. Anything else the card holds, like stakes or an author's note,
+    // follows after.
     function render(roll) {
         const body = roll.card.cloneNode(true);
         body.removeAttribute('id');
         body.classList.remove('roll-card');
         body.classList.add('roll-detail');
-
-        // Strip the static summary line the no-JS ledger shows; the header replaces it.
         body.querySelectorAll('.roll-summary').forEach(el => el.remove());
 
         const items = [...body.querySelectorAll('.stakes > li[data-range]')];
@@ -558,51 +560,29 @@ a:hover { color: var(--color-accent-hover); }
         header.className = 'roll-header';
         header.innerHTML = `
             <p class="roll-check"></p>
-            <div class="roll-face ${roll.verdict ? 'verdict-' + roll.verdict : ''}">
+            <div class="roll-face landed">
                 <span class="roll-number" aria-hidden="true"></span>
-            </div>
-            <p class="roll-math"></p>
-            <p class="roll-verdict"></p>`;
-        header.querySelector('.roll-check').textContent = `${roll.check} · ${roll.die}`;
-        const number = header.querySelector('.roll-number');
-        number.textContent = roll.natural ?? '?';
+            </div>`;
+        header.querySelector('.roll-check').textContent = `${roll.check}\u00a0·\u00a0${roll.die}`;
+        header.querySelector('.roll-number').textContent =
+            roll.dc !== null ? roll.dc : (roll.natural ?? '?');
 
-        const math = [];
-        if (roll.dice) math.push(`[${roll.dice.join(', ')}]`);
-        if (roll.natural !== null && roll.mod) math.push(`${roll.natural}${formatMod(roll.mod)} = ${roll.total}`);
-        if (roll.dc !== null) math.push(`${roll.vs} ${roll.dc}`);
-        header.querySelector('.roll-math').textContent = math.join('  ·  ');
-        header.querySelector('.roll-verdict').textContent = roll.verdict ? VERDICT_TEXT[roll.verdict] : '';
-
-        // Screen readers get the result in one sentence rather than the animated digits.
         const sr = document.createElement('p');
         sr.className = 'visually-hidden';
-        sr.textContent = `${roll.check}: rolled ${roll.natural ?? 'unknown'} on ${roll.die}` +
-            (roll.mod ? `, total ${roll.total}` : '') + (roll.dc !== null ? ` against ${roll.vs} ${roll.dc}` : '') +
-            (roll.verdict ? `. ${VERDICT_TEXT[roll.verdict]}.` : '.');
+        sr.textContent = `${roll.check}, ${roll.die}` + (roll.dc !== null ? `, ${roll.vs} ${roll.dc}.` : '.');
         header.append(sr);
 
-        body.prepend(header);
-        return { body, number };
-    }
+        const happened = document.createElement('div');
+        happened.className = 'roll-happened';
+        happened.innerHTML = '<h4>What happened</h4><p class="roll-result"></p>';
+        const result = happened.querySelector('.roll-result');
+        result.textContent = resultLine(roll);
+        if (roll.verdict) result.classList.add('verdict-' + roll.verdict);
 
-    // The first time a reader opens a roll, the die tumbles before landing,
-    // so the result arrives the way it did at the table.
-    function tumble(number, roll) {
-        const face = number.parentElement;
-        if (reduceMotion || roll.natural === null) { face.classList.add('landed'); return; }
-        const faces = parseInt((roll.die.match(/d(\d+)/i) || [])[1], 10) || 20;
-        face.classList.add('tumbling');
-        let ticks = 0;
-        const timer = setInterval(() => {
-            number.textContent = 1 + Math.floor(Math.random() * faces);
-            if (++ticks >= 12) {
-                clearInterval(timer);
-                number.textContent = roll.natural;
-                face.classList.remove('tumbling');
-                face.classList.add('landed');
-            }
-        }, 55);
+        const question = body.querySelector('h3');
+        if (question) question.after(happened); else body.prepend(happened);
+        body.prepend(header);
+        return { body };
     }
 
     function show(id, { fromHash = false } = {}) {
@@ -615,16 +595,8 @@ a:hover { color: var(--color-accent-hover); }
         sidebar.classList.add('has-roll');
         reader.classList.add('has-roll');
 
-        const { body, number } = render(roll);
-        panel.replaceChildren(body);
+        panel.replaceChildren(render(roll).body);
         panel.scrollTop = 0;
-
-        if (!seen.has(id)) {
-            seen.add(id);
-            tumble(number, roll);
-        } else {
-            number.parentElement.classList.add('landed');
-        }
 
         marks.forEach(m => m.classList.toggle('active', m.dataset.roll === id));
         if (!wide.matches) sidebar.classList.add('open');

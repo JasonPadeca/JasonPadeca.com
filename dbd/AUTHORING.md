@@ -23,62 +23,61 @@ You can mark more than one passage with the same id if a single roll plays out o
 Inside the `roll-ledger` section at the bottom, add one `<aside>` per roll:
 
 ```html
-<aside class="roll-card" id="read-the-ward"
-       data-check="Intelligence (Arcana)" data-die="d20"
-       data-natural="12" data-mod="5" data-dc="15">
-    <h3>Can Ilsa read the ward before it reads her?</h3>
-    <p class="roll-summary">Intelligence (Arcana), d20: 12 + 5 = 17 vs DC 15</p>
+<aside class="roll-card" id="jasa-arrives"
+       data-check="Wisdom (Perception) Check" data-die="d20"
+       data-natural="7" data-dc="12">
+    <h3>Does David notice Jasa?</h3>
+    <p class="roll-summary">Wisdom (Perception) Check, d20, DC 12: 7. Failure.</p>
+</aside>
+```
 
-    <h4>What was at stake</h4>
-    <ol class="stakes">
-        <li data-range="nat1">Worst case…</li>
-        <li data-range="1-9">Failure…</li>
-        <li data-range="10-14">Partial…</li>
-        <li data-range="15+">Success…</li>
-    </ol>
+The reader sees:
 
-    <h4>What happened</h4>
-    <p>…</p>
+- the check and die (`WISDOM (PERCEPTION) CHECK · D20`)
+- the DC on the die icon (`12`)
+- your question as the headline
+- **What happened:** `7. Failure.` This is worked out from the numbers, so you never type it.
 
-    <h4>What it changes</h4>
-    <p>…</p>
+With a modifier it reads `7 + 3 = 10. Failure.` On a d20, a natural 20 or 1 reads
+"Critical success" or "Critical failure" whatever the total. With no DC (a random
+table roll), the die shows the roll itself and there is no Success/Failure.
 
+### Author's note (only when you have one)
+
+```html
     <div class="author-note">
         <h4>Author's note</h4>
         <p>…</p>
     </div>
-</aside>
 ```
+
+Leave it out entirely when there's nothing to say.
 
 ### Attributes
 
 | Attribute      | Required | Meaning |
 |----------------|----------|---------|
 | `id`           | yes      | Same as the passage's `data-roll`. |
-| `data-check`   | yes      | Label shown above the die: "Dexterity save", "Attack roll", "Random event"… |
+| `data-check`   | yes      | "Wisdom (Perception) Check", "Attack Roll", "Random Event"… |
 | `data-die`     | no       | `d20` (default), `d6`, `2d6`, `d100`… |
 | `data-natural` | yes      | What the dice actually showed. For several dice, give the sum. |
 | `data-dice`    | no       | The individual dice for a multi-die roll, e.g. `data-dice="3 6"`. |
 | `data-mod`     | no       | Modifier added to the natural roll (`5`, `-1`). |
-| `data-dc`      | no       | Target number. Leave it out for rolls on a random table. |
+| `data-dc`      | no       | Target number. Leave it out for random table rolls. |
 | `data-vs`      | no       | What the target is called: `DC` (default) or `AC`. |
 
-With a DC, the reader sees **Success** or **Failure**. On a d20, a natural 20 or 1
-shows as a crit or fumble, whatever the total came to.
+### Typical DCs
 
-### Stakes
+| Task | DC |
+|---|---|
+| Very easy | 5 |
+| Easy | 10 |
+| Medium | 15 |
+| Hard | 20 |
+| Very hard | 25 |
+| Nearly impossible | 30 |
 
-Each `<li>` in `.stakes` has a `data-range`, and the matching line gets highlighted:
-
-- `7` is one exact total
-- `10-14` is a range of totals (modifier included)
-- `15+` means 15 or higher
-- `nat1` / `nat20` match the natural die face and beat any range
-
-Every section except the `<h3>` is optional. Leave out the author's note when you have nothing to say.
-
-`.roll-summary` is a plain-text line for readers without JavaScript. The script
-hides it and draws the die instead. Keep it in sync with the data attributes.
+`.roll-summary` is the plain-text line shown to readers without JavaScript. Keep it in sync.
 
 ## Licensing
 
