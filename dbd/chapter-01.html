@@ -326,7 +326,7 @@ a:hover { color: var(--color-accent-hover); }
     .dice-ready .roll-sidebar { transition: none; }
 }
 
-/* ---- DM Inspiration ---------------------------------------------------- */
+/* ---- DM Favor --------------------------------------------------------- */
 
 .inspo-tally {
     display: flex; align-items: center; gap: 0.6rem;
@@ -343,7 +343,7 @@ header .inspo-tally { margin-top: 1rem; }
 }
 .inspo-pips .pip.full { background: var(--color-crit); }
 
-/* In the text: a small pill where an inspiration is banked or spent. */
+/* In the text: a small pill where a favor is banked or spent. */
 .inspo {
     display: inline-flex; align-items: center; gap: 0.45rem;
     font-family: var(--font-sans); font-size: 0.75rem; line-height: 1.4;
@@ -481,20 +481,20 @@ header .inspo-tally { margin-top: 1rem; }
     </div>
 
     <script>
-// DM Inspiration. Every natural 20 the MC rolls banks one, up to three.
+// DM Favor. Every natural 20 the MC rolls banks one, up to three.
 // The chapter says how many it starts with:
 //     <article class="chapter" data-inspiration-start="1">
 // and the text marks each change where it happens:
 //     <span class="inspo" data-inspo="gain"></span>
 //     <span class="inspo" data-inspo="use"></span>
 // This script keeps the running count, fills in each marker as
-// "DM Inspiration used! ●●● → ●●○", and shows the tally at the start
+// "DM Favor used! ●●● → ●●○", and shows the tally at the start
 // and end of the chapter.
 (function () {
     const chapter = document.querySelector('.chapter[data-inspiration-start]');
     if (!chapter) return;
     const MAX = 3;
-    const LABEL = { gain: 'DM Inspiration banked!', use: 'DM Inspiration used!' };
+    const LABEL = { gain: 'DM Favor banked!', use: 'DM Favor used!' };
 
     function pips(n) {
         const wrap = document.createElement('span');
@@ -512,7 +512,7 @@ header .inspo-tally { margin-top: 1rem; }
     function tally(n, where) {
         const el = document.createElement('div');
         el.className = 'inspo-tally at-' + where;
-        el.append('DM Inspiration', pips(n));
+        el.append('DM Favor', pips(n));
         return el;
     }
 
@@ -524,7 +524,7 @@ header .inspo-tally { margin-top: 1rem; }
         if (!LABEL[kind]) return;
         const before = count;
         count = kind === 'gain' ? Math.min(MAX, count + 1) : Math.max(0, count - 1);
-        if (kind === 'use' && before === 0) console.warn('DM Inspiration used with none banked', marker);
+        if (kind === 'use' && before === 0) console.warn('DM Favor used with none banked', marker);
 
         const label = marker.textContent.trim() || LABEL[kind];
         const arrow = document.createElement('span');
