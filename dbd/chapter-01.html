@@ -325,6 +325,34 @@ a:hover { color: var(--color-accent-hover); }
     .roll-face.tumbling { animation: none; }
     .dice-ready .roll-sidebar { transition: none; }
 }
+
+/* ---- DM Inspiration ---------------------------------------------------- */
+
+.inspo-tally {
+    display: flex; align-items: center; gap: 0.6rem;
+    font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+header .inspo-tally { margin-top: 1rem; }
+.inspo-tally.at-end { margin-top: 2.5rem; }
+
+.inspo-pips { display: inline-flex; gap: 0.25rem; vertical-align: middle; }
+.inspo-pips .pip {
+    width: 0.62rem; height: 0.62rem; border-radius: 50%;
+    border: 1.5px solid var(--color-crit); background: transparent;
+}
+.inspo-pips .pip.full { background: var(--color-crit); }
+
+/* In the text: a small pill where an inspiration is banked or spent. */
+.inspo {
+    display: inline-flex; align-items: center; gap: 0.45rem;
+    font-family: var(--font-sans); font-size: 0.75rem; line-height: 1.4;
+    letter-spacing: 0.04em; white-space: nowrap;
+    padding: 0.1rem 0.55rem; margin: 0 0.15rem; border-radius: 999px;
+    border: 1px solid var(--color-crit); color: var(--color-crit);
+    vertical-align: 0.15em;
+}
+.inspo .inspo-arrow { color: var(--color-text-muted); }
     </style>
 </head>
 <body>
@@ -339,7 +367,7 @@ a:hover { color: var(--color-accent-hover); }
     </nav>
 
     <div class="reader">
-        <article class="chapter">
+        <article class="chapter" data-inspiration-start="0">
             <header>
                 <p class="chapter-number">Chapter 1</p>
                 <h1>Daggers ’n David</h1>
@@ -452,6 +480,62 @@ a:hover { color: var(--color-accent-hover); }
         </aside>
     </div>
 
+    <script>
+// DM Inspiration. Every natural 20 the MC rolls banks one, up to three.
+// The chapter says how many it starts with:
+//     <article class="chapter" data-inspiration-start="1">
+// and the text marks each change where it happens:
+//     <span class="inspo" data-inspo="gain"></span>
+//     <span class="inspo" data-inspo="use"></span>
+// This script keeps the running count, fills in each marker as
+// "DM Inspiration used! ●●● → ●●○", and shows the tally at the start
+// and end of the chapter.
+(function () {
+    const chapter = document.querySelector('.chapter[data-inspiration-start]');
+    if (!chapter) return;
+    const MAX = 3;
+    const LABEL = { gain: 'DM Inspiration banked!', use: 'DM Inspiration used!' };
+
+    function pips(n) {
+        const wrap = document.createElement('span');
+        wrap.className = 'inspo-pips';
+        wrap.setAttribute('role', 'img');
+        wrap.setAttribute('aria-label', `${n} of ${MAX}`);
+        for (let i = 0; i < MAX; i++) {
+            const pip = document.createElement('span');
+            pip.className = 'pip' + (i < n ? ' full' : '');
+            wrap.append(pip);
+        }
+        return wrap;
+    }
+
+    function tally(n, where) {
+        const el = document.createElement('div');
+        el.className = 'inspo-tally at-' + where;
+        el.append('DM Inspiration', pips(n));
+        return el;
+    }
+
+    let count = Math.min(MAX, Math.max(0, parseInt(chapter.dataset.inspirationStart, 10) || 0));
+    chapter.querySelector('header').append(tally(count, 'start'));
+
+    chapter.querySelectorAll('.inspo[data-inspo]').forEach(marker => {
+        const kind = marker.dataset.inspo;
+        if (!LABEL[kind]) return;
+        const before = count;
+        count = kind === 'gain' ? Math.min(MAX, count + 1) : Math.max(0, count - 1);
+        if (kind === 'use' && before === 0) console.warn('DM Inspiration used with none banked', marker);
+
+        const label = marker.textContent.trim() || LABEL[kind];
+        const arrow = document.createElement('span');
+        arrow.className = 'inspo-arrow';
+        arrow.textContent = '→';
+        marker.replaceChildren(label, pips(before), arrow, pips(count));
+    });
+
+    chapter.querySelector('.chapter-nav').before(tally(count, 'end'));
+})();
+    </script>
     <script>
 // Drafted By Dice — roll reader.
 //

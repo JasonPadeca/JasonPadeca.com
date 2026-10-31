@@ -79,6 +79,26 @@ Leave it out entirely when there's nothing to say.
 
 `.roll-summary` is the plain-text line shown to readers without JavaScript. Keep it in sync.
 
+## 3. DM Inspiration
+
+Set how many inspirations the chapter starts with (the previous chapter's end count):
+
+```html
+<article class="chapter" data-inspiration-start="1">
+```
+
+Then drop a marker in the text wherever one is banked or spent:
+
+```html
+<span class="inspo" data-inspo="gain"></span>   <!-- natural 20 -->
+<span class="inspo" data-inspo="use"></span>
+```
+
+Each marker renders as a small pill, e.g. "DM Inspiration used! ●●● → ●●○". The
+tally under the chapter title shows the starting count, and the tally above the
+chapter links shows the count after the last marker. The count caps at 3. To change
+a pill's wording, put your own text inside the span.
+
 ## Licensing
 
 The story uses the Open Game License v1.0a. Its full text is at the bottom of
