@@ -99,6 +99,16 @@ tally under the chapter title shows the starting count, and the tally above the
 chapter links shows the count after the last marker. The count caps at 3. To change
 a pill's wording, put your own text inside the span.
 
+## 4. Stat blocks
+
+`stat-blocks.html` has one `<section class="character">` per character, newest first.
+When a character changes (a level, a class, new gear):
+
+1. Copy their current `<div class="era current">` and paste the copy directly below it.
+2. On the copy (now history), remove `current` from the class and close its range,
+   e.g. `Chapter 1 – present` becomes `Chapters 1–4`.
+3. Edit the block on top to the new stats and set its range to `Chapter 5 – present`.
+
 ## Licensing
 
 The story uses the Open Game License v1.0a. Its full text is at the bottom of
