@@ -350,6 +350,33 @@ a:hover { color: var(--color-accent-hover); }
 @media (max-width: 420px) {
     .abilities { grid-template-columns: repeat(3, 1fr); row-gap: 0.5rem; }
 }
+
+/* ---- Builds sidebar ---------------------------------------------------- */
+
+.builds-nav {
+    margin: 2rem 1.5rem 0; padding: 1rem 1.25rem;
+    background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 6px;
+    font-size: 0.9rem;
+}
+.builds-nav ul { list-style: none; margin-bottom: 0.75rem; }
+.builds-nav li a { display: flex; justify-content: space-between; gap: 0.75rem; padding: 0.2rem 0; color: var(--color-text); }
+.builds-nav li a:hover { color: var(--color-accent-hover); }
+.builds-nav li a span { color: var(--color-text-muted); font-size: 0.8rem; white-space: nowrap; }
+.builds-nav-head {
+    font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--color-accent); margin: 0.25rem 0 0.35rem;
+}
+@media (min-width: 1040px) {
+    .builds-layout {
+        display: grid; grid-template-columns: 230px minmax(0, 760px);
+        justify-content: center; gap: 1.5rem; padding: 0 1.5rem;
+    }
+    .builds-nav { position: sticky; top: 1.5rem; align-self: start; margin: 4rem 0 0; }
+    .builds-main { margin: 0; }
+}
+.era { scroll-margin-top: 1.5rem; }
+.house-rules h3 { scroll-margin-top: 1.5rem; }
+.era.alternate .era-range { color: var(--color-text-muted); }
     </style>
 </head>
 <body>
@@ -364,14 +391,32 @@ a:hover { color: var(--color-accent-hover); }
         </div>
     </nav>
 
-    <main class="landing">
+    <div class="builds-layout">
+        <nav class="builds-nav" aria-label="Stat blocks">
+            <p class="builds-nav-head">David</p>
+            <ul>
+                <li><a href="#david-rogue-1">Rogue 1 <span>Ch. 2 – present</span></a></li>
+                <li><a href="#david-commoner">Commoner <span>Ch. 1</span></a></li>
+                <li><a href="#david-goblin-ranger-1">Goblin Ranger 1 <span>Alternate</span></a></li>
+            </ul>
+            <p class="builds-nav-head">House rules</p>
+            <ul>
+                <li><a href="#unique-human">Unique Human</a></li>
+                <li><a href="#ranged-specialist">Ranged Specialist</a></li>
+                <li><a href="#goblin">Goblin</a></li>
+                <li><a href="#common">Common</a></li>
+                <li><a href="#orcish">Orcish</a></li>
+            </ul>
+        </nav>
+
+    <main class="landing builds-main">
         <p class="eyebrow">Drafted By Dice</p>
         <h1>Stat blocks</h1>
 
         <section class="character" id="david">
             <h2>David</h2>
 
-            <div class="era current">
+            <div class="era current" id="david-rogue-1">
                 <p class="era-range">Chapter 2 – present</p>
                 <article class="stat-block">
                     <h3>Rogue 1</h3>
@@ -410,7 +455,7 @@ a:hover { color: var(--color-accent-hover); }
                 </article>
             </div>
 
-            <div class="era">
+            <div class="era" id="david-commoner">
                 <p class="era-range">Chapter 1</p>
                 <article class="stat-block">
                     <h3>Commoner</h3>
@@ -437,22 +482,66 @@ a:hover { color: var(--color-accent-hover); }
                     <p><span class="sb-action-name">Dagger.</span> <em>Melee or Ranged Weapon Attack:</em> +2 to hit, reach 5 ft. or range 20/60 ft., one target. <em>Hit:</em> 2 (1d4) piercing damage.</p>
                 </article>
             </div>
+
+            <div class="era alternate" id="david-goblin-ranger-1">
+                <p class="era-range">Alternate build</p>
+                <article class="stat-block">
+                    <h3>Ranger 1</h3>
+                    <p class="sb-type">Small humanoid (goblin), level 1</p>
+                    <hr>
+                    <p><span class="sb-label">Armor Class</span> 14 (leather armor)</p>
+                    <p><span class="sb-label">Hit Points</span> 12 (1d10 + 2)</p>
+                    <p><span class="sb-label">Speed</span> 25 ft.</p>
+                    <hr>
+                    <dl class="abilities">
+                        <div><dt>STR</dt><dd>10 (+0)</dd></div>
+                        <div><dt>DEX</dt><dd>17 (+3)</dd></div>
+                        <div><dt>CON</dt><dd>14 (+2)</dd></div>
+                        <div><dt>INT</dt><dd>8 (−1)</dd></div>
+                        <div><dt>WIS</dt><dd>12 (+1)</dd></div>
+                        <div><dt>CHA</dt><dd>14 (+2)</dd></div>
+                    </dl>
+                    <hr>
+                    <p><span class="sb-label">Saving Throws</span> Str +2, Dex +5</p>
+                    <p><span class="sb-label">Skills</span> Perception +3, Stealth +5, Survival +3</p>
+                    <p><span class="sb-label">Senses</span> darkvision 60 ft., passive Perception 13</p>
+                    <p><span class="sb-label">Languages</span> Common, Orcish</p>
+                    <p><span class="sb-label">Proficiency Bonus</span> +2</p>
+                    <p><span class="sb-label">Equipment</span> leather armor, two shortswords, shortbow and arrows</p>
+                    <hr>
+                    <p><span class="sb-action-name">Small Target.</span> Disengage or Hide as a bonus action.</p>
+                    <p><span class="sb-action-name">Complex Inferiority (2/long rest).</span> Force advantage on his weapon attack, or disadvantage on a weapon attack against him.</p>
+                    <p><span class="sb-action-name">Favored Enemy (beasts).</span> Advantage on Wisdom (Survival) checks to track beasts and on Intelligence checks to recall information about them.</p>
+                    <p><span class="sb-action-name">Natural Explorer (forest).</span> In forest, difficult terrain doesn’t slow his group’s travel, he can’t become lost except by magical means, he stays alert to danger while doing other things, moves stealthily at a normal pace when traveling alone, finds twice as much food when foraging, and learns the exact number, sizes and passing time of creatures he tracks.</p>
+                    <h4>Actions</h4>
+                    <p><span class="sb-action-name">Shortsword.</span> <em>Melee Weapon Attack:</em> +5 to hit, reach 5 ft., one target. <em>Hit:</em> 6 (1d6 + 3) piercing damage.</p>
+                    <p><span class="sb-action-name">Shortbow.</span> <em>Ranged Weapon Attack:</em> +5 to hit, range 80/320 ft., one target. <em>Hit:</em> 6 (1d6 + 3) piercing damage.</p>
+                    <h4>Bonus Actions</h4>
+                    <p><span class="sb-action-name">Off-Hand Shortsword.</span> After attacking with a shortsword, <em>Melee Weapon Attack:</em> +5 to hit, reach 5 ft., one target. <em>Hit:</em> 3 (1d6) piercing damage.</p>
+                </article>
+            </div>
         </section>
 
         <section class="house-rules" id="house-rules">
             <h2>House rules</h2>
 
-            <h3>Unique Human</h3>
+            <h3 id="unique-human">Unique Human</h3>
             <p>Unique Humans are versatile combatants who adapt easily to a variety of roles and occupations. They are not, however, jacks-of-all-trades and masters of none. Instead, they are specialists who often train to a high level of specific skill in their chosen path.</p>
             <p>A unique human gains a +1 bonus to two separate stats of the player's choice, a feat of your choice, and fluency in common and one additional language.</p>
 
-            <h3>Ranged Specialist</h3>
+            <h3 id="ranged-specialist">Ranged Specialist</h3>
             <p>The ranged specialist feat grants a +2 bonus to attack rolls made with weapons with which the specialist is proficient, and +1 to weapons for which they lack a proficiency.</p>
 
-            <h3>Common</h3>
+            <h3 id="goblin">Goblin</h3>
+            <p>Quick and resilient in a way that is sometimes compared to rats, Goblins gain +2 and +1 to their dexterity and constitution scores, respectively.</p>
+            <p><strong>Small Target:</strong> A goblin can disengage or hide as a bonus action.</p>
+            <p><strong>Complex Inferiority:</strong> Like a left-handed pitcher, you are much more used to fighting as a small than others are with fighting someone your height. You may force advantage on a weapon attack or disadvantage on a weapon attack against you an amount of times per long rest equal to your proficiency bonus.</p>
+            <p><strong>Darkvision:</strong> You have darkvision up to distances of 60 feet.</p>
+
+            <h3 id="common">Common</h3>
             <p>You can speak, write, read and otherwise understand the common tongue.</p>
 
-            <h3>Orcish</h3>
+            <h3 id="orcish">Orcish</h3>
             <p>You can speak, write, read and otherwise understand the language of the orcs.</p>
         </section>
 
@@ -460,5 +549,6 @@ a:hover { color: var(--color-accent-hover); }
             <p><a href="preface.html#ogl">Open Game License v1.0a</a> · &copy; 2026 Jason Padeca</p>
         </footer>
     </main>
+    </div>
 </body>
 </html>
