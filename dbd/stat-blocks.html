@@ -345,6 +345,8 @@ a:hover { color: var(--color-accent-hover); }
 }
 .abilities dt { font-weight: 600; font-size: 0.8rem; color: var(--color-accent-hover); }
 .abilities dd { margin: 0; }
+.house-rules { margin-top: 3rem; }
+.house-rules h3 { font-family: var(--font-serif); font-size: 1.25rem; margin: 1.5rem 0 0.4rem; }
 @media (max-width: 420px) {
     .abilities { grid-template-columns: repeat(3, 1fr); row-gap: 0.5rem; }
 }
@@ -370,7 +372,45 @@ a:hover { color: var(--color-accent-hover); }
             <h2>David</h2>
 
             <div class="era current">
-                <p class="era-range">Chapter 1 – present</p>
+                <p class="era-range">Chapter 2 – present</p>
+                <article class="stat-block">
+                    <h3>Rogue 1</h3>
+                    <p class="sb-type">Medium humanoid (unique human), level 1</p>
+                    <hr>
+                    <p><span class="sb-label">Armor Class</span> 14 (leather armor)</p>
+                    <p><span class="sb-label">Hit Points</span> 10 (1d8 + 2)</p>
+                    <p><span class="sb-label">Speed</span> 30 ft.</p>
+                    <hr>
+                    <dl class="abilities">
+                        <div><dt>STR</dt><dd>10 (+0)</dd></div>
+                        <div><dt>DEX</dt><dd>16 (+3)</dd></div>
+                        <div><dt>CON</dt><dd>14 (+2)</dd></div>
+                        <div><dt>INT</dt><dd>8 (−1)</dd></div>
+                        <div><dt>WIS</dt><dd>12 (+1)</dd></div>
+                        <div><dt>CHA</dt><dd>14 (+2)</dd></div>
+                    </dl>
+                    <hr>
+                    <p><span class="sb-label">Saving Throws</span> Dex +5, Int +1</p>
+                    <p><span class="sb-label">Skills</span> Acrobatics +5, Insight +3, Perception +3, Sleight of Hand +7, Stealth +7</p>
+                    <p><span class="sb-label">Tools</span> thieves’ tools +5</p>
+                    <p><span class="sb-label">Senses</span> passive Perception 13</p>
+                    <p><span class="sb-label">Languages</span> Common, Orcish, Thieves’ Cant</p>
+                    <p><span class="sb-label">Proficiency Bonus</span> +2</p>
+                    <p><span class="sb-label">Equipment</span> leather armor, two shortswords, light crossbow and bolts, thieves’ tools</p>
+                    <hr>
+                    <p><span class="sb-action-name">Sneak Attack (1d6).</span> Once per turn, David deals an extra 3 (1d6) damage when he hits with a finesse or ranged weapon and has advantage on the attack roll, or another enemy of the target is within 5 feet of it and he doesn’t have disadvantage.</p>
+                    <p><span class="sb-action-name">Expertise.</span> Proficiency bonus doubled for Sleight of Hand and Stealth.</p>
+                    <p><span class="sb-action-name">Ranged Specialist.</span> +2 to attack rolls with ranged weapons he is proficient with, +1 with those he isn’t.</p>
+                    <h4>Actions</h4>
+                    <p><span class="sb-action-name">Shortsword.</span> <em>Melee Weapon Attack:</em> +5 to hit, reach 5 ft., one target. <em>Hit:</em> 6 (1d6 + 3) piercing damage.</p>
+                    <p><span class="sb-action-name">Light Crossbow.</span> <em>Ranged Weapon Attack:</em> +7 to hit, range 80/320 ft., one target. <em>Hit:</em> 7 (1d8 + 3) piercing damage.</p>
+                    <h4>Bonus Actions</h4>
+                    <p><span class="sb-action-name">Off-Hand Shortsword.</span> After attacking with a shortsword, <em>Melee Weapon Attack:</em> +5 to hit, reach 5 ft., one target. <em>Hit:</em> 3 (1d6) piercing damage.</p>
+                </article>
+            </div>
+
+            <div class="era">
+                <p class="era-range">Chapter 1</p>
                 <article class="stat-block">
                     <h3>Commoner</h3>
                     <p class="sb-type">Medium humanoid, level 0</p>
@@ -396,6 +436,23 @@ a:hover { color: var(--color-accent-hover); }
                     <p><span class="sb-action-name">Dagger.</span> <em>Melee or Ranged Weapon Attack:</em> +2 to hit, reach 5 ft. or range 20/60 ft., one target. <em>Hit:</em> 2 (1d4) piercing damage.</p>
                 </article>
             </div>
+        </section>
+
+        <section class="house-rules" id="house-rules">
+            <h2>House rules</h2>
+
+            <h3>Unique Human</h3>
+            <p>Unique Humans are versatile combatants who adapt easily to a variety of roles and occupations. They are not, however, jacks-of-all-trades and masters of none. Instead, they are specialists who often train to a high level of specific skill in their chosen path.</p>
+            <p>A unique human gains a +1 bonus to two separate stats of the player's choice, a feat of your choice, and fluency in common and one additional language.</p>
+
+            <h3>Ranged Specialist</h3>
+            <p>The ranged specialist feat grants a +2 bonus to attack rolls made with weapons with which the specialist is proficient, and +1 to weapons for which they lack a proficiency.</p>
+
+            <h3>Common</h3>
+            <p>You can speak, write, read and otherwise understand the common tongue.</p>
+
+            <h3>Orcish</h3>
+            <p>You can speak, write, read and otherwise understand the language of the orcs.</p>
         </section>
 
         <footer class="attribution">
